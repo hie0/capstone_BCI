@@ -31,6 +31,7 @@ CALIBRATION_END = 14
 CALIBRATION_BLOCK_REST_ONSET = 15
 MAIN_EXPERIMENT_START = 16
 INITIAL_RELAX_ONSET = 20
+MAIN_RELAX_ONSET = 21
 TRIAL_REST_ONSET = 30
 PRED_LEFT_ONSET = 31
 PRED_RIGHT_ONSET = 32
@@ -62,6 +63,7 @@ CALIBRATION_THRESHOLD_WEIGHT = 0.35
 EXPECTED_SAMPLING_RATE = 250.0
 CLASSIFICATION_WINDOW = 0.5
 INITIAL_RELAX_DURATION = 5.0
+MAIN_RELAX_DURATION = 5.0
 TRIAL_REST_DURATION = 1.0
 BLOCK_REST_INTERVAL = 10
 BLOCK_REST_DURATION = 5.0
@@ -1289,10 +1291,18 @@ class OnlineTestUI:
         wait_with_escape(FINAL_RESULT_DURATION)
         
     def show_initial_relax(self, duration: float, explore):
-        """Show the initial RELAX screen immediately after the experiment starts."""
+        """Show the initial RELAX screen before the calibration block."""
         event.clearEvents(eventType="keyboard")
         self.initial_relax_text.draw()
         self.win.callOnFlip(explore.set_marker, INITIAL_RELAX_ONSET)
+        self.win.flip()
+        wait_with_escape(duration)
+
+    def show_main_relax(self, duration: float, explore):
+        """Show a RELAX screen immediately before the 60-trial main experiment."""
+        event.clearEvents(eventType="keyboard")
+        self.initial_relax_text.draw()
+        self.win.callOnFlip(explore.set_marker, MAIN_RELAX_ONSET)
         self.win.flip()
         wait_with_escape(duration)
 
@@ -1394,6 +1404,7 @@ def main():
     )
     print(f"Main trials          : {N_TRIALS} (6 blocks x 10; each block = 5 LEFT + 5 RIGHT)")
     print(f"Initial RELAX        : {INITIAL_RELAX_DURATION:.1f} s")
+    print(f"Main RELAX           : {MAIN_RELAX_DURATION:.1f} s")
     print(f"Trial REST           : {TRIAL_REST_DURATION:.1f} s")
     print(
         f"Classification       : {CLASSIFICATION_WINDOW:.1f} s x "
@@ -1706,6 +1717,9 @@ def main():
                 applied_threshold,
                 calibration_balanced_accuracy,
             )
+
+            # 5-s RELAX immediately before the 60-trial main experiment.
+            ui.show_main_relax(MAIN_RELAX_DURATION, explore)
             explore.set_marker(MAIN_EXPERIMENT_START)
 
             # =================================================================
