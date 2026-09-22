@@ -1,0 +1,307 @@
+{
+  "project": "Realtime Card Game BCI - Zombie Apocalypse Shelter",
+  "version": "1.0.0",
+  "story_title": "Shelter Mind: Zombie Apocalypse",
+  "cards": [
+    {
+      "id": "CARD_ZOMBIE_001",
+      "category": "식량/물자",
+      "character": "마르코 대장 (특수부대 수색대장)",
+      "avatar": "👨‍✈️",
+      "story_prompt": "도심 중심가 대형 마트에 식량이 남아있습니다. 위험하지만 야간 수색대를 보낼까요?",
+      "left_option": {
+        "text": "위험하니 야간 수색 보류",
+        "stat_delta": { "food": -15, "ammo": 0, "defense": 5, "morale": -5 }
+      },
+      "right_option": {
+        "text": "야간 수색대 파견",
+        "stat_delta": { "food": 30, "ammo": -10, "defense": 0, "morale": 10 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_002",
+      "category": "식량/물자",
+      "character": "생존자 민우 (어린 생존자)",
+      "avatar": "👦",
+      "story_prompt": "문 밖에서 아이를 안은 여성이 살려달라고 울부짖고 있어요! 쉘터 문을 열어줄까요?",
+      "left_option": {
+        "text": "감염 위험이 있으니 문 거절",
+        "stat_delta": { "food": 0, "ammo": 0, "defense": 5, "morale": -20 }
+      },
+      "right_option": {
+        "text": "문을 열어 생존자 들여보내기",
+        "stat_delta": { "food": -10, "ammo": -5, "defense": -5, "morale": 25 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_003",
+      "category": "식량/물자",
+      "character": "닥터 헬렌 (임상 연구원)",
+      "avatar": "👩‍⚕️",
+      "story_prompt": "유통기한이 지난 비상 통조림이 다량 발견되었습니다. 생존자들에게 바로 배급할까요?",
+      "left_option": {
+        "text": "위험하니 전량 폐기",
+        "stat_delta": { "food": -15, "ammo": 0, "defense": 0, "morale": -10 }
+      },
+      "right_option": {
+        "text": "통조림 찌개로 배급",
+        "stat_delta": { "food": 20, "ammo": 0, "defense": 0, "morale": -15 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_004",
+      "category": "식량/물자",
+      "character": "약탈자 렉스 (무장 두목)",
+      "avatar": "🦹‍♂️",
+      "story_prompt": "너희가 가진 비상 항생제 3상자를 내놓으면 소총 탄약 500발과 교환해주지!",
+      "left_option": {
+        "text": "항생제는 소중하니 거래 거절",
+        "stat_delta": { "food": 10, "ammo": -10, "defense": 0, "morale": 5 }
+      },
+      "right_option": {
+        "text": "탄약 확보를 위해 항생제 교환",
+        "stat_delta": { "food": -20, "ammo": 25, "defense": 0, "morale": -10 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_005",
+      "category": "식량/물자",
+      "character": "닥터 헬렌 (임상 연구원)",
+      "avatar": "👩‍⚕️",
+      "story_prompt": "옥상에 수경재배 비닐하우스를 세우면 자체 채소를 수확할 수 있습니다. 구축할까요?",
+      "left_option": {
+        "text": "설비 제작 자원 부족으로 포기",
+        "stat_delta": { "food": -10, "ammo": 0, "defense": 5, "morale": 0 }
+      },
+      "right_option": {
+        "text": "옥상 수경재배 온실 설치",
+        "stat_delta": { "food": 25, "ammo": 0, "defense": -10, "morale": 10 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_006",
+      "category": "탄약/방어",
+      "character": "마르코 대장 (특수부대 수색대장)",
+      "avatar": "👨‍✈️",
+      "story_prompt": "쉘터 외곽에 고전압 철조망을 가동하면 좀비 방어력이 대폭 상승합니다. 가동할까요?",
+      "left_option": {
+        "text": "연료 전력 아끼기",
+        "stat_delta": { "food": 0, "ammo": 0, "defense": -15, "morale": 5 }
+      },
+      "right_option": {
+        "text": "고전압 울타리 풀 가동",
+        "stat_delta": { "food": -10, "ammo": 5, "defense": 30, "morale": -5 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_007",
+      "category": "탄약/방어",
+      "character": "마르코 대장 (특수부대 수색대장)",
+      "avatar": "👨‍✈️",
+      "story_prompt": "버려진 인근 군사 기지 탄약고를 털면 중무장을 갖출 수 있습니다. 대규모 출동할까요?",
+      "left_option": {
+        "text": "좀비 호드 거점이니 포기",
+        "stat_delta": { "food": 5, "ammo": -15, "defense": 5, "morale": 0 }
+      },
+      "right_option": {
+        "text": "수색대 총동원 탄약고 기습",
+        "stat_delta": { "food": -15, "ammo": 35, "defense": -10, "morale": 10 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_008",
+      "category": "탄약/방어",
+      "character": "네오가디언 AI (쉘터 BCI AI)",
+      "avatar": "🤖",
+      "story_prompt": "감시탑 높이를 2배로 높이면 적의 기습을 사전에 조기 경보할 수 있습니다. 개축할까요?",
+      "left_option": {
+        "text": "자재 소모를 줄이기 위해 거절",
+        "stat_delta": { "food": 0, "ammo": 0, "defense": -10, "morale": 0 }
+      },
+      "right_option": {
+        "text": "자재를 바쳐 감시탑 증축",
+        "stat_delta": { "food": -5, "ammo": -5, "defense": 25, "morale": 5 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_009",
+      "category": "탄약/방어",
+      "character": "마르코 대장 (특수부대 수색대장)",
+      "avatar": "👨‍✈️",
+      "story_prompt": "쉘터 입구 도로에 지뢰와 크레모아를 매설해 좀비 호드에 대비할까요?",
+      "left_option": {
+        "text": "생존자 오발 위험으로 거절",
+        "stat_delta": { "food": 0, "ammo": 10, "defense": -15, "morale": 5 }
+      },
+      "right_option": {
+        "text": "입구 도로 전면 지뢰 매설",
+        "stat_delta": { "food": 0, "ammo": -20, "defense": 30, "morale": -10 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_010",
+      "category": "탄약/방어",
+      "character": "약탈자 렉스 (무장 두목)",
+      "avatar": "🦹‍♂️",
+      "story_prompt": "휘발유를 소모해 제작한 수제 화염방사기 주둥이를 방어선에 배치할까?",
+      "left_option": {
+        "text": "화재 위험과 연료 부족으로 거절",
+        "stat_delta": { "food": 5, "ammo": 0, "defense": -10, "morale": 0 }
+      },
+      "right_option": {
+        "text": "화염방사기 감시탑 배치",
+        "stat_delta": { "food": -10, "ammo": 15, "defense": 15, "morale": -5 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_011",
+      "category": "내부질서/사기",
+      "character": "닥터 헬렌 (임상 연구원)",
+      "avatar": "👩‍⚕️",
+      "story_prompt": "수색대원 중 한 명이 미세한 이빨 자국을 숨겼습니다. 지하에 즉시 강제 격리할까요?",
+      "left_option": {
+        "text": "단순 상처일지 모르니 경과 관찰",
+        "stat_delta": { "food": 0, "ammo": 0, "defense": -20, "morale": 10 }
+      },
+      "right_option": {
+        "text": "철장 지하실로 즉시 강제 격리",
+        "stat_delta": { "food": 0, "ammo": 0, "defense": 20, "morale": -15 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_012",
+      "category": "내부질서/사기",
+      "character": "생존자 민우 (어린 생존자)",
+      "avatar": "👦",
+      "story_prompt": "창고에서 몰래 통조림 5개를 훔치다 걸린 생존자가 있습니다. 쉘터 밖으로 추방할까요?",
+      "left_option": {
+        "text": "추방 대신 1주일 강제 노역",
+        "stat_delta": { "food": -5, "ammo": 0, "defense": 5, "morale": 15 }
+      },
+      "right_option": {
+        "text": "질서를 위해 즉시 밖으로 추방",
+        "stat_delta": { "food": 10, "ammo": 0, "defense": 0, "morale": -25 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_013",
+      "category": "내부질서/사기",
+      "character": "생존자 민우 (어린 생존자)",
+      "avatar": "👦",
+      "story_prompt": "공포에 질린 생존자들을 위해 발전기를 돌려 영화와 음악 파티를 열어줄까요?",
+      "left_option": {
+        "text": "소음으로 좀비가 몰리니 금지",
+        "stat_delta": { "food": 5, "ammo": 0, "defense": 5, "morale": -15 }
+      },
+      "right_option": {
+        "text": "오늘 하루 위문 음악회 개최",
+        "stat_delta": { "food": -15, "ammo": 0, "defense": -10, "morale": 30 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_014",
+      "category": "내부질서/사기",
+      "character": "네오가디언 AI (쉘터 BCI AI)",
+      "avatar": "🤖",
+      "story_prompt": "정부 구조대의 비상 라디오 주파수 신호가 수신되었습니다. 전력을 쏟아 교신을 시도할까요?",
+      "left_option": {
+        "text": "위치 노출 위험으로 교신 무시",
+        "stat_delta": { "food": 0, "ammo": 0, "defense": 5, "morale": -10 }
+      },
+      "right_option": {
+        "text": "전력 풀 가동 방송 송출",
+        "stat_delta": { "food": -10, "ammo": 0, "defense": -5, "morale": 25 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_015",
+      "category": "내부질서/사기",
+      "character": "약탈자 렉스 (무장 두목)",
+      "avatar": "🦹‍♂️",
+      "story_prompt": "매주 탄약 100발을 통행세로 바친다면 너희 수색로를 안전하게 보장해주마!",
+      "left_option": {
+        "text": "약탈자와의 타협 거부 및 전쟁",
+        "stat_delta": { "food": 0, "ammo": -20, "defense": -15, "morale": 15 }
+      },
+      "right_option": {
+        "text": "평화를 위해 매주 탄약 헌납",
+        "stat_delta": { "food": 10, "ammo": -25, "defense": 10, "morale": -15 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_016",
+      "category": "백신/웨이브",
+      "character": "닥터 헬렌 (임상 연구원)",
+      "avatar": "👩‍⚕️",
+      "story_prompt": "초기 바이러스 항체 백신이 완성되었습니다! 중증 생존자에게 임상 시험해 볼까요?",
+      "left_option": {
+        "text": "부작용이 우려되니 연구 보강",
+        "stat_delta": { "food": 0, "ammo": 0, "defense": 0, "morale": -5 }
+      },
+      "right_option": {
+        "text": "위험을 감수하고 백신 투여",
+        "stat_delta": { "food": 0, "ammo": 0, "defense": 10, "morale": 20 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_017",
+      "category": "백신/웨이브",
+      "character": "마르코 대장 (특수부대 수색대장)",
+      "avatar": "👨‍✈️",
+      "story_prompt": "수천 마리의 좀비 호드가 쉘터 정면으로 밀려옵니다! 비상 예비 탄약을 전량 사격할까요?",
+      "left_option": {
+        "text": "탄약 아끼고 육탄 근접전",
+        "stat_delta": { "food": 0, "ammo": 15, "defense": -30, "morale": -20 }
+      },
+      "right_option": {
+        "text": "예비 탄약 및 미사일 전량 사격",
+        "stat_delta": { "food": 0, "ammo": -35, "defense": 20, "morale": 15 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_018",
+      "category": "백신/웨이브",
+      "character": "네오가디언 AI (쉘터 BCI AI)",
+      "avatar": "🤖",
+      "story_prompt": "정부 구원 헬기가 상공을 지납니다! 옥상에서 유도 조명탄을 피워 쉘터 위치를 알릴까요?",
+      "left_option": {
+        "text": "좀비가 올 수 있으니 수신호 조용히",
+        "stat_delta": { "food": 0, "ammo": 0, "defense": 5, "morale": -10 }
+      },
+      "right_option": {
+        "text": "옥상 전체에 거대 조명탄 투하",
+        "stat_delta": { "food": 0, "ammo": -10, "defense": -15, "morale": 30 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_019",
+      "category": "백신/웨이브",
+      "character": "닥터 헬렌 (임상 연구원)",
+      "avatar": "👩‍⚕️",
+      "story_prompt": "쉘터 내 독소 가스와 곰팡이가 퍼지고 있습니다. 알코올 방역 소독을 진행할까요?",
+      "left_option": {
+        "text": "물자가 아까우니 방역 보류",
+        "stat_delta": { "food": -10, "ammo": 0, "defense": -10, "morale": -10 }
+      },
+      "right_option": {
+        "text": "소독제 총동원 쉘터 방역",
+        "stat_delta": { "food": -10, "ammo": 0, "defense": 15, "morale": 10 }
+      }
+    },
+    {
+      "id": "CARD_ZOMBIE_020",
+      "category": "백신/웨이브",
+      "character": "마르코 대장 (특수부대 수색대장)",
+      "avatar": "👨‍✈️",
+      "story_prompt": "약탈단 렉스의 본진이 방심하고 있습니다. 선제 기습 공격으로 물자를 털어올까요?",
+      "left_option": {
+        "text": "수성 방어에 집중",
+        "stat_delta": { "food": 0, "ammo": 10, "defense": 10, "morale": -5 }
+      },
+      "right_option": {
+        "text": "특수부대 선제 역기습 발출",
+        "stat_delta": { "food": 30, "ammo": -20, "defense": -10, "morale": 15 }
+      }
+    }
+  ]
+}
