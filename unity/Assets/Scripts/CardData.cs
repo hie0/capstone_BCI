@@ -51,4 +51,8 @@ public class BCIPacket
     public float right_prob = 0.5f;
     public string trigger = "NONE";   // NONE | LEFT | RIGHT | NEUTRAL
     public float elapsed_sec = 0f;
+    public int level = 0;             // neuro_feedback3 Dynamic Fading Level (0~3)
+    public float c3_uV = 0f;          // 실시간 C3 전압
+    public float c4_uV = 0f;          // 실시간 C4 전압
 }
+
