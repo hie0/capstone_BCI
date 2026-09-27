@@ -63,6 +63,15 @@ CALIBRATION_BLOCK_REST_DURATION = 5.0
 ORIGINAL_THRESHOLD_WEIGHT = 0.40
 CALIBRATION_THRESHOLD_WEIGHT = 0.60
 
+# Daily amplitude normalization. training_channel_scale must be exported in
+# bundle["adaptation"] from the OFFLINE fixation 1.0-2.0 s baseline using the
+# exact same stream preprocessing and scale calculation used here.
+ENABLE_AMPLITUDE_NORMALIZATION = True
+AMPLITUDE_MAD_TO_SIGMA = 1.4826
+AMPLITUDE_GAIN_MIN = 0.67
+AMPLITUDE_GAIN_MAX = 1.50
+AMPLITUDE_SCALE_EPS = 1e-12
+
 # Only the final LDA/SVM head is eligible for daily adaptation.  The fitted
 # CSP/Riemannian/filter-bank/scaler objects in the participant bundle stay fixed.
 ENABLE_CLASSIFIER_FINETUNING = True
@@ -420,6 +429,10 @@ class BundleRuntime:
         self._sample_count = 0
         self._filter_zi: dict[object, np.ndarray] = {}
         self._stream_error: Exception | None = None
+        # One multiplicative gain per selected EEG channel. It remains identity
+        # during collection of the 20 calibration REST/MI segments and is set
+        # only after today_scale has been computed.
+        self.channel_gain = np.ones(len(self.selected_channels), dtype=np.float64)
 
         self._validate_supported_operations()
 
@@ -464,6 +477,7 @@ class BundleRuntime:
             self._sample_count = 0
             self._filter_zi.clear()
             self._stream_error = None
+            self.channel_gain = np.ones(len(self.selected_channels), dtype=np.float64)
             self._condition.notify_all()
 
     @property
@@ -642,22 +656,22 @@ class BundleRuntime:
 
         return np.concatenate(parts, axis=0)
 
-    def get_window_epoch(
+    def get_processed_segment(
         self,
         start_sample: int,
         n_samples: int,
         timeout: float = 2.0,
     ) -> np.ndarray:
-        """Return one exact non-overlapping model window from the continuous stream."""
+        """Return an arbitrary-length segment after bundle stream preprocessing.
+
+        Shape is samples x channels for a single-band stream, or samples x bands
+        x channels for a filter-bank stream. No daily gain is applied here.
+        """
         start = int(start_sample)
         n_samples = int(n_samples)
+        if n_samples <= 0:
+            raise ValueError("n_samples must be positive.")
         stop = start + n_samples
-
-        expected_samples = int(self.epoch_spec["n_samples"])
-        if n_samples != expected_samples:
-            raise ValueError(
-                f"Requested {n_samples} samples, but the model expects {expected_samples}."
-            )
 
         deadline = time.monotonic() + timeout
         with self._condition:
@@ -667,31 +681,97 @@ class BundleRuntime:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     raise TimeoutError(
-                        f"Not enough EEG samples for prediction: have {self._sample_count}, "
-                        f"need {stop}. Check device streaming/sampling rate."
+                        f"Not enough EEG samples: have {self._sample_count}, need {stop}. "
+                        "Check device streaming/sampling rate."
                     )
                 self._condition.wait(timeout=min(0.05, remaining))
-
-            epoch = self._slice_samples_locked(start, stop)
+            segment = self._slice_samples_locked(start, stop)
 
         n_channels = len(self.selected_channels)
-        if epoch.ndim == 2:
-            if epoch.shape != (n_samples, n_channels):
-                raise RuntimeError(
-                    f"Epoch shape mismatch: got {epoch.shape}, expected "
-                    f"({n_samples}, {n_channels})."
-                )
-            return epoch.T[np.newaxis, :, :]
+        if segment.ndim == 2 and segment.shape != (n_samples, n_channels):
+            raise RuntimeError(
+                f"Segment shape mismatch: got {segment.shape}, expected "
+                f"({n_samples}, {n_channels})."
+            )
+        if segment.ndim == 3 and segment.shape[2] != n_channels:
+            raise RuntimeError(
+                f"Filter-bank segment channel mismatch: got {segment.shape}, "
+                f"expected final axis {n_channels}."
+            )
+        if segment.ndim not in {2, 3}:
+            raise RuntimeError(f"Unexpected segment dimensionality: {segment.shape}")
+        return np.asarray(segment, dtype=np.float64)
 
-        if epoch.ndim == 3:
-            n_bands = epoch.shape[1]
-            if epoch.shape != (n_samples, n_bands, n_channels):
-                raise RuntimeError(
-                    f"Filter-bank epoch shape mismatch: got {epoch.shape}."
-                )
-            return np.transpose(epoch, (1, 2, 0))[np.newaxis, :, :, :]
+    @staticmethod
+    def robust_channel_scale(segment: np.ndarray) -> np.ndarray:
+        """Return one robust amplitude scale per selected channel.
 
-        raise RuntimeError(f"Unexpected epoch dimensionality: {epoch.shape}")
+        scale = 1.4826 * MAD. For filter-bank streams, MAD is calculated across
+        time in each band, then the median across bands gives one scale/channel.
+        The offline training_channel_scale must use this exact rule.
+        """
+        x = np.asarray(segment, dtype=np.float64)
+        if x.ndim == 2:  # samples x channels
+            center = np.median(x, axis=0)
+            mad = np.median(np.abs(x - center[None, :]), axis=0)
+            scale = AMPLITUDE_MAD_TO_SIGMA * mad
+        elif x.ndim == 3:  # samples x bands x channels
+            center = np.median(x, axis=0)
+            mad_per_band = np.median(np.abs(x - center[None, :, :]), axis=0)
+            scale = AMPLITUDE_MAD_TO_SIGMA * np.median(mad_per_band, axis=0)
+        else:
+            raise ValueError(f"Unexpected amplitude-scale segment shape: {x.shape}")
+        return np.asarray(scale, dtype=np.float64)
+
+    def set_channel_gain(self, gain: np.ndarray) -> None:
+        gain = np.asarray(gain, dtype=np.float64).reshape(-1)
+        if gain.shape != (len(self.selected_channels),):
+            raise ValueError(
+                f"channel gain shape {gain.shape} does not match "
+                f"{len(self.selected_channels)} selected channels."
+            )
+        if not np.isfinite(gain).all() or np.any(gain <= 0):
+            raise ValueError("channel gain must contain finite positive values.")
+        self.channel_gain = gain.copy()
+
+    def apply_channel_gain(self, epoch: np.ndarray) -> np.ndarray:
+        """Apply current daily channel gain to one or more model-shaped epochs."""
+        x = np.asarray(epoch, dtype=np.float64)
+        gain = np.asarray(self.channel_gain, dtype=np.float64)
+        if x.ndim == 3:  # batch x channels x time
+            if x.shape[1] != len(gain):
+                raise ValueError(f"Epoch channel mismatch for gain: {x.shape}")
+            return x * gain[None, :, None]
+        if x.ndim == 4:  # batch x bands x channels x time
+            if x.shape[2] != len(gain):
+                raise ValueError(f"Filter-bank epoch channel mismatch for gain: {x.shape}")
+            return x * gain[None, None, :, None]
+        raise ValueError(f"Unexpected model epoch shape for gain: {x.shape}")
+
+    def get_window_epoch(
+        self,
+        start_sample: int,
+        n_samples: int,
+        timeout: float = 2.0,
+        apply_gain: bool = True,
+    ) -> np.ndarray:
+        """Return one exact non-overlapping model window from the stream."""
+        n_samples = int(n_samples)
+        expected_samples = int(self.epoch_spec["n_samples"])
+        if n_samples != expected_samples:
+            raise ValueError(
+                f"Requested {n_samples} samples, but the model expects {expected_samples}."
+            )
+
+        segment = self.get_processed_segment(start_sample, n_samples, timeout=timeout)
+        if segment.ndim == 2:
+            epoch = segment.T[np.newaxis, :, :]
+        else:
+            epoch = np.transpose(segment, (1, 2, 0))[np.newaxis, :, :, :]
+
+        if apply_gain:
+            epoch = self.apply_channel_gain(epoch)
+        return epoch
 
     @staticmethod
     def _compute_shrinkage_covariances(X: np.ndarray, shrink: float) -> np.ndarray:
@@ -838,6 +918,78 @@ class BundleRuntime:
             raise KeyError(f"Prediction label {label!r} is absent from label_to_direction.")
 
         return label, str(direction).upper(), probability
+
+
+def _load_training_channel_scale(bundle: dict, selected_channels: list[str]) -> np.ndarray:
+    """Load the offline amplitude reference stored in bundle['adaptation']."""
+    adaptation = bundle.get("adaptation", {})
+    value = adaptation.get("training_channel_scale")
+    if value is None:
+        raise RuntimeError(
+            "Amplitude normalization is enabled, but the model bundle has no "
+            "bundle['adaptation']['training_channel_scale']. Regenerate the offline "
+            "joblib using FIXATION 1.0-2.0 s and the same preprocessing/MAD rule."
+        )
+
+    if isinstance(value, dict):
+        missing = [ch for ch in selected_channels if ch not in value]
+        if missing:
+            raise RuntimeError(
+                "training_channel_scale is missing selected channels: " + ", ".join(missing)
+            )
+        scale = np.asarray([value[ch] for ch in selected_channels], dtype=np.float64)
+    else:
+        scale = np.asarray(value, dtype=np.float64).reshape(-1)
+
+    if scale.shape != (len(selected_channels),):
+        raise RuntimeError(
+            f"training_channel_scale has shape {scale.shape}; expected "
+            f"({len(selected_channels)},) for channels {selected_channels}."
+        )
+    if not np.isfinite(scale).all() or np.any(scale <= AMPLITUDE_SCALE_EPS):
+        raise RuntimeError("training_channel_scale must contain finite positive values.")
+    return scale
+
+
+def compute_daily_amplitude_normalization(
+    runtime: BundleRuntime,
+    calibration_rest_segments: list[np.ndarray],
+) -> dict:
+    """Compute today_scale and bounded per-channel gain from 20 REST segments."""
+    training_scale = _load_training_channel_scale(runtime.bundle, runtime.selected_channels)
+    if len(calibration_rest_segments) != CALIBRATION_TRIALS:
+        raise RuntimeError(
+            f"Expected {CALIBRATION_TRIALS} calibration REST segments, got "
+            f"{len(calibration_rest_segments)}."
+        )
+
+    rest_scales = np.vstack(
+        [runtime.robust_channel_scale(segment) for segment in calibration_rest_segments]
+    )
+    if rest_scales.shape != (CALIBRATION_TRIALS, len(runtime.selected_channels)):
+        raise RuntimeError(f"Unexpected REST scale matrix shape: {rest_scales.shape}")
+
+    today_scale = np.median(rest_scales, axis=0)
+    if not np.isfinite(today_scale).all() or np.any(today_scale <= AMPLITUDE_SCALE_EPS):
+        raise RuntimeError(
+            "today_scale contains zero/invalid values; check electrode contact and "
+            "the preprocessing used for amplitude normalization."
+        )
+
+    raw_gain = training_scale / today_scale
+    clipped_gain = np.clip(raw_gain, AMPLITUDE_GAIN_MIN, AMPLITUDE_GAIN_MAX)
+    runtime.set_channel_gain(clipped_gain)
+    return {
+        "training_scale": training_scale,
+        "today_scale": today_scale,
+        "raw_gain": raw_gain,
+        "applied_gain": clipped_gain,
+        "rest_scales": rest_scales,
+    }
+
+
+def _csv_vector(values: np.ndarray) -> str:
+    return ",".join(f"{float(v):.10g}" for v in np.asarray(values).reshape(-1))
 
 
 def _right_probabilities(estimator, features: np.ndarray, right_label) -> np.ndarray:
@@ -1212,7 +1364,7 @@ class OnlineTestUI:
                 "Session-Calibrated Dynamic Fading Motor Imagery BCI Test\n\n"
                 "먼저 20 trials (LEFT 10 / RIGHT 10) calibration을 수행합니다.\n"
                 "Calibration에서는 제시된 방향의 손 움직임을 3초 동안 상상하세요.\n"
-                "Calibration 종료 후 분류기 파인튜닝과 오늘의 threshold 계산을 수행합니다.\n"
+                "Calibration REST로 진폭 정규화 후 분류기 파인튜닝과 오늘의 threshold를 계산합니다.\n"
                 "검증을 통과하지 못하면 원래 분류기를 그대로 사용합니다.\n"
                 "본 실험에서는 중앙 cue의 색상 변화가 실시간 분류 결과를 반영합니다.\n\n"
                 "SPACE : 테스트 시작\n"
@@ -1358,12 +1510,13 @@ class OnlineTestUI:
         if target_direction is not None:
             self.target_text.draw()
 
-    def show_calibration_rest(self, trial_number, explore, global_clock):
-        """1-s inter-trial rest: show only the centered black cue circle."""
+    def show_calibration_rest(self, trial_number, explore, global_clock, runtime):
+        """1-s REST used both visually and for today's amplitude scale."""
         holder = {}
 
         def on_flip():
             holder["time"] = global_clock.getTime()
+            holder["sample"] = runtime.mark_stream_sample()
             explore.set_marker(CALIBRATION_REST_ONSET)
 
         event.clearEvents(eventType="keyboard")
@@ -1376,7 +1529,7 @@ class OnlineTestUI:
         self.win.callOnFlip(on_flip)
         self.win.flip()
         wait_with_escape(CALIBRATION_REST_DURATION)
-        return holder["time"]
+        return holder["time"], holder["sample"]
 
     def begin_calibration_trial(
         self,
@@ -1655,6 +1808,15 @@ def main():
         f"Threshold weighting  : old={ORIGINAL_THRESHOLD_WEIGHT:.2f}, "
         f"calibration={CALIBRATION_THRESHOLD_WEIGHT:.2f}"
     )
+    print(
+        "Amplitude norm       : "
+        + (
+            f"REST 1 s x {CALIBRATION_TRIALS}, 1.4826*MAD -> median; "
+            f"gain clip [{AMPLITUDE_GAIN_MIN:.2f}, {AMPLITUDE_GAIN_MAX:.2f}]"
+            if ENABLE_AMPLITUDE_NORMALIZATION
+            else "disabled"
+        )
+    )
     print(f"Main trials          : {N_TRIALS} (6 blocks x 10; each block = 5 LEFT + 5 RIGHT)")
     print(f"Initial RELAX        : {INITIAL_RELAX_DURATION:.1f} s")
     print(f"Main RELAX           : {MAIN_RELAX_DURATION:.1f} s")
@@ -1701,9 +1863,12 @@ def main():
     global_clock = core.Clock()
     results = []
     calibration_rows = []
-    calibration_epochs = []
+    calibration_epochs = []  # stored without daily gain until all 20 REST segments are available
     calibration_window_targets = []
     calibration_window_trial_ids = []
+    calibration_rest_segments = []
+    calibration_trial_metadata = []
+    amplitude_result = None
     calibration_threshold = float("nan")
     applied_threshold = original_threshold
     finetuning_result = {
@@ -1723,6 +1888,7 @@ def main():
         "prediction_at_original_threshold",
         "correct_at_original_threshold",
         "calibration_rest_onset_s",
+        "calibration_rest_stream_sample",
         "calibration_cue_onset_s",
         "calibration_cue_stream_sample",
     ]
@@ -1736,6 +1902,8 @@ def main():
         "applied_threshold",
         "finetuning_applied",
         "finetuning_reason",
+        "amplitude_normalization_enabled",
+        "applied_channel_gain",
         "prediction_sequence",
         "predicted_label_sequence",
         "right_probability_sequence",
@@ -1811,36 +1979,30 @@ def main():
             print("20-TRIAL SESSION CALIBRATION")
             print("=" * 78)
 
+            rest_samples = int(round(CALIBRATION_REST_DURATION * runtime.fs))
+
+            # Phase A: collect all 20 REST segments and all MI windows WITHOUT
+            # daily amplitude gain. The gain is known only after all REST segments.
             for calibration_trial in range(1, CALIBRATION_TRIALS + 1):
                 target_direction = calibration_schedule[calibration_trial - 1]
 
-                calibration_rest_onset = ui.show_calibration_rest(
-                    calibration_trial,
-                    explore,
-                    global_clock,
+                calibration_rest_onset, calibration_rest_start_sample = ui.show_calibration_rest(
+                    calibration_trial, explore, global_clock, runtime
                 )
+                rest_segment = runtime.get_processed_segment(
+                    calibration_rest_start_sample, rest_samples, timeout=2.0
+                )
+                calibration_rest_segments.append(np.array(rest_segment, copy=True))
+
                 calibration_cue_onset, calibration_start_sample = ui.begin_calibration_trial(
-                    calibration_trial,
-                    target_direction,
-                    explore,
-                    global_clock,
-                    runtime,
+                    calibration_trial, target_direction, explore, global_clock, runtime
                 )
 
-                probability_values = []
                 for prediction_index in range(calibration_predictions):
                     window_start = calibration_start_sample + prediction_index * window_samples
                     epoch = runtime.get_window_epoch(
-                        window_start,
-                        window_samples,
-                        timeout=2.0,
+                        window_start, window_samples, timeout=2.0, apply_gain=False
                     )
-                    _, _, right_probability = runtime.predict(epoch)
-                    if right_probability is None:
-                        raise RuntimeError(
-                            "Calibration requires P(RIGHT), but runtime.predict() returned None."
-                        )
-                    probability_values.append(float(right_probability))
                     calibration_epochs.append(np.array(epoch, copy=True))
                     calibration_window_targets.append(
                         runtime.output_spec["right_label"]
@@ -1849,7 +2011,85 @@ def main():
                     )
                     calibration_window_trial_ids.append(calibration_trial)
 
+                calibration_trial_metadata.append({
+                    "subject": subject,
+                    "trial": calibration_trial,
+                    "target_direction": target_direction,
+                    "calibration_rest_onset_s": calibration_rest_onset,
+                    "calibration_rest_stream_sample": calibration_rest_start_sample,
+                    "calibration_cue_onset_s": calibration_cue_onset,
+                    "calibration_cue_stream_sample": calibration_start_sample,
+                })
+
+                print(
+                    f"Calibration {calibration_trial:02d}/{CALIBRATION_TRIALS} | "
+                    f"target={target_direction:<5} | EEG collected"
+                )
+
+                if (
+                    calibration_trial % CALIBRATION_BLOCK_SIZE == 0
+                    and calibration_trial < CALIBRATION_TRIALS
+                ):
+                    ui.show_calibration_block_rest(CALIBRATION_BLOCK_REST_DURATION, explore)
+
+            # Phase B: REST 1 s x 20 -> channel MAD -> median -> gain.
+            if ENABLE_AMPLITUDE_NORMALIZATION:
+                amplitude_result = compute_daily_amplitude_normalization(
+                    runtime, calibration_rest_segments
+                )
+            else:
+                unity = np.ones(len(runtime.selected_channels), dtype=float)
+                runtime.set_channel_gain(unity)
+                amplitude_result = {
+                    "training_scale": np.full_like(unity, np.nan),
+                    "today_scale": np.full_like(unity, np.nan),
+                    "raw_gain": unity.copy(),
+                    "applied_gain": unity.copy(),
+                    "rest_scales": np.full(
+                        (CALIBRATION_TRIALS, len(unity)), np.nan, dtype=float
+                    ),
+                }
+
+            print("\nDAILY AMPLITUDE NORMALIZATION")
+            for ch, tr, td, raw, applied in zip(
+                runtime.selected_channels,
+                amplitude_result["training_scale"],
+                amplitude_result["today_scale"],
+                amplitude_result["raw_gain"],
+                amplitude_result["applied_gain"],
+            ):
+                print(
+                    f"  {ch:<6} training={tr:.6g}  today={td:.6g}  "
+                    f"raw_gain={raw:.4f}  applied_gain={applied:.4f}"
+                )
+
+            # Phase C: normalize stored calibration MI once, then recompute the
+            # original classifier's P(RIGHT). Fine-tuning and T_cal therefore use
+            # exactly the same normalized signal domain as the main experiment.
+            calibration_epochs = [
+                runtime.apply_channel_gain(epoch) for epoch in calibration_epochs
+            ]
+            normalized_window_probabilities = []
+            for epoch in calibration_epochs:
+                _, _, right_probability = runtime.predict(epoch)
+                if right_probability is None:
+                    raise RuntimeError(
+                        "Calibration requires P(RIGHT), but runtime.predict() returned None."
+                    )
+                normalized_window_probabilities.append(float(right_probability))
+
+            calibration_rows.clear()
+            trial_ids_array = np.asarray(calibration_window_trial_ids, dtype=int)
+            normalized_window_probabilities = np.asarray(
+                normalized_window_probabilities, dtype=float
+            )
+            for meta in calibration_trial_metadata:
+                trial_id = int(meta["trial"])
+                probability_values = normalized_window_probabilities[
+                    trial_ids_array == trial_id
+                ]
                 trial_score = float(np.median(probability_values))
+                target_direction = str(meta["target_direction"]).upper()
                 prediction_at_original = (
                     "RIGHT" if trial_score >= original_threshold else "LEFT"
                 )
@@ -1857,7 +2097,7 @@ def main():
 
                 calibration_row = {
                     "subject": subject,
-                    "trial": calibration_trial,
+                    "trial": trial_id,
                     "target_direction": target_direction,
                     "right_probability_sequence": ",".join(
                         f"{value:.8f}" for value in probability_values
@@ -1865,28 +2105,23 @@ def main():
                     "trial_score_right_probability": f"{trial_score:.8f}",
                     "prediction_at_original_threshold": prediction_at_original,
                     "correct_at_original_threshold": correct_at_original,
-                    "calibration_rest_onset_s": f"{calibration_rest_onset:.6f}",
-                    "calibration_cue_onset_s": f"{calibration_cue_onset:.6f}",
-                    "calibration_cue_stream_sample": int(calibration_start_sample),
+                    "calibration_rest_onset_s": f"{meta['calibration_rest_onset_s']:.6f}",
+                    "calibration_rest_stream_sample": int(
+                        meta["calibration_rest_stream_sample"]
+                    ),
+                    "calibration_cue_onset_s": f"{meta['calibration_cue_onset_s']:.6f}",
+                    "calibration_cue_stream_sample": int(
+                        meta["calibration_cue_stream_sample"]
+                    ),
                 }
                 calibration_rows.append(calibration_row)
                 calibration_writer.writerow(calibration_row)
-                calibration_log_file.flush()
-
                 print(
-                    f"Calibration {calibration_trial:02d}/{CALIBRATION_TRIALS} | "
+                    f"Normalized calibration {trial_id:02d}/{CALIBRATION_TRIALS} | "
                     f"target={target_direction:<5} | median P(RIGHT)={trial_score:.4f} | "
                     f"old-pred={prediction_at_original:<5} | correct={correct_at_original}"
                 )
-
-                if (
-                    calibration_trial % CALIBRATION_BLOCK_SIZE == 0
-                    and calibration_trial < CALIBRATION_TRIALS
-                ):
-                    ui.show_calibration_block_rest(
-                        CALIBRATION_BLOCK_REST_DURATION,
-                        explore,
-                    )
+            calibration_log_file.flush()
 
             explore.set_marker(CALIBRATION_END)
 
@@ -1941,6 +2176,16 @@ def main():
                     "calibration_mi_duration_s",
                     "windows_per_calibration_trial",
                     "calibration_seed",
+                    "amplitude_normalization_enabled",
+                    "amplitude_scale_method",
+                    "amplitude_scale_domain",
+                    "amplitude_channel_names",
+                    "training_channel_scale",
+                    "today_channel_scale",
+                    "raw_channel_gain",
+                    "applied_channel_gain",
+                    "amplitude_gain_min",
+                    "amplitude_gain_max",
                     "original_threshold",
                     "calibration_threshold",
                     "original_weight",
@@ -1972,6 +2217,26 @@ def main():
                         "calibration_mi_duration_s": f"{CALIBRATION_MI_DURATION:.3f}",
                         "windows_per_calibration_trial": calibration_predictions,
                         "calibration_seed": "" if calibration_seed is None else calibration_seed,
+                        "amplitude_normalization_enabled": int(ENABLE_AMPLITUDE_NORMALIZATION),
+                        "amplitude_scale_method": (
+                            "1.4826*MAD per 1-s REST; median across 20 REST trials"
+                        ),
+                        "amplitude_scale_domain": (
+                            "bundle stream-preprocessed signal; filter-bank: median MAD across bands"
+                        ),
+                        "amplitude_channel_names": ",".join(runtime.selected_channels),
+                        "training_channel_scale": _csv_vector(
+                            amplitude_result["training_scale"]
+                        ),
+                        "today_channel_scale": _csv_vector(
+                            amplitude_result["today_scale"]
+                        ),
+                        "raw_channel_gain": _csv_vector(amplitude_result["raw_gain"]),
+                        "applied_channel_gain": _csv_vector(
+                            amplitude_result["applied_gain"]
+                        ),
+                        "amplitude_gain_min": f"{AMPLITUDE_GAIN_MIN:.4f}",
+                        "amplitude_gain_max": f"{AMPLITUDE_GAIN_MAX:.4f}",
                         "original_threshold": f"{original_threshold:.8f}",
                         "calibration_threshold": f"{calibration_threshold:.8f}",
                         "original_weight": f"{ORIGINAL_THRESHOLD_WEIGHT:.2f}",
@@ -2017,6 +2282,15 @@ def main():
                 )
 
             print("-" * 78)
+            print(
+                "Applied channel gain  : "
+                + ", ".join(
+                    f"{ch}={gain:.4f}"
+                    for ch, gain in zip(
+                        runtime.selected_channels, amplitude_result["applied_gain"]
+                    )
+                )
+            )
             print(f"Original threshold    : {original_threshold:.6f}")
             print(
                 f"Fine-tuning applied   : {finetuning_result['applied']} "
@@ -2213,6 +2487,10 @@ def main():
                     "applied_threshold": f"{applied_threshold:.8f}",
                     "finetuning_applied": int(finetuning_result["applied"]),
                     "finetuning_reason": finetuning_result["reason"],
+                    "amplitude_normalization_enabled": int(ENABLE_AMPLITUDE_NORMALIZATION),
+                    "applied_channel_gain": _csv_vector(
+                        amplitude_result["applied_gain"]
+                    ),
                     "prediction_sequence": ",".join(prediction_sequence),
                     "predicted_label_sequence": ",".join(predicted_label_sequence),
                     "right_probability_sequence": ",".join(probability_sequence),
