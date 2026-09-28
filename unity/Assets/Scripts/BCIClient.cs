@@ -38,6 +38,9 @@ public class BCIClient : MonoBehaviour
     public float RightProb { get; private set; } = 0.5f;
     public string Trigger { get; private set; } = "NONE";   // NONE | LEFT | RIGHT | NEUTRAL
     public bool IsConnected { get; private set; } = false;
+    public int Level { get; private set; } = 0;             // neuro_feedback3 Level (0~3)
+    public float C3_uV { get; private set; } = 0f;
+    public float C4_uV { get; private set; } = 0f;
 
     // ── 소켓 수신 스레드 관련 ─────────────────────────────────────────
     private Thread _rxThread;
@@ -150,6 +153,9 @@ public class BCIClient : MonoBehaviour
                 LeftProb = Mathf.Clamp01(_latestPacket.left_prob);
                 RightProb = Mathf.Clamp01(_latestPacket.right_prob);
                 Trigger = string.IsNullOrEmpty(_latestPacket.trigger) ? "NONE" : _latestPacket.trigger;
+                Level = _latestPacket.level;
+                C3_uV = _latestPacket.c3_uV;
+                C4_uV = _latestPacket.c4_uV;
                 _hasNewPacket = false;
                 consumedPacket = true;
             }

@@ -20,6 +20,11 @@ public class GameManager : MonoBehaviour
     public BCIClient bci;
     public CardView cardView;
 
+    [Header("실시간 뇌파 시각화 (neuro_feedback3 연동)")]
+    public DynamicFadingCue fadingCue;
+    public EEGWaveformMonitor leftEEGMonitor;  // C4 (Left Hand)
+    public EEGWaveformMonitor rightEEGMonitor; // C3 (Right Hand)
+
     [Header("글로벌 헤더 & HUD")]
     public Text headerStatusText;
     public Text dayText;
@@ -63,9 +68,10 @@ public class GameManager : MonoBehaviour
 
     [Header("게임 규칙")]
     public int maxDays = 30;
-    public float readyDuration = 2.0f;    // Step 2 보정 2초
-    public float miTimeout = 4.0f;        // Step 3 최대 4초
-    public float feedbackDuration = 2.5f; // Step 4 피드백 2.5초
+    public float readDuration = 3.0f;     // 카드 읽기 시간 3초 (좌우 분류 잠금)
+    public float miTimeout = 5.0f;        // 뇌파 상상 판단 시간 최대 5초
+
+    public float feedbackDuration = 2.5f; // 결과 피드백 표시 2.5초
     public float triggerThreshold = 0.80f;
 
     // 자원 수치
@@ -164,48 +170,34 @@ public class GameManager : MonoBehaviour
     {
         while (!_gameOver)
         {
-            // ── Step 1: Card Reading (EEG OFF) ─────────────────────────
-            SetHeaderStatus("LIVE OPERATIONAL SECTOR");
+            // ── Step 1: Card Reading (5초간 좌우 분류 완전 잠금) ────────────────
             if (bci) bci.DecodingEnabled = false;
             if (calibrationOverlay) calibrationOverlay.SetActive(false);
             if (feedbackOverlay) feedbackOverlay.SetActive(false);
+            if (fadingCue) fadingCue.SetFeedback(0, "NONE", 0.5f);
+            if (cardView) cardView.UpdateTilt(0.5f, 0.5f);
+            UpdateBalanceHUD(0.5f, 0.5f);
 
             float readTimer = 0f;
-            while (readTimer < 2.5f && !Input.GetKeyDown(KeyCode.Space))
+            while (readTimer < readDuration)
             {
                 readTimer += Time.deltaTime;
+                float remain = Mathf.Max(0f, readDuration - readTimer);
+                SetHeaderStatus($"📖 READING PHASE // {remain:F1}s [INPUT LOCKED - SPACE TO SKIP]");
+
+                // 뇌파 모니터는 기본 베이스라인 파형 유지
+                if (leftEEGMonitor) leftEEGMonitor.UpdateTelemetry(0.5f);
+                if (rightEEGMonitor) rightEEGMonitor.UpdateTelemetry(0.5f);
+
+                // Space 누르면 즉시 읽기 스킵 가능
+                if (Input.GetKeyDown(KeyCode.Space))
+                    break;
+
                 yield return null;
             }
 
-            // ── Step 2: Cognitive Sync Calibration (00.png) ───────────
-            SetHeaderStatus("COGNITIVE SYNC CALIBRATION");
-            if (calibrationOverlay) calibrationOverlay.SetActive(true);
-            if (bci) bci.DecodingEnabled = false;
-
-            float calTimer = 0f;
-            while (calTimer < readyDuration)
-            {
-                calTimer += Time.deltaTime;
-                float remain = readyDuration - calTimer;
-                int countNum = Mathf.CeilToInt(remain);
-                if (calibrationCountdownText)
-                    calibrationCountdownText.text = countNum > 0 ? countNum.ToString() : "+";
-
-                if (calibrationArcRect)
-                    calibrationArcRect.Rotate(0, 0, -150f * Time.deltaTime);
-
-                if (calibrationTelemetryText)
-                {
-                    float ch1 = 7.0f + Mathf.PingPong(Time.time * 2f, 1.5f);
-                    float ch2 = 8.8f + Mathf.PingPong(Time.time * 1.8f, 1.6f);
-                    calibrationTelemetryText.text = $"■ EEG-Ch1 [C3]: {ch1:F1} uV    ■ EEG-Ch2 [C4]: {ch2:F1} uV    SYSTEM STABLE // SYNCING...";
-                }
-                yield return null;
-            }
-            if (calibrationOverlay) calibrationOverlay.SetActive(false);
-
-            // ── Step 3: Realtime Motor Imagery (04.png) ───────────────
-            SetHeaderStatus("NEURAL SENSOR FEEDBACK INCOMING");
+            // ── Step 2: Realtime Motor Imagery (좌우 뇌파 분류 활성화!) ────────
+            SetHeaderStatus("⚡ NEURAL FOCUS ACTIVE // IMAGINE LEFT OR RIGHT");
             if (bci) bci.DecodingEnabled = true;
 
             float miTimer = 0f;
@@ -219,6 +211,34 @@ public class GameManager : MonoBehaviour
 
                 if (cardView) cardView.UpdateTilt(pL, pR);
                 UpdateBalanceHUD(pL, pR);
+
+                // neuro_feedback3_calibrated.py 기반 Dynamic Fading Level 계산 (서버 값 우선 or 자동 계산)
+                int lvl = (bci != null && bci.Level > 0) ? bci.Level : 0;
+                string cand = "NONE";
+                float prob = 0.5f;
+
+                if (lvl == 0)
+                {
+                    if (pL >= triggerThreshold) { lvl = 3; cand = "LEFT"; prob = pL; }
+                    else if (pR >= triggerThreshold) { lvl = 3; cand = "RIGHT"; prob = pR; }
+                    else if (pL >= 0.70f) { lvl = 2; cand = "LEFT"; prob = pL; }
+                    else if (pR >= 0.70f) { lvl = 2; cand = "RIGHT"; prob = pR; }
+                    else if (pL >= 0.58f) { lvl = 1; cand = "LEFT"; prob = pL; }
+                    else if (pR >= 0.58f) { lvl = 1; cand = "RIGHT"; prob = pR; }
+                }
+                else
+                {
+                    cand = (pL >= pR) ? "LEFT" : "RIGHT";
+                    prob = Mathf.Max(pL, pR);
+                }
+
+                if (fadingCue) fadingCue.SetFeedback(lvl, cand, prob);
+
+                float? rawC4 = (bci != null && bci.C4_uV > 0f) ? (float?)bci.C4_uV : null;
+                float? rawC3 = (bci != null && bci.C3_uV > 0f) ? (float?)bci.C3_uV : null;
+                if (leftEEGMonitor) leftEEGMonitor.UpdateTelemetry(pL, rawC4);
+                if (rightEEGMonitor) rightEEGMonitor.UpdateTelemetry(pR, rawC3);
+
 
                 if (pL >= triggerThreshold) { decided = "LEFT"; break; }
                 if (pR >= triggerThreshold) { decided = "RIGHT"; break; }
@@ -234,6 +254,7 @@ public class GameManager : MonoBehaviour
             // ── Step 4: Feedback & Rest (01.png) ──────────────────────
             SetHeaderStatus("COMMAND EXECUTION CONFIRMED");
             if (bci) bci.DecodingEnabled = false;
+            if (fadingCue) fadingCue.SetFeedback(3, decided, 1.0f, "SUCCESS");
 
             if (cardView) cardView.StartSwipe(decided);
 

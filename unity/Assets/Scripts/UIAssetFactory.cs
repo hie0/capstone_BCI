@@ -363,4 +363,166 @@ public static class UIAssetFactory
         _cache[key] = sprite;
         return sprite;
     }
+
+    /// <summary>neuro_feedback3_calibrated.py Level 0용 점선 원형 링</summary>
+    public static Sprite GetDashedRing(int size = 256, int nDashes = 18, float stroke = 4f)
+    {
+        string key = $"DashedRing_{size}_{nDashes}_{stroke}";
+        if (_cache.TryGetValue(key, out var cached)) return cached;
+
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode = TextureWrapMode.Clamp;
+
+        Color[] pixels = new Color[size * size];
+        Vector2 center = new Vector2(size * 0.5f, size * 0.5f);
+        float radius = (size - stroke * 2) * 0.48f;
+        float dashAngle = 360f / nDashes;
+        float dashActive = dashAngle * 0.60f; // 60% 선, 40% 빈 공간
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                Vector2 pos = new Vector2(x + 0.5f, y + 0.5f);
+                float dist = Vector2.Distance(pos, center);
+                float dRing = Mathf.Abs(dist - radius);
+
+                if (dRing > stroke * 0.5f + 1f)
+                {
+                    pixels[y * size + x] = Color.clear;
+                    continue;
+                }
+
+                float angle = Mathf.Atan2(pos.y - center.y, pos.x - center.x) * Mathf.Rad2Deg;
+                if (angle < 0) angle += 360f;
+
+                float mod = angle % dashAngle;
+                if (mod < dashActive)
+                {
+                    float alpha = Mathf.Clamp01(1f - (dRing - stroke * 0.5f));
+                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+                else
+                {
+                    pixels[y * size + x] = Color.clear;
+                }
+            }
+        }
+
+        tex.SetPixels(pixels);
+        tex.Apply();
+
+        var sprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        _cache[key] = sprite;
+        return sprite;
+    }
+
+    /// <summary>Dynamic Fading Level 1~3 채움용 아크 링</summary>
+    public static Sprite GetRingSprite(int size = 256, float stroke = 6f)
+    {
+        string key = $"RingSprite_{size}_{stroke}";
+        if (_cache.TryGetValue(key, out var cached)) return cached;
+
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode = TextureWrapMode.Clamp;
+
+        Color[] pixels = new Color[size * size];
+        Vector2 center = new Vector2(size * 0.5f, size * 0.5f);
+        float radius = (size - stroke * 2) * 0.48f;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                Vector2 pos = new Vector2(x + 0.5f, y + 0.5f);
+                float dist = Vector2.Distance(pos, center);
+                float dRing = Mathf.Abs(dist - radius);
+
+                if (dRing <= stroke * 0.5f + 1f)
+                {
+                    float alpha = Mathf.Clamp01(1f - (dRing - stroke * 0.5f));
+                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+                else
+                {
+                    pixels[y * size + x] = Color.clear;
+                }
+            }
+        }
+
+        tex.SetPixels(pixels);
+        tex.Apply();
+
+        var sprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        _cache[key] = sprite;
+        return sprite;
+    }
+
+    /// <summary>Dynamic Fading 화살표 스프라이트 (샤프트 + 삼각형 헤드)</summary>
+    public static Sprite GetArrowSprite(int width = 96, int height = 64, bool pointLeft = true)
+    {
+        string key = $"Arrow_{width}_{height}_{pointLeft}";
+        if (_cache.TryGetValue(key, out var cached)) return cached;
+
+        var tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode = TextureWrapMode.Clamp;
+
+        Color[] pixels = new Color[width * height];
+        for (int i = 0; i < pixels.Length; i++) pixels[i] = Color.clear;
+
+        float midY = height * 0.5f;
+        float shaftH = height * 0.35f;
+        float headW = width * 0.45f;
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                bool inShape = false;
+                if (pointLeft)
+                {
+                    // 왼쪽 삼각형 헤드 (0 ~ headW)
+                    if (x < headW)
+                    {
+                        float progress = x / headW; // 0 (끝) ~ 1 (밑변)
+                        float maxDy = progress * (height * 0.5f);
+                        if (Mathf.Abs(y - midY) <= maxDy) inShape = true;
+                    }
+                    // 오른쪽 샤프트 (headW ~ width)
+                    else if (Mathf.Abs(y - midY) <= shaftH * 0.5f)
+                    {
+                        inShape = true;
+                    }
+                }
+                else
+                {
+                    // 오른쪽 삼각형 헤드 (width - headW ~ width)
+                    if (x >= width - headW)
+                    {
+                        float progress = (width - 1 - x) / headW;
+                        float maxDy = progress * (height * 0.5f);
+                        if (Mathf.Abs(y - midY) <= maxDy) inShape = true;
+                    }
+                    // 왼쪽 샤프트
+                    else if (Mathf.Abs(y - midY) <= shaftH * 0.5f)
+                    {
+                        inShape = true;
+                    }
+                }
+
+                if (inShape) pixels[y * width + x] = Color.white;
+            }
+        }
+
+        tex.SetPixels(pixels);
+        tex.Apply();
+
+        var sprite = Sprite.Create(tex, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f), 100f);
+        _cache[key] = sprite;
+        return sprite;
+    }
 }
+
