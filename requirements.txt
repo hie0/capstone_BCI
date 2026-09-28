@@ -1,0 +1,13 @@
+# online1.py dependencies
+#
+# Python standard-library modules (argparse, csv, random, threading, time,
+# datetime, pathlib) are not listed here.
+
+numpy
+scipy
+joblib
+psychopy
+explorepy
+scikit-learn==1.9.0
+pyriemann
+mne
