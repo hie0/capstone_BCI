@@ -55,6 +55,50 @@ public class BCIClient : MonoBehaviour
     // 이 상태에서는 트리거를 NONE 으로 강제한다.
     public bool DecodingEnabled { get; set; } = true;
 
+    [Serializable]
+    private class NetworkConfig
+    {
+        public string host = "127.0.0.1";
+        public int port = 5000;
+    }
+
+    void Awake()
+    {
+        LoadExternalConfig();
+    }
+
+    void LoadExternalConfig()
+    {
+        try
+        {
+            string[] paths = {
+                Path.Combine(Application.streamingAssetsPath, "bci_config.json"),
+                Path.Combine(Application.dataPath, "..", "bci_config.json"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bci_config.json")
+            };
+
+            foreach (var p in paths)
+            {
+                if (File.Exists(p))
+                {
+                    string json = File.ReadAllText(p);
+                    var cfg = JsonUtility.FromJson<NetworkConfig>(json);
+                    if (cfg != null)
+                    {
+                        if (!string.IsNullOrEmpty(cfg.host)) host = cfg.host.Trim();
+                        if (cfg.port > 0) port = cfg.port;
+                        Debug.Log($"[BCIClient] Loaded config from {p}: {host}:{port}");
+                        return;
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[BCIClient] Config load fallback: {e.Message}");
+        }
+    }
+
     void OnEnable()
     {
         StartReceiver();
