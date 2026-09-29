@@ -54,7 +54,7 @@ EXPERIMENT_ABORTED = 98
 # =============================================================================
 # Experiment design
 # =============================================================================
-N_TRIALS = 60
+N_TRIALS = 30
 CALIBRATION_TRIALS = 20
 CALIBRATION_BLOCK_SIZE = 10
 CALIBRATION_MI_DURATION = 3.0
@@ -125,14 +125,26 @@ def parse_arguments():
         "--subject",
         required=True,
         help=(
-            "Participant id. The program loads <subject>_model.joblib automatically "
-            "without subject-specific preprocessing branches."
+            "Participant id. It must match bundle['participant'] in the selected joblib."
+        ),
+    )
+    parser.add_argument(
+        "-m",
+        "--model-file",
+        required=True,
+        help=(
+            "Joblib filename or path to load, e.g. wmj_model.joblib or "
+            "wmj_model_plus0929.joblib. If only a filename is given, the program "
+            "searches --model-dir, <script_dir>/--model-dir, and <script_dir>."
         ),
     )
     parser.add_argument(
         "--model-dir",
         default="models",
-        help="Directory containing <subject>_model.joblib. Default: models",
+        help=(
+            "Directory searched when --model-file is a filename rather than a path. "
+            "Default: models"
+        ),
     )
     parser.add_argument(
         "-o",
@@ -176,7 +188,7 @@ def make_balanced_target_schedule(n_trials: int, block_size: int, seed: int | No
     """Create a block-balanced LEFT/RIGHT target schedule.
 
     Each block contains exactly half LEFT and half RIGHT trials, shuffled randomly.
-    For the current experiment: 60 trials -> 6 blocks of 10 -> 5 LEFT + 5 RIGHT per block.
+    For the current experiment: 30 trials -> 3 blocks of 10 -> 5 LEFT + 5 RIGHT per block.
     """
     n_trials = int(n_trials)
     block_size = int(block_size)
@@ -290,37 +302,48 @@ def calibration_accuracy(calibration_rows: list[dict], threshold: float) -> floa
 # =============================================================================
 # Bundle loading / validation
 # =============================================================================
-def resolve_model_path(subject: str, model_dir: str) -> Path:
-    """Resolve <subject>_model.joblib using a generic filename convention."""
-    subject = subject.strip().lower()
-    filename = f"{subject}_model.joblib"
-
+def resolve_model_path(model_file: str, model_dir: str) -> Path:
+    """Resolve the exact joblib filename/path supplied on the command line."""
+    requested = Path(model_file).expanduser()
     script_dir = Path(__file__).resolve().parent
-    candidates = [
-        Path(model_dir).expanduser() / filename,
-        script_dir / model_dir / filename,
-        script_dir / filename,
-    ]
+
+    # If the user supplied a path (absolute or containing a directory), use that
+    # path first.  A bare filename is searched in the usual model locations.
+    if requested.is_absolute() or requested.parent != Path("."):
+        candidates = [requested]
+        if not requested.is_absolute():
+            candidates.append(script_dir / requested)
+    else:
+        candidates = [
+            Path(model_dir).expanduser() / requested.name,
+            script_dir / model_dir / requested.name,
+            script_dir / requested.name,
+        ]
 
     seen = set()
+    resolved_candidates = []
     for candidate in candidates:
         candidate = candidate.resolve()
         if candidate in seen:
             continue
         seen.add(candidate)
+        resolved_candidates.append(candidate)
         if candidate.exists():
+            if candidate.suffix.lower() != ".joblib":
+                raise ValueError(
+                    f"Selected model file is not a .joblib file: {candidate}"
+                )
             return candidate
 
-    searched = "\n  - ".join(str(p) for p in candidates)
+    searched = "\n  - ".join(str(p) for p in resolved_candidates)
     raise FileNotFoundError(
-        f"Could not find model bundle for subject '{subject}'.\n"
-        f"Expected file: {filename}\n"
+        f"Could not find the requested model file: {model_file!r}\n"
         f"Searched:\n  - {searched}"
     )
 
 
-def load_bundle(subject: str, model_dir: str):
-    model_path = resolve_model_path(subject, model_dir)
+def load_bundle(subject: str, model_file: str, model_dir: str):
+    model_path = resolve_model_path(model_file, model_dir)
     bundle = joblib.load(model_path)
 
     if not isinstance(bundle, dict):
@@ -346,7 +369,7 @@ def load_bundle(subject: str, model_dir: str):
         notes = bundle.get("metadata", {}).get("notes", {})
         blocker = notes.get("online_blocker") or notes.get("requires_online_calibration")
         raise RuntimeError(
-            f"{requested}_model.joblib is marked online_ready=False.\n"
+            f"{model_path.name} is marked online_ready=False.\n"
             "This online test intentionally stops rather than applying preprocessing "
             "that differs from training.\n"
             f"Bundle note: {blocker}"
@@ -1581,7 +1604,7 @@ class OnlineTestUI:
             f"Calibration threshold : {calibration_threshold:.4f}\n"
             f"{applied_line}"
             f"Calibration balanced accuracy : {calibration_balanced_accuracy * 100.0:.1f}%\n\n"
-            "SPACE : 60-trial 본 실험 시작\n"
+            "SPACE : 30-trial 본 실험 시작\n"
             "ESC : 종료"
         )
         wait_for_space(self.calibration_summary_text, self.win)
@@ -1710,7 +1733,7 @@ class OnlineTestUI:
         wait_with_escape(duration)
 
     def show_main_relax(self, duration: float, explore):
-        """Show a RELAX screen immediately before the 60-trial main experiment."""
+        """Show a RELAX screen immediately before the 30-trial main experiment."""
         event.clearEvents(eventType="keyboard")
         self.initial_relax_text.draw()
         self.win.callOnFlip(explore.set_marker, MAIN_RELAX_ONSET)
@@ -1746,7 +1769,7 @@ def main():
         seed=calibration_seed,
     )
 
-    model_path, bundle = load_bundle(subject, args.model_dir)
+    model_path, bundle = load_bundle(subject, args.model_file, args.model_dir)
     runtime = BundleRuntime(bundle)
 
     if runtime.predictor.get("decision_mode") != "predict_proba_threshold":
@@ -1822,7 +1845,12 @@ def main():
             else "disabled"
         )
     )
-    print(f"Main trials          : {N_TRIALS} (6 blocks x 10; each block = 5 LEFT + 5 RIGHT)")
+    n_main_blocks = N_TRIALS // BLOCK_REST_INTERVAL
+    print(
+        f"Main trials          : {N_TRIALS} "
+        f"({n_main_blocks} blocks x {BLOCK_REST_INTERVAL}; "
+        f"each block = {BLOCK_REST_INTERVAL // 2} LEFT + {BLOCK_REST_INTERVAL // 2} RIGHT)"
+    )
     print(f"Initial RELAX        : {INITIAL_RELAX_DURATION:.1f} s")
     print(f"Main RELAX           : {MAIN_RELAX_DURATION:.1f} s")
     print(f"Trial REST           : {TRIAL_REST_DURATION:.1f} s")
@@ -2349,7 +2377,7 @@ def main():
                 finetuning_result["applied"],
             )
 
-            # 5-s RELAX immediately before the 60-trial main experiment.
+            # 5-s RELAX immediately before the 30-trial main experiment.
             ui.show_main_relax(MAIN_RELAX_DURATION, explore)
             explore.set_marker(MAIN_EXPERIMENT_START)
 
@@ -2546,7 +2574,7 @@ def main():
                     f"pred={''.join(prediction_sequence)}"
                 )
                 
-                # [추가] 10, 20, 30, 40, 50 Trial 종료 시 5초 휴식 (마지막 60 Trial 제외)
+                # 10, 20 Trial 종료 시 5초 휴식 (마지막 30 Trial 제외)
                 if trial_number % BLOCK_REST_INTERVAL == 0 and trial_number < N_TRIALS:
                     print(f"\n>>> Block rest for {BLOCK_REST_DURATION:.0f} seconds...\n")
                     ui.show_block_rest(BLOCK_REST_DURATION, explore)
