@@ -64,10 +64,16 @@ ORIGINAL_THRESHOLD_WEIGHT = 0.40
 CALIBRATION_THRESHOLD_WEIGHT = 0.60
 
 # Daily amplitude normalization. training_channel_scale must be exported in
-# bundle["adaptation"] from the OFFLINE fixation 1.0-2.0 s baseline using the
-# exact same stream preprocessing and scale calculation used here.
+# bundle["adaptation"] from OFFLINE 3.0-s MI epochs using the exact same stream
+# preprocessing and robust scale calculation used here.  Online calibration uses
+# the 20 x 3.0-s MI epochs to define today's robust amplitude range.
 ENABLE_AMPLITUDE_NORMALIZATION = True
 AMPLITUDE_MAD_TO_SIGMA = 1.4826
+AMPLITUDE_RANGE_LOW_PERCENTILE = 10.0
+AMPLITUDE_RANGE_HIGH_PERCENTILE = 90.0
+AMPLITUDE_CURRENT_WINDOW = 1.0
+AMPLITUDE_OUT_OF_RANGE_STREAK = 2
+AMPLITUDE_GAIN_SMOOTHING_ALPHA = 0.20
 AMPLITUDE_GAIN_MIN = 0.67
 AMPLITUDE_GAIN_MAX = 1.50
 AMPLITUDE_SCALE_EPS = 1e-12
@@ -453,8 +459,9 @@ class BundleRuntime:
         self._filter_zi: dict[object, np.ndarray] = {}
         self._stream_error: Exception | None = None
         # One multiplicative gain per selected EEG channel. It remains identity
-        # during collection of the 20 calibration REST/MI segments and is set
-        # only after today_scale has been computed.
+        # while the 20 calibration MI epochs are collected, then starts from the
+        # offline-training / today-median ratio and can adapt slowly during the
+        # main experiment when today's robust range is persistently exceeded.
         self.channel_gain = np.ones(len(self.selected_channels), dtype=np.float64)
 
         self._validate_supported_operations()
@@ -731,7 +738,7 @@ class BundleRuntime:
 
         scale = 1.4826 * MAD. For filter-bank streams, MAD is calculated across
         time in each band, then the median across bands gives one scale/channel.
-        The offline training_channel_scale must use this exact rule.
+        The offline MI-based training_channel_scale must use this exact rule.
         """
         x = np.asarray(segment, dtype=np.float64)
         if x.ndim == 2:  # samples x channels
@@ -951,7 +958,7 @@ def _load_training_channel_scale(bundle: dict, selected_channels: list[str]) -> 
         raise RuntimeError(
             "Amplitude normalization is enabled, but the model bundle has no "
             "bundle['adaptation']['training_channel_scale']. Regenerate the offline "
-            "joblib using FIXATION 1.0-2.0 s and the same preprocessing/MAD rule."
+            "joblib using 3.0-s MI epochs and the same preprocessing/MAD rule."
         )
 
     if isinstance(value, dict):
@@ -976,38 +983,120 @@ def _load_training_channel_scale(bundle: dict, selected_channels: list[str]) -> 
 
 def compute_daily_amplitude_normalization(
     runtime: BundleRuntime,
-    calibration_rest_segments: list[np.ndarray],
+    calibration_mi_segments: list[np.ndarray],
 ) -> dict:
-    """Compute today_scale and bounded per-channel gain from 20 REST segments."""
+    """Build today's robust MI-amplitude profile and the initial channel gain.
+
+    Each of the 20 calibration trials contributes one 3.0-s MI amplitude scale
+    per channel using the same 1.4826*MAD rule as the offline training reference.
+    Today's normal range is the 10th-90th percentile across those 20 scales.
+    The initial gain aligns today's median MI amplitude to the offline MI median.
+    """
     training_scale = _load_training_channel_scale(runtime.bundle, runtime.selected_channels)
-    if len(calibration_rest_segments) != CALIBRATION_TRIALS:
+    if len(calibration_mi_segments) != CALIBRATION_TRIALS:
         raise RuntimeError(
-            f"Expected {CALIBRATION_TRIALS} calibration REST segments, got "
-            f"{len(calibration_rest_segments)}."
+            f"Expected {CALIBRATION_TRIALS} calibration MI segments, got "
+            f"{len(calibration_mi_segments)}."
         )
 
-    rest_scales = np.vstack(
-        [runtime.robust_channel_scale(segment) for segment in calibration_rest_segments]
+    mi_scales = np.vstack(
+        [runtime.robust_channel_scale(segment) for segment in calibration_mi_segments]
     )
-    if rest_scales.shape != (CALIBRATION_TRIALS, len(runtime.selected_channels)):
-        raise RuntimeError(f"Unexpected REST scale matrix shape: {rest_scales.shape}")
-
-    today_scale = np.median(rest_scales, axis=0)
-    if not np.isfinite(today_scale).all() or np.any(today_scale <= AMPLITUDE_SCALE_EPS):
+    expected_shape = (CALIBRATION_TRIALS, len(runtime.selected_channels))
+    if mi_scales.shape != expected_shape:
         raise RuntimeError(
-            "today_scale contains zero/invalid values; check electrode contact and "
-            "the preprocessing used for amplitude normalization."
+            f"Unexpected calibration MI scale matrix shape: {mi_scales.shape}; "
+            f"expected {expected_shape}."
+        )
+    if not np.isfinite(mi_scales).all() or np.any(mi_scales <= AMPLITUDE_SCALE_EPS):
+        raise RuntimeError(
+            "Calibration MI amplitude scales contain zero/invalid values; check "
+            "electrode contact and preprocessing."
         )
 
-    raw_gain = training_scale / today_scale
+    today_lower = np.percentile(
+        mi_scales, AMPLITUDE_RANGE_LOW_PERCENTILE, axis=0
+    )
+    today_median = np.median(mi_scales, axis=0)
+    today_upper = np.percentile(
+        mi_scales, AMPLITUDE_RANGE_HIGH_PERCENTILE, axis=0
+    )
+
+    if (
+        not np.isfinite(today_lower).all()
+        or not np.isfinite(today_median).all()
+        or not np.isfinite(today_upper).all()
+        or np.any(today_lower <= AMPLITUDE_SCALE_EPS)
+        or np.any(today_median <= AMPLITUDE_SCALE_EPS)
+        or np.any(today_upper <= AMPLITUDE_SCALE_EPS)
+    ):
+        raise RuntimeError("Today's robust MI amplitude range contains invalid values.")
+
+    raw_gain = training_scale / today_median
     clipped_gain = np.clip(raw_gain, AMPLITUDE_GAIN_MIN, AMPLITUDE_GAIN_MAX)
     runtime.set_channel_gain(clipped_gain)
     return {
         "training_scale": training_scale,
-        "today_scale": today_scale,
+        "today_lower": today_lower,
+        "today_median": today_median,
+        "today_upper": today_upper,
         "raw_gain": raw_gain,
-        "applied_gain": clipped_gain,
-        "rest_scales": rest_scales,
+        "applied_gain": clipped_gain.copy(),
+        "mi_scales": mi_scales,
+    }
+
+
+def update_realtime_amplitude_gain(
+    runtime: BundleRuntime,
+    current_segment: np.ndarray,
+    amplitude_profile: dict,
+    out_of_range_streak: np.ndarray,
+) -> dict:
+    """Update per-channel gain only after persistent robust-range violations.
+
+    current_segment is the most recent 1.0-s *pre-gain* EEG segment.  A channel
+    must be outside today's robust calibration range for two consecutive checks
+    before its target gain is updated.  The target gain is clipped, then blended
+    with the previous gain using alpha=0.20 to avoid abrupt scale jumps.
+    """
+    current_scale = runtime.robust_channel_scale(current_segment)
+    lower = np.asarray(amplitude_profile["today_lower"], dtype=np.float64)
+    upper = np.asarray(amplitude_profile["today_upper"], dtype=np.float64)
+    training_scale = np.asarray(amplitude_profile["training_scale"], dtype=np.float64)
+
+    if current_scale.shape != lower.shape:
+        raise RuntimeError(
+            f"Current amplitude scale shape {current_scale.shape} does not match "
+            f"calibration range shape {lower.shape}."
+        )
+
+    outside = (current_scale < lower) | (current_scale > upper)
+    out_of_range_streak = np.where(outside, out_of_range_streak + 1, 0).astype(int)
+    eligible = out_of_range_streak >= AMPLITUDE_OUT_OF_RANGE_STREAK
+
+    old_gain = np.asarray(runtime.channel_gain, dtype=np.float64).copy()
+    raw_target_gain = training_scale / np.maximum(current_scale, AMPLITUDE_SCALE_EPS)
+    clipped_target_gain = np.clip(
+        raw_target_gain, AMPLITUDE_GAIN_MIN, AMPLITUDE_GAIN_MAX
+    )
+
+    new_gain = old_gain.copy()
+    if np.any(eligible):
+        alpha = float(AMPLITUDE_GAIN_SMOOTHING_ALPHA)
+        smoothed = (1.0 - alpha) * old_gain + alpha * clipped_target_gain
+        new_gain[eligible] = smoothed[eligible]
+        new_gain = np.clip(new_gain, AMPLITUDE_GAIN_MIN, AMPLITUDE_GAIN_MAX)
+        runtime.set_channel_gain(new_gain)
+
+    return {
+        "current_scale": current_scale,
+        "outside": outside,
+        "eligible": eligible,
+        "out_of_range_streak": out_of_range_streak,
+        "raw_target_gain": raw_target_gain,
+        "clipped_target_gain": clipped_target_gain,
+        "old_gain": old_gain,
+        "applied_gain": np.asarray(runtime.channel_gain, dtype=np.float64).copy(),
     }
 
 
@@ -1387,7 +1476,7 @@ class OnlineTestUI:
                 "Session-Calibrated Dynamic Fading Motor Imagery BCI Test\n\n"
                 "먼저 20 trials (LEFT 10 / RIGHT 10) calibration을 수행합니다.\n"
                 "Calibration에서는 제시된 방향의 손 움직임을 3초 동안 상상하세요.\n"
-                "Calibration REST로 진폭 정규화 후 분류기 파인튜닝과 오늘의 threshold를 계산합니다.\n"
+                "Calibration MI 3초로 진폭 범위를 설정한 후 분류기 파인튜닝과 오늘의 threshold를 계산합니다.\n"
                 "검증을 통과하지 못하면 원래 분류기를 그대로 사용합니다.\n"
                 "본 실험에서는 중앙 cue의 색상 변화가 실시간 분류 결과를 반영합니다.\n\n"
                 "SPACE : 테스트 시작\n"
@@ -1534,7 +1623,7 @@ class OnlineTestUI:
             self.target_text.draw()
 
     def show_calibration_rest(self, trial_number, explore, global_clock, runtime):
-        """1-s REST used both visually and for today's amplitude scale."""
+        """1-s visual REST before calibration MI; not used for amplitude scaling."""
         holder = {}
 
         def on_flip():
@@ -1791,6 +1880,7 @@ def main():
 
     original_threshold = float(runtime.predictor["threshold"])
     window_samples = int(round(CLASSIFICATION_WINDOW * runtime.fs))
+    amplitude_window_samples = int(round(AMPLITUDE_CURRENT_WINDOW * runtime.fs))
     calibration_predictions = int(round(CALIBRATION_MI_DURATION / CLASSIFICATION_WINDOW))
     if calibration_predictions <= 0:
         raise ValueError("CALIBRATION_MI_DURATION must include at least one model window.")
@@ -1839,7 +1929,11 @@ def main():
     print(
         "Amplitude norm       : "
         + (
-            f"REST 1 s x {CALIBRATION_TRIALS}, 1.4826*MAD -> median; "
+            f"MI {CALIBRATION_MI_DURATION:.1f} s x {CALIBRATION_TRIALS}; "
+            f"1.4826*MAD -> P{AMPLITUDE_RANGE_LOW_PERCENTILE:.0f}/median/"
+            f"P{AMPLITUDE_RANGE_HIGH_PERCENTILE:.0f}; realtime {AMPLITUDE_CURRENT_WINDOW:.1f}-s "
+            f"tracking; streak={AMPLITUDE_OUT_OF_RANGE_STREAK}; "
+            f"alpha={AMPLITUDE_GAIN_SMOOTHING_ALPHA:.2f}; "
             f"gain clip [{AMPLITUDE_GAIN_MIN:.2f}, {AMPLITUDE_GAIN_MAX:.2f}]"
             if ENABLE_AMPLITUDE_NORMALIZATION
             else "disabled"
@@ -1896,10 +1990,10 @@ def main():
     global_clock = core.Clock()
     results = []
     calibration_rows = []
-    calibration_epochs = []  # stored without daily gain until all 20 REST segments are available
+    calibration_epochs = []  # stored without daily gain until all 20 MI segments are available
     calibration_window_targets = []
     calibration_window_trial_ids = []
-    calibration_rest_segments = []
+    calibration_mi_segments = []
     calibration_trial_metadata = []
     amplitude_result = None
     calibration_threshold = float("nan")
@@ -1924,6 +2018,7 @@ def main():
         "calibration_rest_stream_sample",
         "calibration_cue_onset_s",
         "calibration_cue_stream_sample",
+        "calibration_mi_channel_scale",
     ]
 
     log_fields = [
@@ -1937,6 +2032,11 @@ def main():
         "finetuning_reason",
         "amplitude_normalization_enabled",
         "applied_channel_gain",
+        "amplitude_current_scale_sequence",
+        "amplitude_outside_range_sequence",
+        "amplitude_update_eligible_sequence",
+        "amplitude_raw_target_gain_sequence",
+        "amplitude_applied_gain_sequence",
         "prediction_sequence",
         "predicted_label_sequence",
         "right_probability_sequence",
@@ -2012,20 +2112,17 @@ def main():
             print("20-TRIAL SESSION CALIBRATION")
             print("=" * 78)
 
-            rest_samples = int(round(CALIBRATION_REST_DURATION * runtime.fs))
+            mi_samples = int(round(CALIBRATION_MI_DURATION * runtime.fs))
 
-            # Phase A: collect all 20 REST segments and all MI windows WITHOUT
-            # daily amplitude gain. The gain is known only after all REST segments.
+            # Phase A: collect all 20 x 3.0-s MI segments and all 0.5-s MI windows
+            # WITHOUT daily amplitude gain. The amplitude profile is computed only
+            # after all 20 MI trials are available.
             for calibration_trial in range(1, CALIBRATION_TRIALS + 1):
                 target_direction = calibration_schedule[calibration_trial - 1]
 
                 calibration_rest_onset, calibration_rest_start_sample = ui.show_calibration_rest(
                     calibration_trial, explore, global_clock, runtime
                 )
-                rest_segment = runtime.get_processed_segment(
-                    calibration_rest_start_sample, rest_samples, timeout=2.0
-                )
-                calibration_rest_segments.append(np.array(rest_segment, copy=True))
 
                 calibration_cue_onset, calibration_start_sample = ui.begin_calibration_trial(
                     calibration_trial, target_direction, explore, global_clock, runtime
@@ -2044,6 +2141,13 @@ def main():
                     )
                     calibration_window_trial_ids.append(calibration_trial)
 
+                # All six 0.5-s windows have now arrived, so the exact 3.0-s MI
+                # segment can be recovered in the same pre-gain signal domain.
+                mi_segment = runtime.get_processed_segment(
+                    calibration_start_sample, mi_samples, timeout=2.0
+                )
+                calibration_mi_segments.append(np.array(mi_segment, copy=True))
+
                 calibration_trial_metadata.append({
                     "subject": subject,
                     "trial": calibration_trial,
@@ -2056,7 +2160,7 @@ def main():
 
                 print(
                     f"Calibration {calibration_trial:02d}/{CALIBRATION_TRIALS} | "
-                    f"target={target_direction:<5} | EEG collected"
+                    f"target={target_direction:<5} | 3.0-s MI collected"
                 )
 
                 if (
@@ -2065,35 +2169,42 @@ def main():
                 ):
                     ui.show_calibration_block_rest(CALIBRATION_BLOCK_REST_DURATION, explore)
 
-            # Phase B: REST 1 s x 20 -> channel MAD -> median -> gain.
+            # Phase B: 3.0-s MI x 20 -> channel MAD scales -> robust P10/P90 range.
+            # Initial gain aligns today's MI median to the offline MI training scale.
             if ENABLE_AMPLITUDE_NORMALIZATION:
                 amplitude_result = compute_daily_amplitude_normalization(
-                    runtime, calibration_rest_segments
+                    runtime, calibration_mi_segments
                 )
             else:
                 unity = np.ones(len(runtime.selected_channels), dtype=float)
                 runtime.set_channel_gain(unity)
+                nan_vec = np.full_like(unity, np.nan)
                 amplitude_result = {
-                    "training_scale": np.full_like(unity, np.nan),
-                    "today_scale": np.full_like(unity, np.nan),
+                    "training_scale": nan_vec.copy(),
+                    "today_lower": nan_vec.copy(),
+                    "today_median": nan_vec.copy(),
+                    "today_upper": nan_vec.copy(),
                     "raw_gain": unity.copy(),
                     "applied_gain": unity.copy(),
-                    "rest_scales": np.full(
+                    "mi_scales": np.full(
                         (CALIBRATION_TRIALS, len(unity)), np.nan, dtype=float
                     ),
                 }
 
             print("\nDAILY AMPLITUDE NORMALIZATION")
-            for ch, tr, td, raw, applied in zip(
+            for ch, tr, lo, med, hi, raw, applied in zip(
                 runtime.selected_channels,
                 amplitude_result["training_scale"],
-                amplitude_result["today_scale"],
+                amplitude_result["today_lower"],
+                amplitude_result["today_median"],
+                amplitude_result["today_upper"],
                 amplitude_result["raw_gain"],
                 amplitude_result["applied_gain"],
             ):
                 print(
-                    f"  {ch:<6} training={tr:.6g}  today={td:.6g}  "
-                    f"raw_gain={raw:.4f}  applied_gain={applied:.4f}"
+                    f"  {ch:<6} training={tr:.6g}  today=P{AMPLITUDE_RANGE_LOW_PERCENTILE:.0f} "
+                    f"{lo:.6g} / median {med:.6g} / P{AMPLITUDE_RANGE_HIGH_PERCENTILE:.0f} "
+                    f"{hi:.6g}  raw_gain={raw:.4f}  initial_gain={applied:.4f}"
                 )
 
             # Phase C: normalize stored calibration MI once, then recompute the
@@ -2145,6 +2256,9 @@ def main():
                     "calibration_cue_onset_s": f"{meta['calibration_cue_onset_s']:.6f}",
                     "calibration_cue_stream_sample": int(
                         meta["calibration_cue_stream_sample"]
+                    ),
+                    "calibration_mi_channel_scale": _csv_vector(
+                        amplitude_result["mi_scales"][trial_id - 1]
                     ),
                 }
                 calibration_rows.append(calibration_row)
@@ -2223,9 +2337,16 @@ def main():
                     "amplitude_scale_domain",
                     "amplitude_channel_names",
                     "training_channel_scale",
-                    "today_channel_scale",
-                    "raw_channel_gain",
-                    "applied_channel_gain",
+                    "today_channel_lower",
+                    "today_channel_median",
+                    "today_channel_upper",
+                    "initial_raw_channel_gain",
+                    "initial_applied_channel_gain",
+                    "amplitude_range_low_percentile",
+                    "amplitude_range_high_percentile",
+                    "amplitude_current_window_s",
+                    "amplitude_out_of_range_streak",
+                    "amplitude_gain_smoothing_alpha",
                     "amplitude_gain_min",
                     "amplitude_gain_max",
                     "original_threshold",
@@ -2261,7 +2382,7 @@ def main():
                         "calibration_seed": "" if calibration_seed is None else calibration_seed,
                         "amplitude_normalization_enabled": int(ENABLE_AMPLITUDE_NORMALIZATION),
                         "amplitude_scale_method": (
-                            "1.4826*MAD per 1-s REST; median across 20 REST trials"
+                            "1.4826*MAD per 3.0-s MI; P10/median/P90 across 20 MI trials"
                         ),
                         "amplitude_scale_domain": (
                             "bundle stream-preprocessed signal; filter-bank: median MAD across bands"
@@ -2270,13 +2391,26 @@ def main():
                         "training_channel_scale": _csv_vector(
                             amplitude_result["training_scale"]
                         ),
-                        "today_channel_scale": _csv_vector(
-                            amplitude_result["today_scale"]
+                        "today_channel_lower": _csv_vector(
+                            amplitude_result["today_lower"]
                         ),
-                        "raw_channel_gain": _csv_vector(amplitude_result["raw_gain"]),
-                        "applied_channel_gain": _csv_vector(
+                        "today_channel_median": _csv_vector(
+                            amplitude_result["today_median"]
+                        ),
+                        "today_channel_upper": _csv_vector(
+                            amplitude_result["today_upper"]
+                        ),
+                        "initial_raw_channel_gain": _csv_vector(
+                            amplitude_result["raw_gain"]
+                        ),
+                        "initial_applied_channel_gain": _csv_vector(
                             amplitude_result["applied_gain"]
                         ),
+                        "amplitude_range_low_percentile": f"{AMPLITUDE_RANGE_LOW_PERCENTILE:.1f}",
+                        "amplitude_range_high_percentile": f"{AMPLITUDE_RANGE_HIGH_PERCENTILE:.1f}",
+                        "amplitude_current_window_s": f"{AMPLITUDE_CURRENT_WINDOW:.3f}",
+                        "amplitude_out_of_range_streak": AMPLITUDE_OUT_OF_RANGE_STREAK,
+                        "amplitude_gain_smoothing_alpha": f"{AMPLITUDE_GAIN_SMOOTHING_ALPHA:.4f}",
                         "amplitude_gain_min": f"{AMPLITUDE_GAIN_MIN:.4f}",
                         "amplitude_gain_max": f"{AMPLITUDE_GAIN_MAX:.4f}",
                         "original_threshold": f"{original_threshold:.8f}",
@@ -2325,7 +2459,7 @@ def main():
 
             print("-" * 78)
             print(
-                "Applied channel gain  : "
+                "Initial channel gain  : "
                 + ", ".join(
                     f"{ch}={gain:.4f}"
                     for ch, gain in zip(
@@ -2418,6 +2552,15 @@ def main():
                 candidate_sequence = []
                 initial_candidate = None
 
+                amplitude_current_scale_sequence = []
+                amplitude_outside_range_sequence = []
+                amplitude_update_eligible_sequence = []
+                amplitude_raw_target_gain_sequence = []
+                amplitude_applied_gain_sequence = []
+                amplitude_out_of_range_streak = np.zeros(
+                    len(runtime.selected_channels), dtype=int
+                )
+
                 actual_wall_time = None
                 decision_time = None
 
@@ -2427,6 +2570,51 @@ def main():
                         classification_start_sample
                         + (prediction_index - 1) * window_samples
                     )
+
+                    # Realtime amplitude adaptation starts only after a full 1.0 s
+                    # of MI has accumulated.  The preceding 1.0-s segment is read
+                    # from the pre-gain stream, compared with today's robust range,
+                    # and can update the gain used for the NEXT 0.5-s model window.
+                    if (
+                        ENABLE_AMPLITUDE_NORMALIZATION
+                        and window_start - classification_start_sample >= amplitude_window_samples
+                    ):
+                        amplitude_segment = runtime.get_processed_segment(
+                            window_start - amplitude_window_samples,
+                            amplitude_window_samples,
+                            timeout=2.0,
+                        )
+                        amp_update = update_realtime_amplitude_gain(
+                            runtime=runtime,
+                            current_segment=amplitude_segment,
+                            amplitude_profile=amplitude_result,
+                            out_of_range_streak=amplitude_out_of_range_streak,
+                        )
+                        amplitude_out_of_range_streak = amp_update[
+                            "out_of_range_streak"
+                        ]
+                        amplitude_current_scale_sequence.append(
+                            _csv_vector(amp_update["current_scale"])
+                        )
+                        amplitude_outside_range_sequence.append(
+                            _csv_vector(amp_update["outside"].astype(int))
+                        )
+                        amplitude_update_eligible_sequence.append(
+                            _csv_vector(amp_update["eligible"].astype(int))
+                        )
+                        amplitude_raw_target_gain_sequence.append(
+                            _csv_vector(amp_update["raw_target_gain"])
+                        )
+                    else:
+                        amplitude_current_scale_sequence.append("")
+                        amplitude_outside_range_sequence.append("")
+                        amplitude_update_eligible_sequence.append("")
+                        amplitude_raw_target_gain_sequence.append("")
+
+                    amplitude_applied_gain_sequence.append(
+                        _csv_vector(runtime.channel_gain)
+                    )
+
                     epoch = runtime.get_window_epoch(
                         window_start,
                         window_samples,
@@ -2536,8 +2724,21 @@ def main():
                     "finetuning_applied": int(finetuning_result["applied"]),
                     "finetuning_reason": finetuning_result["reason"],
                     "amplitude_normalization_enabled": int(ENABLE_AMPLITUDE_NORMALIZATION),
-                    "applied_channel_gain": _csv_vector(
-                        amplitude_result["applied_gain"]
+                    "applied_channel_gain": _csv_vector(runtime.channel_gain),
+                    "amplitude_current_scale_sequence": ";".join(
+                        amplitude_current_scale_sequence
+                    ),
+                    "amplitude_outside_range_sequence": ";".join(
+                        amplitude_outside_range_sequence
+                    ),
+                    "amplitude_update_eligible_sequence": ";".join(
+                        amplitude_update_eligible_sequence
+                    ),
+                    "amplitude_raw_target_gain_sequence": ";".join(
+                        amplitude_raw_target_gain_sequence
+                    ),
+                    "amplitude_applied_gain_sequence": ";".join(
+                        amplitude_applied_gain_sequence
                     ),
                     "prediction_sequence": ",".join(prediction_sequence),
                     "predicted_label_sequence": ",".join(predicted_label_sequence),
@@ -2571,6 +2772,7 @@ def main():
                     f"time={float(decision_time):>4.1f}s | "
                     f"status={status:<7} | "
                     f"correct={int(is_correct)} | "
+                    f"gain={_csv_vector(runtime.channel_gain)} | "
                     f"pred={''.join(prediction_sequence)}"
                 )
                 
