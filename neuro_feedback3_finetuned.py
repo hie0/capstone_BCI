@@ -1052,25 +1052,33 @@ def update_realtime_amplitude_gain(
     amplitude_profile: dict,
     out_of_range_streak: np.ndarray,
 ) -> dict:
-    """Update per-channel gain only after persistent robust-range violations.
+    """Adapt gain outside the robust range and recover it inside the range.
 
-    current_segment is the most recent 1.0-s *pre-gain* EEG segment.  A channel
+    current_segment is the most recent 1.0-s *pre-gain* EEG segment. A channel
     must be outside today's robust calibration range for two consecutive checks
-    before its target gain is updated.  The target gain is clipped, then blended
-    with the previous gain using alpha=0.20 to avoid abrupt scale jumps.
+    before its target gain is updated. When the channel returns to the normal
+    range, its gain is smoothly pulled back toward the calibration initial_gain.
+    Both directions use alpha=0.20 to avoid abrupt scale jumps.
     """
     current_scale = runtime.robust_channel_scale(current_segment)
     lower = np.asarray(amplitude_profile["today_lower"], dtype=np.float64)
     upper = np.asarray(amplitude_profile["today_upper"], dtype=np.float64)
     training_scale = np.asarray(amplitude_profile["training_scale"], dtype=np.float64)
+    initial_gain = np.asarray(amplitude_profile["applied_gain"], dtype=np.float64)
 
     if current_scale.shape != lower.shape:
         raise RuntimeError(
             f"Current amplitude scale shape {current_scale.shape} does not match "
             f"calibration range shape {lower.shape}."
         )
+    if initial_gain.shape != lower.shape:
+        raise RuntimeError(
+            f"Initial gain shape {initial_gain.shape} does not match "
+            f"calibration range shape {lower.shape}."
+        )
 
     outside = (current_scale < lower) | (current_scale > upper)
+    inside = ~outside
     out_of_range_streak = np.where(outside, out_of_range_streak + 1, 0).astype(int)
     eligible = out_of_range_streak >= AMPLITUDE_OUT_OF_RANGE_STREAK
 
@@ -1080,11 +1088,22 @@ def update_realtime_amplitude_gain(
         raw_target_gain, AMPLITUDE_GAIN_MIN, AMPLITUDE_GAIN_MAX
     )
 
+    alpha = float(AMPLITUDE_GAIN_SMOOTHING_ALPHA)
     new_gain = old_gain.copy()
+
+    # If amplitude is back inside today's normal range, do not leave a temporary
+    # correction fixed in place. Slowly recover toward the calibration initial_gain.
+    if np.any(inside):
+        recovered = (1.0 - alpha) * old_gain + alpha * initial_gain
+        new_gain[inside] = recovered[inside]
+
+    # If amplitude remains outside the normal range for the required streak,
+    # keep the existing realtime correction toward the current target gain.
     if np.any(eligible):
-        alpha = float(AMPLITUDE_GAIN_SMOOTHING_ALPHA)
-        smoothed = (1.0 - alpha) * old_gain + alpha * clipped_target_gain
-        new_gain[eligible] = smoothed[eligible]
+        corrected = (1.0 - alpha) * old_gain + alpha * clipped_target_gain
+        new_gain[eligible] = corrected[eligible]
+
+    if np.any(inside) or np.any(eligible):
         new_gain = np.clip(new_gain, AMPLITUDE_GAIN_MIN, AMPLITUDE_GAIN_MAX)
         runtime.set_channel_gain(new_gain)
 
@@ -2521,6 +2540,11 @@ def main():
             # =================================================================
             for trial_number in range(1, N_TRIALS + 1):
                 target_direction = target_schedule[trial_number - 1]
+
+                # Reset gain at the start of every trial so a temporary realtime
+                # correction from the previous trial never carries over.
+                # amplitude_result["applied_gain"] is the calibration initial_gain.
+                runtime.set_channel_gain(amplitude_result["applied_gain"])
 
                 # 1) 1-s REST: common Level-0 circle, no EEG classification.
                 trial_rest_onset = ui.show_trial_rest(
