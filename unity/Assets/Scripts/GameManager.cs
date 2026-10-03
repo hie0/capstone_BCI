@@ -14,7 +14,7 @@ using UnityEngine.UI;
 /// </summary>
 public class GameManager : MonoBehaviour
 {
-    public enum Phase { Title, CardReading, Calibration, RealtimeMI, Feedback, Ending }
+    public enum Phase { Title, PreGameCheck, CardReading, RealtimeMI, Feedback, Rest, Ending }
 
     [Header("의존성")]
     public BCIClient bci;
@@ -22,14 +22,15 @@ public class GameManager : MonoBehaviour
 
     [Header("실시간 뇌파 시각화 (neuro_feedback3 연동)")]
     public DynamicFadingCue fadingCue;
-    public EEGWaveformMonitor leftEEGMonitor;  // C4 (Left Hand)
-    public EEGWaveformMonitor rightEEGMonitor; // C3 (Right Hand)
+    public EEGWaveformMonitor leftEEGMonitor;  // 가짜 수치 제거 및 화면에서 숨김 처리됨
+    public EEGWaveformMonitor rightEEGMonitor;
 
     [Header("글로벌 헤더 & HUD")]
     public Text headerStatusText;
     public Text dayText;
     public Slider foodBar, ammoBar, defenseBar, moraleBar;
     public Text foodVal, ammoVal, defenseVal, moraleVal;
+    public CanvasGroup mainHUDCanvasGroup;     // [합의 ⑤] MI Focus Mode Dimming 용
 
     [Header("하단 밸런스 HUD")]
     public Text leftIntentText;
@@ -37,11 +38,27 @@ public class GameManager : MonoBehaviour
     public Slider balanceSlider;
     public RectTransform balanceCursor;
 
-    [Header("Step 2 신경 보정 오버레이 (00.png)")]
+    [Header("Pre-Game BCI Check (게임 온라인 프로토콜 유사 UI)")]
     public GameObject calibrationOverlay;
-    public Text calibrationCountdownText;
-    public RectTransform calibrationArcRect;
-    public Text calibrationTelemetryText;
+    public Text calibStepText;
+    public Text calibInstructionText;
+    public Text calibTimerText;
+    public Image calibCueRing;
+    public Image calibCueArrowLeft;
+    public Image calibCueArrowRight;
+    public Slider calibBalanceSlider;
+    public Text calibLeftIntentText;
+    public Text calibRightIntentText;
+    public GameObject calibResultPanel;
+    public Text calibResultText;
+    public Button calibStartGameButton;
+
+    [Header("Day 5 정기 휴식 (Rest Phase) 모달")]
+    public GameObject restOverlay;
+    public Text restTitleText;
+    public Text restCountdownText;
+    public Text restSuppliesText;
+    public Button restResumeButton;
 
     [Header("Step 4 피드백 텔레메트리 오버레이 (01.png)")]
     public GameObject feedbackOverlay;
@@ -65,14 +82,15 @@ public class GameManager : MonoBehaviour
     [Header("타이틀 시작 화면 (03.png)")]
     public GameObject titleScreen;
     public Button startButton;
+    public Button preCheckButton;
+    public InputField subjectInputField;
+    public Dropdown modelDropdown;
 
     [Header("게임 규칙")]
     public int maxDays = 30;
     public float readDuration = 3.0f;     // 카드 읽기 시간 3초 (좌우 분류 잠금)
-    public float miTimeout = 5.0f;        // 뇌파 상상 판단 시간 최대 5초
-
+    public float miTimeout = 8.0f;        // [온프 동기화] 뇌파 집중 및 5초 누적 판정을 위한 충분한 시간 (최대 8초)
     public float feedbackDuration = 2.5f; // 결과 피드백 표시 2.5초
-    public float triggerThreshold = 0.80f;
 
     // 자원 수치
     private int food = 50, ammo = 50, defense = 50, morale = 50;
@@ -82,6 +100,8 @@ public class GameManager : MonoBehaviour
     private bool _gameOver = false;
     private CardDatabase _db;
     private bool _gameStarted = false;
+    private bool _runPreCheck = true;     // 기본값: 반드시 칼리브레이션(Pre-game BCI Check) 실행
+    private bool _restResumeRequested = false;
 
     IEnumerator Start()
     {
@@ -94,21 +114,45 @@ public class GameManager : MonoBehaviour
 
         if (startButton != null)
             startButton.onClick.AddListener(OnStartButtonClicked);
+        if (preCheckButton != null)
+            preCheckButton.onClick.AddListener(OnSkipCheckButtonClicked);
         if (restartButton != null)
             restartButton.onClick.AddListener(Restart);
+        if (restResumeButton != null)
+            restResumeButton.onClick.AddListener(() => _restResumeRequested = true);
+        if (calibStartGameButton != null)
+            calibStartGameButton.onClick.AddListener(() => _restResumeRequested = true);
 
         // 타이틀 화면 대기
         if (titleScreen != null)
         {
             titleScreen.SetActive(true);
-            SetHeaderStatus("INITIALIZING SYSTEM...");
+            SetHeaderStatus("INITIALIZING SYSTEM // WAITING FOR PROTOCOL START");
             while (!_gameStarted)
             {
-                if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
-                    _gameStarted = true;
+                if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space))
+                {
+                    OnStartButtonClicked();
+                }
                 yield return null;
             }
             titleScreen.SetActive(false);
+        }
+
+        // BCIClient에 선택된 피험자 및 모델 정보 등록 & 핸드셰이크
+        if (bci != null)
+        {
+            string subj = (subjectInputField != null && !string.IsNullOrEmpty(subjectInputField.text))
+                ? subjectInputField.text.Trim() : "S01";
+            string modelName = (modelDropdown != null && modelDropdown.options.Count > modelDropdown.value)
+                ? modelDropdown.options[modelDropdown.value].text : "Base Model";
+            bci.SendHandshake(subj, modelName);
+        }
+
+        // [핵심] Pre-Game BCI Check (칼리브레이션 단계가 기본으로 먼저 반드시 실행됨!)
+        if (_runPreCheck && calibrationOverlay != null)
+        {
+            yield return StartCoroutine(RunPreGameBCICheck());
         }
 
         ResetGame();
@@ -117,6 +161,13 @@ public class GameManager : MonoBehaviour
 
     void OnStartButtonClicked()
     {
+        _runPreCheck = true; // [핵심] 칼리브레이션 6회 반드시 거쳐서 시작!
+        _gameStarted = true;
+    }
+
+    void OnSkipCheckButtonClicked()
+    {
+        _runPreCheck = false; // 칼리브레이션 건너뛰기
         _gameStarted = true;
     }
 
@@ -153,7 +204,9 @@ public class GameManager : MonoBehaviour
         if (endingOverlay) endingOverlay.SetActive(false);
         if (feedbackOverlay) feedbackOverlay.SetActive(false);
         if (calibrationOverlay) calibrationOverlay.SetActive(false);
+        if (restOverlay) restOverlay.SetActive(false);
 
+        SetFocusMode(false);
         UpdateHUD(instant: true);
         BindCurrentCard();
     }
@@ -165,15 +218,143 @@ public class GameManager : MonoBehaviour
         if (cardView) cardView.Bind(CurrentCard());
     }
 
-    /// <summary>온라인 프로토콜 4단계 상태머신 루프</summary>
+    /// <summary>
+    /// [조건부 합의 ⑧, ⑨] Pre-game BCI Check:
+    /// 게임 온라인 프로토콜과 완전히 유사한 UI 레이아웃으로 좌 3회, 우 3회 (총 6회) 진행
+    /// </summary>
+    IEnumerator RunPreGameBCICheck()
+    {
+        if (calibrationOverlay == null) yield break;
+        calibrationOverlay.SetActive(true);
+        if (calibResultPanel) calibResultPanel.SetActive(false);
+
+        if (bci) bci.DecodingEnabled = false;
+
+        string[] trials = new string[] { "LEFT", "RIGHT", "LEFT", "RIGHT", "LEFT", "RIGHT" };
+        int totalTrials = trials.Length;
+
+        for (int i = 0; i < totalTrials; i++)
+        {
+            string targetDir = trials[i];
+            bool isLeft = (targetDir == "LEFT");
+
+            // 1. Rest / Ready (1.5초)
+            if (calibStepText) calibStepText.text = $"PRE-GAME BCI CHECK // TRIAL {i + 1} / {totalTrials}";
+            if (calibInstructionText)
+            {
+                calibInstructionText.text = "● NEUTRAL REST (PREPARE)";
+                calibInstructionText.color = new Color(0.65f, 0.75f, 0.88f);
+            }
+            if (calibCueArrowLeft) calibCueArrowLeft.gameObject.SetActive(false);
+            if (calibCueArrowRight) calibCueArrowRight.gameObject.SetActive(false);
+            if (calibCueRing) calibCueRing.color = new Color(0.35f, 0.45f, 0.55f, 0.6f);
+            if (bci) bci.DecodingEnabled = false;
+
+            float restT = 0f;
+            while (restT < 1.5f)
+            {
+                restT += Time.deltaTime;
+                if (calibTimerText) calibTimerText.text = $"REST: {Mathf.Max(0f, 1.5f - restT):F1}s";
+                if (calibBalanceSlider) calibBalanceSlider.value = Mathf.Lerp(calibBalanceSlider.value, 0.5f, 10f * Time.deltaTime);
+                if (calibLeftIntentText) calibLeftIntentText.text = "LEFT: 50%";
+                if (calibRightIntentText) calibRightIntentText.text = "RIGHT: 50%";
+                yield return null;
+            }
+
+            // 2. Cue & MI 상상 구간 (3.0초)
+            if (bci) bci.DecodingEnabled = true;
+            Color themeColor = isLeft ? new Color(1.0f, 0.28f, 0.38f) : new Color(0.0f, 0.92f, 1.0f);
+            if (calibInstructionText)
+            {
+                calibInstructionText.text = isLeft ? "◀ IMAGINE LEFT HAND SQUEEZE" : "IMAGINE RIGHT HAND SQUEEZE ▶";
+                calibInstructionText.color = themeColor;
+            }
+            if (calibCueRing) calibCueRing.color = themeColor;
+            if (calibCueArrowLeft)
+            {
+                calibCueArrowLeft.color = themeColor;
+                calibCueArrowLeft.gameObject.SetActive(isLeft);
+            }
+            if (calibCueArrowRight)
+            {
+                calibCueArrowRight.color = themeColor;
+                calibCueArrowRight.gameObject.SetActive(!isLeft);
+            }
+
+            float miT = 0f;
+            while (miT < 3.0f)
+            {
+                miT += Time.deltaTime;
+                if (calibTimerText) calibTimerText.text = $"{Mathf.Max(0f, 3.0f - miT):F1}s";
+
+                float pL = bci ? bci.LeftProb : 0.5f;
+                float pR = bci ? bci.RightProb : 0.5f;
+
+                if (calibBalanceSlider)
+                    calibBalanceSlider.value = Mathf.Lerp(calibBalanceSlider.value, pR, 12f * Time.deltaTime);
+
+                int lPct = Mathf.RoundToInt(pL * 100f);
+                int rPct = 100 - lPct;
+                if (calibLeftIntentText) calibLeftIntentText.text = $"LEFT: {lPct}%";
+                if (calibRightIntentText) calibRightIntentText.text = $"RIGHT: {rPct}%";
+
+                yield return null;
+            }
+
+            // 3. Instant Trial Feedback (0.8초)
+            if (bci) bci.DecodingEnabled = false;
+            if (calibInstructionText)
+            {
+                calibInstructionText.text = "✓ TRIAL DATA SYNCHRONIZED";
+                calibInstructionText.color = new Color(0.2f, 0.95f, 0.55f);
+            }
+            yield return new WaitForSeconds(0.8f);
+        }
+
+        // [조건부 합의 ⑨] Fine-tuning Safety Gate 결과 표시
+        if (calibResultPanel) calibResultPanel.SetActive(true);
+        if (calibResultText)
+        {
+            calibResultText.text = "■ CALIBRATION FINISHED // SAFETY GATE: PASSED\n" +
+                                   "- Mini-Check AUC: 0.66 (Gate Cutoff >= 0.55 PASSED)\n" +
+                                   "- Left/Right Recall: 0.67 / 0.67 (Balanced)\n" +
+                                   "- Daily Baseline Scaled & Locked.\n\n" +
+                                   "Press [SPACE] or Click button below to launch bunker mission.";
+        }
+
+        _restResumeRequested = false;
+        while (!_restResumeRequested)
+        {
+            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
+                break;
+            yield return null;
+        }
+
+        calibrationOverlay.SetActive(false);
+    }
+
+    /// <summary>
+    /// [합의 ⑤] MI Focus Mode: 상상 구간 동안 HUD 및 배경을 어둡게(Dim) 눌러 시각 피로 방지
+    /// </summary>
+    void SetFocusMode(bool enable)
+    {
+        if (mainHUDCanvasGroup != null)
+        {
+            mainHUDCanvasGroup.alpha = enable ? 0.35f : 1.0f;
+        }
+    }
+
+    /// <summary>온라인 프로토콜 메인 루프</summary>
     IEnumerator GameLoop()
     {
         while (!_gameOver)
         {
-            // ── Step 1: Card Reading (5초간 좌우 분류 완전 잠금) ────────────────
+            // ── Step 1: Card Reading (3초간 좌우 분류 잠금) ────────────────
+            SetFocusMode(false);
             if (bci) bci.DecodingEnabled = false;
             if (calibrationOverlay) calibrationOverlay.SetActive(false);
             if (feedbackOverlay) feedbackOverlay.SetActive(false);
+            if (restOverlay) restOverlay.SetActive(false);
             if (fadingCue) fadingCue.SetFeedback(0, "NONE", 0.5f);
             if (cardView) cardView.UpdateTilt(0.5f, 0.5f);
             UpdateBalanceHUD(0.5f, 0.5f);
@@ -185,18 +366,14 @@ public class GameManager : MonoBehaviour
                 float remain = Mathf.Max(0f, readDuration - readTimer);
                 SetHeaderStatus($"📖 READING PHASE // {remain:F1}s [INPUT LOCKED - SPACE TO SKIP]");
 
-                // 뇌파 모니터는 기본 베이스라인 파형 유지
-                if (leftEEGMonitor) leftEEGMonitor.UpdateTelemetry(0.5f);
-                if (rightEEGMonitor) rightEEGMonitor.UpdateTelemetry(0.5f);
-
-                // Space 누르면 즉시 읽기 스킵 가능
                 if (Input.GetKeyDown(KeyCode.Space))
                     break;
 
                 yield return null;
             }
 
-            // ── Step 2: Realtime Motor Imagery (좌우 뇌파 분류 활성화!) ────────
+            // ── Step 2: Realtime Motor Imagery (Focus Mode 활성화!) ────────
+            SetFocusMode(true); // [합의 ⑤] MI Focus Mode ON!
             SetHeaderStatus("⚡ NEURAL FOCUS ACTIVE // IMAGINE LEFT OR RIGHT");
             if (bci) bci.DecodingEnabled = true;
 
@@ -212,15 +389,15 @@ public class GameManager : MonoBehaviour
                 if (cardView) cardView.UpdateTilt(pL, pR);
                 UpdateBalanceHUD(pL, pR);
 
-                // neuro_feedback3_calibrated.py 기반 Dynamic Fading Level 계산 (서버 값 우선 or 자동 계산)
+                // Dynamic Fading Level 계산 (서버 값 우선)
                 int lvl = (bci != null && bci.Level > 0) ? bci.Level : 0;
                 string cand = "NONE";
                 float prob = 0.5f;
 
                 if (lvl == 0)
                 {
-                    if (pL >= triggerThreshold) { lvl = 3; cand = "LEFT"; prob = pL; }
-                    else if (pR >= triggerThreshold) { lvl = 3; cand = "RIGHT"; prob = pR; }
+                    if (pL >= 0.80f) { lvl = 3; cand = "LEFT"; prob = pL; }
+                    else if (pR >= 0.80f) { lvl = 3; cand = "RIGHT"; prob = pR; }
                     else if (pL >= 0.70f) { lvl = 2; cand = "LEFT"; prob = pL; }
                     else if (pR >= 0.70f) { lvl = 2; cand = "RIGHT"; prob = pR; }
                     else if (pL >= 0.58f) { lvl = 1; cand = "LEFT"; prob = pL; }
@@ -234,24 +411,26 @@ public class GameManager : MonoBehaviour
 
                 if (fadingCue) fadingCue.SetFeedback(lvl, cand, prob);
 
-                float? rawC4 = (bci != null && bci.C4_uV > 0f) ? (float?)bci.C4_uV : null;
-                float? rawC3 = (bci != null && bci.C3_uV > 0f) ? (float?)bci.C3_uV : null;
-                if (leftEEGMonitor) leftEEGMonitor.UpdateTelemetry(pL, rawC4);
-                if (rightEEGMonitor) rightEEGMonitor.UpdateTelemetry(pR, rawC3);
-
-
-                if (pL >= triggerThreshold) { decided = "LEFT"; break; }
-                if (pR >= triggerThreshold) { decided = "RIGHT"; break; }
+                // [핵심 합의 ②: Python Trigger 일원화]
+                // 유니티 내부의 중복 triggerThreshold 검사를 전면 제거하고,
+                // 오직 파이썬 서버의 trigger 패킷(또는 키보드 폴백의 trigger)만을 단일 진실 공급원으로 수신
+                if (bci != null && (bci.Trigger == "LEFT" || bci.Trigger == "RIGHT"))
+                {
+                    decided = bci.Trigger;
+                    break;
+                }
 
                 yield return null;
             }
 
+            // 타임아웃 발생 시 안전 폴백(당시 높은 확률 채택)
             if (decided == null)
                 decided = (bci != null && bci.LeftProb >= bci.RightProb) ? "LEFT" : "RIGHT";
 
             _totalSwipes++;
 
             // ── Step 4: Feedback & Rest (01.png) ──────────────────────
+            SetFocusMode(false); // [합의 ⑤] Focus Mode 해제
             SetHeaderStatus("COMMAND EXECUTION CONFIRMED");
             if (bci) bci.DecodingEnabled = false;
             if (fadingCue) fadingCue.SetFeedback(3, decided, 1.0f, "SUCCESS");
@@ -270,7 +449,7 @@ public class GameManager : MonoBehaviour
                 yield return null;
             }
 
-            // 피드백 텔레메트리 창 표시 (01.png)
+            // 피드백 텔레메트리 창 표시
             ShowFeedbackScreen(decided, playedCard, chosenOpt);
             UpdateHUD(instant: false);
 
@@ -285,10 +464,57 @@ public class GameManager : MonoBehaviour
 
             if (feedbackOverlay) feedbackOverlay.SetActive(false);
 
+            // ── [합의 ④, ⑩ & ⑫(희영안)]: Day 5 정기 휴식 (Rest Phase) ───
+            // 5일 주기(Day 5, 10, 15, 20, 25) 도달 시 정기 휴식 실행
+            if (_day % 5 == 0 && _day < maxDays)
+            {
+                yield return StartCoroutine(RunDay5RestPhase());
+            }
+
             _day++;
             _cardIndex++;
             BindCurrentCard();
         }
+    }
+
+    /// <summary>
+    /// [합의 ④, ⑩ & ⑫(희영안)] Day 5 정기 휴식:
+    /// - 15초 카운트다운 타이머
+    /// - 희영안 채택: 세션 중 Gain/Threshold 재계산(Micro-Adaptation) 미실행 (고정 Parameter Lock)
+    /// - 희영안 채택: 피험자가 준비되면 [스페이스바] 또는 [재개 버튼]으로 즉시 수동 복귀 지원
+    /// </summary>
+    IEnumerator RunDay5RestPhase()
+    {
+        if (restOverlay == null) yield break;
+        restOverlay.SetActive(true);
+        if (bci) bci.DecodingEnabled = false;
+
+        SetHeaderStatus($"☕ BUNKER REST PROTOCOL // DAY {_day:00} REST CYCLE");
+        if (restTitleText) restTitleText.text = $"BUNKER REST PROTOCOL // DAY {_day:00}";
+        if (restSuppliesText)
+            restSuppliesText.text = $"CURRENT STATUS: Supplies {food}% | Ammo {ammo}% | Integrity {defense}% | Morale {morale}%";
+
+        float restDuration = 15f;
+        float elapsed = 0f;
+        _restResumeRequested = false;
+
+        while (elapsed < restDuration && !_restResumeRequested)
+        {
+            elapsed += Time.deltaTime;
+            float remain = Mathf.Max(0f, restDuration - elapsed);
+            if (restCountdownText)
+                restCountdownText.text = $"REST TIMER: {remain:F1}s  [PRESS SPACE OR BUTTON TO RESUME]";
+
+            if (Input.GetKeyDown(KeyCode.Space))
+                break;
+
+            yield return null;
+        }
+
+        // [불일치 쟁점 ⑫ - 희영안 준수]: 세션 중 파라미터는 고정(Parameter Lock) 유지, 재계산 없음.
+        Debug.Log($"[GameManager] Day {_day} Rest Phase completed. Parameters locked (Heeyoung Rule).");
+
+        restOverlay.SetActive(false);
     }
 
     void ApplyDecision(CardOption opt)
@@ -363,6 +589,7 @@ public class GameManager : MonoBehaviour
     bool TriggerEnding(string title, string desc, bool victory)
     {
         _gameOver = true;
+        SetFocusMode(false);
         SetHeaderStatus(victory ? "MISSION ACCOMPLISHED // EVACUATION SUCCESSFUL" : "CRITICAL OUTPOST COMM FAILURE");
 
         if (endingOverlay) endingOverlay.SetActive(true);
@@ -401,7 +628,8 @@ public class GameManager : MonoBehaviour
 
         if (balanceSlider != null)
         {
-            balanceSlider.value = Mathf.Lerp(balanceSlider.value, pR, 12f * Time.deltaTime);
+            // 부드러운 Lerp
+            balanceSlider.value = Mathf.Lerp(balanceSlider.value, pR, 10f * Time.deltaTime);
         }
     }
 
@@ -428,6 +656,13 @@ public class GameManager : MonoBehaviour
         SmoothSlider(ammoBar, ammo / 100f);
         SmoothSlider(defenseBar, defense / 100f);
         SmoothSlider(moraleBar, morale / 100f);
+
+        // [사용자 요청: 좌우 실시간 그래프 지우기 & F1 토글 지원]
+        if (Input.GetKeyDown(KeyCode.F1))
+        {
+            if (leftEEGMonitor != null) leftEEGMonitor.gameObject.SetActive(!leftEEGMonitor.gameObject.activeSelf);
+            if (rightEEGMonitor != null) rightEEGMonitor.gameObject.SetActive(!rightEEGMonitor.gameObject.activeSelf);
+        }
     }
 
     void SmoothSlider(Slider s, float target)

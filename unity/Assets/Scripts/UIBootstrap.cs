@@ -98,6 +98,7 @@ public class UIBootstrap : MonoBehaviour
         // ── 2. 상단 4대 자원 HUD 바 (시인성 극대화 위젯형 대시보드) ─────────
         var metersGroup = CreateEmpty(canvas.transform, "MetersHUD",
             Anchored(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -66), new Vector2(1220, 60)));
+        var metersCanvasGroup = metersGroup.AddComponent<CanvasGroup>(); // [합의 ⑤] MI Focus Mode Dimming 용
 
         Slider foodBar, ammoBar, defBar, moraleBar;
         Text foodVal, ammoVal, defVal, moraleVal;
@@ -107,30 +108,31 @@ public class UIBootstrap : MonoBehaviour
         CreateMeterBox(metersGroup.transform, 3, "👤 SURVIVOR MORALE", new Color(0.95f, 0.45f, 0.95f), out moraleBar, out moraleVal);
 
         // ── 3. 메인 게임플레이 3분할 뷰 ─────────────────────────────
-        // 3-1) 좌측 패널: ← LEFT MOTOR IMAGERY
+        // 3-1) 좌측 패널: ← LEFT MOTOR IMAGERY (그래프 제거로 시원하게 확장)
         var leftPanelGo = CreatePanel(canvas.transform, "LeftMIPanel", PANEL_BG,
-            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-425, 45), new Vector2(285, 165)));
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-425, -6), new Vector2(285, 270)));
         var leftPanelImg = leftPanelGo.GetComponent<Image>();
         leftPanelImg.sprite = UIAssetFactory.GetTechPanel(32, 10, PANEL_BG, RED_GLOW, 2);
         leftPanelImg.type = Image.Type.Sliced;
 
         var leftHeader = CreateText(leftPanelGo.transform, "Header", "←  LEFT MOTOR IMAGERY", 13, TextAnchor.UpperLeft,
-            Anchored(new Vector2(0, 1), new Vector2(0, 1), new Vector2(18, -14), new Vector2(244, 20)));
+            Anchored(new Vector2(0, 1), new Vector2(0, 1), new Vector2(18, -16), new Vector2(250, 22)));
         leftHeader.fontStyle = FontStyle.Bold;
         leftHeader.color = RED;
 
-        var leftAction = CreateText(leftPanelGo.transform, "Action", "문을 열지 않는다", 18, TextAnchor.MiddleLeft,
-            Anchored(new Vector2(0, 1), new Vector2(0, 1), new Vector2(18, -44), new Vector2(244, 36)));
+        var leftAction = CreateText(leftPanelGo.transform, "Action", "문을 열지 않는다", 20, TextAnchor.MiddleLeft,
+            Anchored(new Vector2(0, 1), new Vector2(0, 1), new Vector2(18, -52), new Vector2(250, 48)));
         leftAction.fontStyle = FontStyle.Bold;
         leftAction.color = TEXT_WHITE;
 
-        var leftSub = CreateText(leftPanelGo.transform, "Sub", "Imagine Left-Hand squeeze to reject.", 11, TextAnchor.UpperLeft,
-            Anchored(new Vector2(0, 0), new Vector2(0, 0), new Vector2(18, 14), new Vector2(244, 46)));
+        var leftSub = CreateText(leftPanelGo.transform, "Sub", "Imagine Left-Hand squeeze to reject request.\n\n● MOTOR ERD RESPONSE ACTIVE", 12, TextAnchor.UpperLeft,
+            Anchored(new Vector2(0, 0), new Vector2(0, 0), new Vector2(18, 20), new Vector2(250, 130)));
         leftSub.color = TEXT_MUTED;
-        leftSub.lineSpacing = 1.25f;
+        leftSub.lineSpacing = 1.35f;
 
-        // 좌측 실시간 뇌파 오실로스코프 모니터 (C4: Left Hand MI)
+        // [사용자 요청 & 합의 ⑥]: 가짜 EEG 정보 및 실시간 그래프 화면에서 지움(비활성화)
         var leftEEG = CreateEEGMonitor(canvas.transform, "LeftEEGMonitor", "C4: LEFT-HAND", RED, new Vector2(-425, -88));
+        leftEEG.gameObject.SetActive(false);
 
         // 3-2) 중앙 생존자 카드 (벙커 원형 창문 + 대사창)
         var cardRoot = CreateEmpty(canvas.transform, "CenterCardRoot",
@@ -161,29 +163,30 @@ public class UIBootstrap : MonoBehaviour
 
         // 중앙 벙커 잠망경/창문 (Porthole)
         var portholeGo = CreateImage(cardBody.transform, "Porthole", Color.white,
-            Anchored(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -42), new Vector2(190, 190)));
+            Anchored(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -42), new Vector2(180, 180)));
         portholeGo.sprite = UIAssetFactory.GetBunkerPorthole(256);
 
         // 창문 내부 캐릭터 아바타
-        var avatar = CreateText(portholeGo.transform, "Avatar", "👤", 60, TextAnchor.MiddleCenter,
+        var avatar = CreateText(portholeGo.transform, "Avatar", "👤", 56, TextAnchor.MiddleCenter,
             Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(120, 120)));
 
         // 하단 화자 이름: NAME: HELENA (SURVIVOR)
         var speakerText = CreateText(cardBody.transform, "Speaker", "NAME: HELENA (SURVIVOR)", 13, TextAnchor.MiddleLeft,
-            Anchored(new Vector2(0, 0), new Vector2(0, 0), new Vector2(22, 102), new Vector2(400, 22)));
+            Anchored(new Vector2(0, 0), new Vector2(0, 0), new Vector2(22, 118), new Vector2(400, 22)));
         speakerText.fontStyle = FontStyle.Bold;
         speakerText.color = CYAN;
 
-        // 하단 전용 스토리 대사창 패널 (가독성 100% 보장 음각 박스)
+        // [합의 ①] 하단 전용 스토리 대사창 패널 (가독성 100% 보장 음각 박스, 폰트 18pt 확대 대응)
         var promptBox = CreatePanel(cardBody.transform, "PromptBox", new Color(0.04f, 0.05f, 0.085f, 0.95f),
-            Anchored(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 14), new Vector2(414, 82)));
+            Anchored(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 12), new Vector2(414, 102)));
         promptBox.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(16, 4, new Color(0.04f, 0.05f, 0.085f, 0.95f), LINE_DIVIDER, 1);
         promptBox.GetComponent<Image>().type = Image.Type.Sliced;
 
-        var promptText = CreateText(promptBox.transform, "Prompt", "\"쉘터 밖에서 아이를 안은 생존자가 문을 열어달라고 요청하고 있습니다. 문을 열어줄까요?\"", 14, TextAnchor.UpperLeft,
-            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(390, 68)));
+        // [핵심 합의 ①: 카드 본문 폰트 14pt -> 18pt 확대]
+        var promptText = CreateText(promptBox.transform, "Prompt", "\"쉘터 밖에서 아이를 안은 생존자가 문을 열어달라고 요청하고 있습니다. 문을 열어줄까요?\"", 18, TextAnchor.UpperLeft,
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(390, 88)));
         promptText.color = TEXT_WHITE;
-        promptText.lineSpacing = 1.35f;
+        promptText.lineSpacing = 1.30f;
 
         // 중앙 상단 neuro_feedback3 Dynamic Fading CUE 인터페이스
         var cuePanel = CreatePanel(canvas.transform, "DynamicFadingCuePanel", PANEL_BG,
@@ -241,36 +244,31 @@ public class UIBootstrap : MonoBehaviour
         fadingCue.levelText = lvlText;
         fadingCue.stateText = cueStateText;
 
-        // 3-3) 우측 패널: RIGHT MOTOR IMAGERY →
+        // 3-3) 우측 패널: RIGHT MOTOR IMAGERY → (그래프 제거로 시원하게 확장)
         var rightPanelGo = CreatePanel(canvas.transform, "RightMIPanel", PANEL_BG,
-            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(425, 45), new Vector2(285, 165)));
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(425, -6), new Vector2(285, 270)));
         var rightPanelImg = rightPanelGo.GetComponent<Image>();
         rightPanelImg.sprite = UIAssetFactory.GetTechPanel(32, 10, PANEL_BG, CYAN_GLOW, 2);
         rightPanelImg.type = Image.Type.Sliced;
 
         var rightHeader = CreateText(rightPanelGo.transform, "Header", "RIGHT MOTOR IMAGERY  →", 13, TextAnchor.UpperLeft,
-            Anchored(new Vector2(0, 1), new Vector2(0, 1), new Vector2(18, -14), new Vector2(244, 20)));
+            Anchored(new Vector2(0, 1), new Vector2(0, 1), new Vector2(18, -16), new Vector2(250, 22)));
         rightHeader.fontStyle = FontStyle.Bold;
         rightHeader.color = CYAN;
 
-        var rightAction = CreateText(rightPanelGo.transform, "Action", "생존자를 받아들인다", 18, TextAnchor.MiddleLeft,
-            Anchored(new Vector2(0, 1), new Vector2(0, 1), new Vector2(18, -44), new Vector2(244, 36)));
+        var rightAction = CreateText(rightPanelGo.transform, "Action", "생존자를 받아들인다", 20, TextAnchor.MiddleLeft,
+            Anchored(new Vector2(0, 1), new Vector2(0, 1), new Vector2(18, -52), new Vector2(250, 48)));
         rightAction.fontStyle = FontStyle.Bold;
         rightAction.color = TEXT_WHITE;
 
-        var rightSub = CreateText(rightPanelGo.transform, "Sub", "Imagine Right-Hand squeeze to accept.", 11, TextAnchor.UpperLeft,
-            Anchored(new Vector2(0, 0), new Vector2(0, 0), new Vector2(18, 14), new Vector2(244, 46)));
+        var rightSub = CreateText(rightPanelGo.transform, "Sub", "Imagine Right-Hand squeeze to accept.\n\n● MOTOR ERD RESPONSE ACTIVE", 12, TextAnchor.UpperLeft,
+            Anchored(new Vector2(0, 0), new Vector2(0, 0), new Vector2(18, 20), new Vector2(250, 130)));
         rightSub.color = TEXT_MUTED;
-        rightSub.lineSpacing = 1.25f;
+        rightSub.lineSpacing = 1.35f;
 
-        var rightStatus = CreateText(rightPanelGo.transform, "Status", "● COGNITIVE LINK READY", 10, TextAnchor.MiddleLeft,
-            Anchored(new Vector2(0, 0), new Vector2(0, 0), new Vector2(18, 2), new Vector2(244, 16)));
-        rightStatus.fontStyle = FontStyle.Bold;
-        rightStatus.color = CYAN;
-
-        // 우측 실시간 뇌파 오실로스코프 모니터 (C3: Right Hand MI)
+        // [사용자 요청 & 합의 ⑥]: 가짜 EEG 정보 및 실시간 그래프 화면에서 지움(비활성화)
         var rightEEG = CreateEEGMonitor(canvas.transform, "RightEEGMonitor", "C3: RIGHT-HAND", CYAN, new Vector2(425, -88));
-
+        rightEEG.gameObject.SetActive(false);
 
         // ── 4. 하단 밸런스 HUD & 슬라이더 ─────────────────────────────
         var balanceGroup = CreateEmpty(canvas.transform, "BalanceGroup",
@@ -292,7 +290,7 @@ public class UIBootstrap : MonoBehaviour
         rightIntent.fontStyle = FontStyle.Bold;
         rightIntent.color = CYAN;
 
-        // 밸런스 슬라이더 트랙 (1220 x 18로 확대)
+        // 밸런스 슬라이더 트랙 (1220 x 18)
         var balTrack = CreatePanel(balanceGroup.transform, "Track", new Color(0.04f, 0.06f, 0.09f, 0.98f),
             Anchored(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 4), new Vector2(1220, 18)));
         balTrack.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(32, 6, new Color(0.04f, 0.06f, 0.09f, 0.98f), LINE_DIVIDER, 1);
@@ -302,12 +300,11 @@ public class UIBootstrap : MonoBehaviour
         CreateImage(balTrack.transform, "CenterDivider", new Color(1f, 1f, 1f, 0.4f),
             Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(2, 18)));
 
-        // 슬라이더 커서 블록 (더 크고 뚜렷한 네온 블록)
+        // 슬라이더 커서 블록
         var balCursor = CreatePanel(balTrack.transform, "Cursor", CYAN,
             Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(24, 18)));
         balCursor.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(16, 3, CYAN, Color.white, 2);
         balCursor.GetComponent<Image>().type = Image.Type.Sliced;
-
 
         var balSlider = balTrack.AddComponent<Slider>();
         balSlider.transition = Selectable.Transition.None;
@@ -327,42 +324,143 @@ public class UIBootstrap : MonoBehaviour
             Anchored(new Vector2(1, 0.5f), new Vector2(1, 0.5f), Vector2.zero, new Vector2(400, 20)));
         footAnt.color = new Color(0.38f, 0.46f, 0.56f);
 
-        // ── 6. Step 2 신경 보정 오버레이 (00.png) ─────────────────────
-        var calibOverlay = CreatePanel(canvas.transform, "CalibrationOverlay", new Color(0.025f, 0.035f, 0.05f, 0.96f), Stretch());
+        // ── 6. [사용자 요청 & 합의 ⑧, ⑨] Pre-Game BCI Check (게임 온라인 프로토콜 유사 UI) ──
+        var calibOverlay = CreatePanel(canvas.transform, "CalibrationOverlay", new Color(0.025f, 0.035f, 0.05f, 0.98f), Stretch());
 
-        var calibNotice = CreateText(calibOverlay.transform, "Notice", "NEURAL SENSOR FEEDBACK INCOMING", 14, TextAnchor.MiddleCenter,
-            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 180), new Vector2(600, 24)));
-        calibNotice.fontStyle = FontStyle.Bold;
-        calibNotice.color = CYAN;
+        // 상단 헤더
+        var calibStep = CreateText(calibOverlay.transform, "StepText", "PRE-GAME BCI CHECK // TRIAL 1 / 6", 16, TextAnchor.MiddleCenter,
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 210), new Vector2(600, 26)));
+        calibStep.fontStyle = FontStyle.Bold;
+        calibStep.color = CYAN;
 
-        var calibTitle = CreateText(calibOverlay.transform, "Title", "Focus and imagine LEFT or RIGHT hand movement", 24, TextAnchor.MiddleCenter,
-            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 145), new Vector2(800, 34)));
-        calibTitle.fontStyle = FontStyle.Bold;
-        calibTitle.color = TEXT_WHITE;
+        var calibSub = CreateText(calibOverlay.transform, "SubText", "NEURAL BASELINE SYNCHRONIZATION // ONLINE PROTOCOL SIMULATION", 11, TextAnchor.MiddleCenter,
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 185), new Vector2(600, 20)));
+        calibSub.color = TEXT_MUTED;
 
-        // 원형 캘리브레이션 링
-        var calibArc = CreateImage(calibOverlay.transform, "Arc", Color.white,
-            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(240, 240)));
-        calibArc.sprite = UIAssetFactory.GetCalibrationArc(256, CYAN);
+        // 중앙 카드 스타일 프로토콜 박스 (게임의 중앙 카드와 동일한 무드)
+        var calibBox = CreatePanel(calibOverlay.transform, "ProtocolBox", new Color(0.065f, 0.085f, 0.135f, 0.98f),
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 15), new Vector2(520, 320)));
+        calibBox.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(32, 10, new Color(0.065f, 0.085f, 0.135f, 0.98f), CYAN_GLOW, 2);
+        calibBox.GetComponent<Image>().type = Image.Type.Sliced;
 
-        // 중앙 카운트다운 텍스트 ("3")
-        var calibCount = CreateText(calibOverlay.transform, "Countdown", "3", 56, TextAnchor.MiddleCenter,
-            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(120, 120)));
-        calibCount.fontStyle = FontStyle.Bold;
-        calibCount.color = CYAN;
+        // 중앙 원형 링 (원 중심 y = 45)
+        var calibRing = CreateImage(calibBox.transform, "Ring", CYAN,
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 45), new Vector2(150, 150)));
+        calibRing.sprite = UIAssetFactory.GetRingSprite(256, 6f);
 
-        // 하단 채널 전압 텔레메트리
-        var calibTelem = CreateText(calibOverlay.transform, "Telem",
-            "■ EEG-Ch1 [C3]: 7.4 uV    ■ EEG-Ch2 [C4]: 9.1 uV    SYSTEM STABLE // SYNCING...", 13, TextAnchor.MiddleCenter,
-            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -170), new Vector2(800, 24)));
-        calibTelem.fontStyle = FontStyle.Bold;
-        calibTelem.color = CYAN;
+        // 좌/우 화살표 큐 - 원형 링 정중앙 (0, 45)에 단독 배치하여 텍스트와 겹침 원천 방지
+        var calibArrowL = CreateImage(calibBox.transform, "ArrowLeft", RED,
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 45), new Vector2(64, 48)));
+        calibArrowL.sprite = UIAssetFactory.GetArrowSprite(96, 64, true);
+        calibArrowL.gameObject.SetActive(false);
+
+        var calibArrowR = CreateImage(calibBox.transform, "ArrowRight", CYAN,
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 45), new Vector2(64, 48)));
+        calibArrowR.sprite = UIAssetFactory.GetArrowSprite(96, 64, false);
+        calibArrowR.gameObject.SetActive(false);
+
+        // 중앙 타이머 텍스트 - 원형 링 아래(0, -44)로 명확히 분리하여 화살표와 겹치지 않음
+        var calibTimer = CreateText(calibBox.transform, "Timer", "03.0s", 22, TextAnchor.MiddleCenter,
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -44), new Vector2(160, 30)));
+        calibTimer.fontStyle = FontStyle.Bold;
+        calibTimer.color = CYAN;
+
+        // 중앙 지시문 텍스트 - 타이머 하단(0, -80)에 배치
+        var calibInstruct = CreateText(calibBox.transform, "Instruction", "● NEUTRAL REST (PREPARE)", 17, TextAnchor.MiddleCenter,
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -80), new Vector2(460, 30)));
+        calibInstruct.fontStyle = FontStyle.Bold;
+        calibInstruct.color = TEXT_WHITE;
+
+        // 하단 밸런스 슬라이더 바 (게임 내 밸런스 바와 동일한 레이아웃)
+        var calibBalGroup = CreateEmpty(calibOverlay.transform, "CalibBalGroup",
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -180), new Vector2(600, 60)));
+
+        var calibLeftIntent = CreateText(calibBalGroup.transform, "L_Intent", "LEFT: 50%", 13, TextAnchor.MiddleLeft,
+            Anchored(new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, new Vector2(150, 20)));
+        calibLeftIntent.fontStyle = FontStyle.Bold; calibLeftIntent.color = RED;
+
+        var calibRightIntent = CreateText(calibBalGroup.transform, "R_Intent", "RIGHT: 50%", 13, TextAnchor.MiddleRight,
+            Anchored(new Vector2(1, 1), new Vector2(1, 1), Vector2.zero, new Vector2(150, 20)));
+        calibRightIntent.fontStyle = FontStyle.Bold; calibRightIntent.color = CYAN;
+
+        var calibTrack = CreatePanel(calibBalGroup.transform, "Track", new Color(0.04f, 0.06f, 0.09f, 0.98f),
+            Anchored(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 6), new Vector2(600, 16)));
+        calibTrack.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(32, 4, new Color(0.04f, 0.06f, 0.09f, 0.98f), LINE_DIVIDER, 1);
+        calibTrack.GetComponent<Image>().type = Image.Type.Sliced;
+
+        var calibCursor = CreatePanel(calibTrack.transform, "Cursor", CYAN,
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(20, 16)));
+        calibCursor.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(16, 2, CYAN, Color.white, 1);
+        calibCursor.GetComponent<Image>().type = Image.Type.Sliced;
+
+        var calibBalSlider = calibTrack.AddComponent<Slider>();
+        calibBalSlider.transition = Selectable.Transition.None;
+        calibBalSlider.targetGraphic = calibCursor.GetComponent<Image>();
+        calibBalSlider.handleRect = calibCursor.GetComponent<RectTransform>();
+        calibBalSlider.minValue = 0f; calibBalSlider.maxValue = 1f; calibBalSlider.value = 0.5f;
+
+        // 체크 완료 및 Safety Gate 결과 모달 (완료 시 노출)
+        var calibResBox = CreatePanel(calibOverlay.transform, "ResultPanel", new Color(0.04f, 0.07f, 0.11f, 0.98f),
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(560, 280)));
+        calibResBox.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(32, 10, new Color(0.04f, 0.07f, 0.11f, 0.98f), GREEN, 2);
+        calibResBox.GetComponent<Image>().type = Image.Type.Sliced;
+
+        var calibResTxt = CreateText(calibResBox.transform, "ResultText", "CALIBRATION FINISHED", 14, TextAnchor.UpperLeft,
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 24), new Vector2(500, 180)));
+        calibResTxt.lineSpacing = 1.35f;
+        calibResTxt.color = TEXT_WHITE;
+
+        var calibStartBtnGo = CreatePanel(calibResBox.transform, "StartBtn", GREEN,
+            Anchored(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 18), new Vector2(400, 44)));
+        calibStartBtnGo.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(16, 4, GREEN, Color.white, 1);
+        calibStartBtnGo.GetComponent<Image>().type = Image.Type.Sliced;
+        var calibStartBtnTxt = CreateText(calibStartBtnGo.transform, "Text", "ENTER SHELTER PROTOCOL [SPACE]", 14, TextAnchor.MiddleCenter, Stretch());
+        calibStartBtnTxt.fontStyle = FontStyle.Bold;
+        calibStartBtnTxt.color = TEXT_DARK;
+        var calibStartGameBtn = calibStartBtnGo.AddComponent<Button>();
+        calibResBox.SetActive(false);
         calibOverlay.SetActive(false);
 
-        // ── 7. Step 4 피드백 텔레메트리 오버레이 (01.png) ───────────────
+        // ── 7. [합의 ④, ⑩ & ⑫(희영안)] Day 5 정기 휴식 (Rest Phase) 모달 UI ─────
+        var restOverlay = CreatePanel(canvas.transform, "RestOverlay", new Color(0.02f, 0.03f, 0.05f, 0.96f), Stretch());
+
+        var restCardBox = CreatePanel(restOverlay.transform, "RestCard", new Color(0.06f, 0.08f, 0.12f, 0.99f),
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(620, 360)));
+        restCardBox.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(32, 10, new Color(0.06f, 0.08f, 0.12f, 0.99f), AMBER, 2);
+        restCardBox.GetComponent<Image>().type = Image.Type.Sliced;
+
+        var restTitle = CreateText(restCardBox.transform, "Title", "☕  BUNKER REST PROTOCOL // DAY 05", 20, TextAnchor.MiddleCenter,
+            Anchored(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -32), new Vector2(560, 30)));
+        restTitle.fontStyle = FontStyle.Bold;
+        restTitle.color = AMBER;
+
+        var restDesc = CreateText(restCardBox.transform, "Desc", "20턴 이후 신경 피로 완화를 위한 벙커 정기 휴식 프로토콜입니다.\n실험 변인 통제를 위해 세션 디코딩 파라미터는 확정값(Locked)으로 유지됩니다.", 13, TextAnchor.MiddleCenter,
+            Anchored(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -78), new Vector2(560, 42)));
+        restDesc.color = TEXT_MUTED;
+        restDesc.lineSpacing = 1.3f;
+
+        var restCountdown = CreateText(restCardBox.transform, "Countdown", "REST TIMER: 15.0s  [PRESS SPACE TO RESUME]", 18, TextAnchor.MiddleCenter,
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 10), new Vector2(560, 36)));
+        restCountdown.fontStyle = FontStyle.Bold;
+        restCountdown.color = CYAN;
+
+        var restSupplies = CreateText(restCardBox.transform, "Supplies", "CURRENT STATUS: Supplies 50% | Ammo 50% | Integrity 50% | Morale 50%", 13, TextAnchor.MiddleCenter,
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -35), new Vector2(560, 26)));
+        restSupplies.color = TEXT_WHITE;
+
+        var restResumeGo = CreatePanel(restCardBox.transform, "ResumeBtn", new Color(0.04f, 0.08f, 0.14f, 0.98f),
+            Anchored(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 24), new Vector2(420, 48)));
+        restResumeGo.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(16, 4, new Color(0.04f, 0.08f, 0.14f, 0.98f), CYAN, 2);
+        restResumeGo.GetComponent<Image>().type = Image.Type.Sliced;
+        var restResumeTxt = CreateText(restResumeGo.transform, "Text", "RESUME SHELTER PROTOCOL [SPACE]", 14, TextAnchor.MiddleCenter, Stretch());
+        restResumeTxt.fontStyle = FontStyle.Bold;
+        restResumeTxt.color = CYAN;
+        var restResumeBtn = restResumeGo.AddComponent<Button>();
+        restOverlay.SetActive(false);
+
+        // ── 8. Step 4 피드백 텔레메트리 오버레이 (01.png) ───────────────
         var feedbackOverlay = CreatePanel(canvas.transform, "FeedbackOverlay", new Color(0.03f, 0.04f, 0.06f, 0.94f), Stretch());
 
-        // 좌측 TELEMETRY DELTA READOUT 박스
         var deltaBox = CreatePanel(feedbackOverlay.transform, "DeltaBox", new Color(0.05f, 0.07f, 0.10f, 0.95f),
             Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-360, -20), new Vector2(340, 200)));
         deltaBox.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(32, 8, new Color(0.05f, 0.07f, 0.10f, 0.95f), LINE_DIVIDER, 1);
@@ -379,7 +477,6 @@ public class UIBootstrap : MonoBehaviour
         deltaList.color = CYAN;
         deltaList.lineSpacing = 1.4f;
 
-        // 우측 확정 뱃지: [ RIGHT ACTION ENGAGED // CONFIRMED ]
         var fbBadge = CreatePanel(feedbackOverlay.transform, "ActionBadge", new Color(0.04f, 0.08f, 0.12f, 0.95f),
             Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(260, 48), new Vector2(480, 48)));
         var fbBadgeImg = fbBadge.GetComponent<Image>();
@@ -390,7 +487,6 @@ public class UIBootstrap : MonoBehaviour
         fbBadgeText.fontStyle = FontStyle.Bold;
         fbBadgeText.color = CYAN;
 
-        // 우측 LOG-SYSTEM ENGAGEMENT 박스
         var logBox = CreatePanel(feedbackOverlay.transform, "LogBox", new Color(0.05f, 0.07f, 0.10f, 0.95f),
             Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(260, -42), new Vector2(480, 100)));
         logBox.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(32, 8, new Color(0.05f, 0.07f, 0.10f, 0.95f), LINE_DIVIDER, 1);
@@ -411,7 +507,7 @@ public class UIBootstrap : MonoBehaviour
         fbWaitHint.color = CYAN;
         feedbackOverlay.SetActive(false);
 
-        // ── 8. 엔딩 오버레이 (02.png) ──────────────────────────────────
+        // ── 9. 엔딩 오버레이 (02.png) ──────────────────────────────────
         var endingOverlay = CreatePanel(canvas.transform, "EndingOverlay", new Color(0.025f, 0.035f, 0.05f, 0.98f), Stretch());
 
         var endAlertTag = CreatePanel(endingOverlay.transform, "AlertTag", new Color(0.18f, 0.05f, 0.06f, 0.9f),
@@ -479,7 +575,7 @@ public class UIBootstrap : MonoBehaviour
             Anchored(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-20, -85), new Vector2(80, 20)));
         endFinalIntegrity.fontStyle = FontStyle.Bold; endFinalIntegrity.color = RED;
 
-        // 재시작 버튼: [ COGNITIVE SYNC [RESTART SYSTEM] ]
+        // 재시작 버튼
         var restartBtnGo = CreatePanel(endingOverlay.transform, "RestartBtn", new Color(0.04f, 0.08f, 0.12f, 0.95f),
             Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -150), new Vector2(380, 48)));
         restartBtnGo.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(32, 6, new Color(0.04f, 0.08f, 0.12f, 0.95f), CYAN, 2);
@@ -491,54 +587,70 @@ public class UIBootstrap : MonoBehaviour
         var restartBtn = restartBtnGo.AddComponent<Button>();
         endingOverlay.SetActive(false);
 
-        // ── 9. 타이틀 시작 화면 (03.png) ───────────────────────────────
+        // ── 10. [합의 ③] 타이틀 시작 화면 (Subject & Model 선택 지원) ─────
         var titleOverlay = CreatePanel(canvas.transform, "TitleScreen", new Color(0.035f, 0.045f, 0.065f, 0.98f), Stretch());
 
         var titleCategory = CreateText(titleOverlay.transform, "Cat", "BCI APOCALYPSE DECISION SYSTEMS", 14, TextAnchor.MiddleCenter,
-            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 150), new Vector2(600, 24)));
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 200), new Vector2(600, 24)));
         titleCategory.fontStyle = FontStyle.Bold;
         titleCategory.color = CYAN;
 
-        var titleLogo = CreateText(titleOverlay.transform, "Logo", "DEAD  SIGNAL", 54, TextAnchor.MiddleCenter,
-            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 95), new Vector2(800, 68)));
+        var titleLogo = CreateText(titleOverlay.transform, "Logo", "DEAD  SIGNAL", 52, TextAnchor.MiddleCenter,
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 150), new Vector2(800, 64)));
         titleLogo.fontStyle = FontStyle.Bold;
         titleLogo.color = TEXT_WHITE;
 
         // 청록빛 가로 분할선
-        var titleDiv = CreateImage(titleOverlay.transform, "Divider", CYAN,
-            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 52), new Vector2(300, 2)));
+        CreateImage(titleOverlay.transform, "Divider", CYAN,
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 110), new Vector2(360, 2)));
 
-        // 장치 상태 박스
-        var devStatusBox = CreatePanel(titleOverlay.transform, "DeviceBox", new Color(0.04f, 0.07f, 0.10f, 0.95f),
-            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -30), new Vector2(520, 110)));
-        devStatusBox.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(32, 8, new Color(0.04f, 0.07f, 0.10f, 0.95f), CYAN, 1);
-        devStatusBox.GetComponent<Image>().type = Image.Type.Sliced;
+        // [핵심 합의 ③] 인게임 타이틀 피험자 및 모델 설정 박스
+        var configBox = CreatePanel(titleOverlay.transform, "ConfigBox", new Color(0.05f, 0.07f, 0.11f, 0.98f),
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 15), new Vector2(500, 150)));
+        configBox.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(32, 8, new Color(0.05f, 0.07f, 0.11f, 0.98f), CYAN_DIM, 1);
+        configBox.GetComponent<Image>().type = Image.Type.Sliced;
 
-        var devStatusLine1 = CreateText(devStatusBox.transform, "L1", "● EEG DEVICE STATUS: ONLINE", 13, TextAnchor.MiddleLeft,
-            Anchored(new Vector2(0, 1), new Vector2(0, 1), new Vector2(22, -16), new Vector2(280, 20)));
-        devStatusLine1.fontStyle = FontStyle.Bold; devStatusLine1.color = CYAN;
+        // Subject ID 입력창
+        var subjLbl = CreateText(configBox.transform, "SubjLbl", "SUBJECT ID", 12, TextAnchor.MiddleLeft,
+            Anchored(new Vector2(0, 1), new Vector2(0, 1), new Vector2(24, -18), new Vector2(140, 20)));
+        subjLbl.fontStyle = FontStyle.Bold; subjLbl.color = CYAN;
 
-        var devConnTag = CreateText(devStatusBox.transform, "Tag", "BCI CONNECTED", 11, TextAnchor.MiddleRight,
-            Anchored(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-22, -16), new Vector2(160, 20)));
-        devConnTag.color = CYAN;
+        var subjInput = CreateInputField(configBox.transform, "SubjInput", "S01",
+            Anchored(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-24, -16), new Vector2(280, 32)));
 
-        var devStatusLine2 = CreateText(devStatusBox.transform, "L2", "SIGNAL QUALITY: 98.4% (EXCELLENT)\nMOTOR IMAGERY CALIBRATION: ACTIVE (LEFT/RIGHT)", 12, TextAnchor.UpperLeft,
-            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -18), new Vector2(476, 42)));
-        devStatusLine2.color = TEXT_MUTED;
-        devStatusLine2.lineSpacing = 1.3f;
+        // Model 선택 드롭다운
+        var modelLbl = CreateText(configBox.transform, "ModelLbl", "DECODER MODEL", 12, TextAnchor.MiddleLeft,
+            Anchored(new Vector2(0, 0), new Vector2(0, 0), new Vector2(24, 48), new Vector2(140, 20)));
+        modelLbl.fontStyle = FontStyle.Bold; modelLbl.color = CYAN;
 
-        // 시작 버튼: [ ENTER COMMAND CODES [START GAME] ]
+        var modelDd = CreateDropdown(configBox.transform, "ModelDropdown",
+            new List<string> { "1. Base Model (Standard)", "2. Fine-tuned (Mini-Check Gate)", "3. Mock / Simulation Stream" },
+            Anchored(new Vector2(1, 0), new Vector2(1, 0), new Vector2(-24, 44), new Vector2(280, 34)));
+
+        // 2종 시작 버튼
+        // 메인 버튼 1: [ START MISSION (WITH PRE-GAME CHECK) ] -> 엔터/스페이스/클릭 시 칼리브레이션 6회 후 시작
         var startBtnGo = CreatePanel(titleOverlay.transform, "StartBtn", CYAN,
-            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -130), new Vector2(460, 52)));
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -95), new Vector2(460, 48)));
         startBtnGo.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(32, 6, CYAN, Color.white, 1);
         startBtnGo.GetComponent<Image>().type = Image.Type.Sliced;
 
-        var startBtnTxt = CreateText(startBtnGo.transform, "Text", "ENTER COMMAND CODES [START GAME]", 15, TextAnchor.MiddleCenter, Stretch());
+        var startBtnTxt = CreateText(startBtnGo.transform, "Text", "START MISSION [RUN BCI CHECK]", 15, TextAnchor.MiddleCenter, Stretch());
         startBtnTxt.fontStyle = FontStyle.Bold;
         startBtnTxt.color = TEXT_DARK;
         var startBtn = startBtnGo.AddComponent<Button>();
 
-        // ── 10. 컴포넌트 배선 ──────────────────────────────────────────
+        // 보조 버튼 2: [ DIRECT START (SKIP CALIBRATION) ] -> 테스트용 건너뛰기
+        var preCheckBtnGo = CreatePanel(titleOverlay.transform, "PreCheckBtn", new Color(0.08f, 0.14f, 0.20f, 0.98f),
+            Anchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -150), new Vector2(460, 42)));
+        preCheckBtnGo.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(32, 6, new Color(0.08f, 0.14f, 0.20f, 0.98f), CYAN_DIM, 1);
+        preCheckBtnGo.GetComponent<Image>().type = Image.Type.Sliced;
+
+        var preCheckBtnTxt = CreateText(preCheckBtnGo.transform, "Text", "DIRECT START [SKIP CALIBRATION]", 13, TextAnchor.MiddleCenter, Stretch());
+        preCheckBtnTxt.fontStyle = FontStyle.Bold;
+        preCheckBtnTxt.color = TEXT_MUTED;
+        var preCheckBtn = preCheckBtnGo.AddComponent<Button>();
+
+        // ── 11. 컴포넌트 배선 ──────────────────────────────────────────
         var bci = gameObject.AddComponent<BCIClient>();
 
         var cardView = cardRoot.AddComponent<CardView>();
@@ -559,7 +671,7 @@ public class UIBootstrap : MonoBehaviour
         cardView.rightHeader = rightHeader;
         cardView.rightActionText = rightAction;
         cardView.rightSubText = rightSub;
-        cardView.rightStatusText = rightStatus;
+        cardView.rightStatusText = rightSub;
 
         var gm = gameObject.AddComponent<GameManager>();
         gm.bci = bci;
@@ -571,21 +683,38 @@ public class UIBootstrap : MonoBehaviour
         gm.ammoBar = ammoBar; gm.ammoVal = ammoVal;
         gm.defenseBar = defBar; gm.defenseVal = defVal;
         gm.moraleBar = moraleBar; gm.moraleVal = moraleVal;
+        gm.mainHUDCanvasGroup = metersCanvasGroup; // [합의 ⑤]
 
         gm.leftIntentText = leftIntent;
         gm.rightIntentText = rightIntent;
         gm.balanceSlider = balSlider;
         gm.balanceCursor = balCursor.GetComponent<RectTransform>();
 
-        // [추가] 실시간 뇌파 시각화 컴포넌트 전달
         gm.fadingCue = fadingCue;
         gm.leftEEGMonitor = leftEEG;
         gm.rightEEGMonitor = rightEEG;
 
+        // [사용자 요청 & 합의 ⑧, ⑨] Pre-Game Check UI 배선
         gm.calibrationOverlay = calibOverlay;
-        gm.calibrationCountdownText = calibCount;
-        gm.calibrationArcRect = calibArc.GetComponent<RectTransform>();
-        gm.calibrationTelemetryText = calibTelem;
+        gm.calibStepText = calibStep;
+        gm.calibInstructionText = calibInstruct;
+        gm.calibTimerText = calibTimer;
+        gm.calibCueRing = calibRing;
+        gm.calibCueArrowLeft = calibArrowL;
+        gm.calibCueArrowRight = calibArrowR;
+        gm.calibBalanceSlider = calibBalSlider;
+        gm.calibLeftIntentText = calibLeftIntent;
+        gm.calibRightIntentText = calibRightIntent;
+        gm.calibResultPanel = calibResBox;
+        gm.calibResultText = calibResTxt;
+        gm.calibStartGameButton = calibStartGameBtn;
+
+        // [합의 ④, ⑩ & ⑫(희영안)] Day 5 Rest UI 배선
+        gm.restOverlay = restOverlay;
+        gm.restTitleText = restTitle;
+        gm.restCountdownText = restCountdown;
+        gm.restSuppliesText = restSupplies;
+        gm.restResumeButton = restResumeBtn;
 
         gm.feedbackOverlay = feedbackOverlay;
         gm.feedbackActionBadge = fbBadgeText;
@@ -604,8 +733,12 @@ public class UIBootstrap : MonoBehaviour
         gm.endingFinalIntegrityText = endFinalIntegrity;
         gm.restartButton = restartBtn;
 
+        // [합의 ③] 타이틀 화면 UI 배선
         gm.titleScreen = titleOverlay;
         gm.startButton = startBtn;
+        gm.preCheckButton = preCheckBtn;
+        gm.subjectInputField = subjInput;
+        gm.modelDropdown = modelDd;
     }
 
     // ───────────────────────── 헬퍼들 ─────────────────────────
@@ -793,4 +926,84 @@ public class UIBootstrap : MonoBehaviour
         rt.anchoredPosition = pos;
         rt.sizeDelta = size;
     };
+
+    InputField CreateInputField(Transform parent, string name, string defaultVal, System.Action<RectTransform> layout)
+    {
+        var root = CreatePanel(parent, name, new Color(0.04f, 0.06f, 0.09f, 0.95f), layout);
+        root.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(16, 4, new Color(0.04f, 0.06f, 0.09f, 0.95f), CYAN_DIM, 1);
+        root.GetComponent<Image>().type = Image.Type.Sliced;
+
+        var phGo = CreateText(root.transform, "Placeholder", "Enter Subject ID...", 13, TextAnchor.MiddleLeft,
+            Anchored(new Vector2(0, 0), new Vector2(1, 1), new Vector2(10, 0), new Vector2(-20, 0)));
+        phGo.color = new Color(0.5f, 0.6f, 0.7f, 0.5f);
+
+        var textGo = CreateText(root.transform, "Text", defaultVal, 14, TextAnchor.MiddleLeft,
+            Anchored(new Vector2(0, 0), new Vector2(1, 1), new Vector2(10, 0), new Vector2(-20, 0)));
+        textGo.color = TEXT_WHITE;
+
+        var input = root.AddComponent<InputField>();
+        input.textComponent = textGo;
+        input.placeholder = phGo;
+        input.text = defaultVal;
+        return input;
+    }
+
+    Dropdown CreateDropdown(Transform parent, string name, List<string> options, System.Action<RectTransform> layout)
+    {
+        var root = CreatePanel(parent, name, new Color(0.04f, 0.06f, 0.09f, 0.95f), layout);
+        root.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(16, 4, new Color(0.04f, 0.06f, 0.09f, 0.95f), CYAN_DIM, 1);
+        root.GetComponent<Image>().type = Image.Type.Sliced;
+
+        var label = CreateText(root.transform, "Label", options.Count > 0 ? options[0] : "", 12, TextAnchor.MiddleLeft,
+            Anchored(new Vector2(0, 0), new Vector2(1, 1), new Vector2(10, 0), new Vector2(-30, 0)));
+        label.color = TEXT_WHITE;
+
+        var arrow = CreateText(root.transform, "Arrow", "▼", 10, TextAnchor.MiddleCenter,
+            Anchored(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-15, 0), new Vector2(20, 20)));
+        arrow.color = CYAN;
+
+        // 드롭다운 템플릿
+        var template = CreatePanel(root.transform, "Template", new Color(0.03f, 0.05f, 0.08f, 0.98f),
+            Anchored(new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, -2), new Vector2(0, 110)));
+        template.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1f);
+        template.GetComponent<Image>().sprite = UIAssetFactory.GetTechPanel(16, 4, new Color(0.03f, 0.05f, 0.08f, 0.98f), CYAN, 1);
+        template.GetComponent<Image>().type = Image.Type.Sliced;
+
+        var scrollRect = template.AddComponent<ScrollRect>();
+        scrollRect.horizontal = false;
+        scrollRect.movementType = ScrollRect.MovementType.Clamped;
+
+        var viewport = CreatePanel(template.transform, "Viewport", Color.clear, Stretch());
+        viewport.AddComponent<Mask>().showMaskGraphic = false;
+        scrollRect.viewport = viewport.GetComponent<RectTransform>();
+
+        var content = CreateEmpty(viewport.transform, "Content",
+            Anchored(new Vector2(0, 1), new Vector2(1, 1), Vector2.zero, new Vector2(0, options.Count * 32)));
+        content.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1f);
+        scrollRect.content = content.GetComponent<RectTransform>();
+
+        var item = CreatePanel(content.transform, "Item", Color.clear,
+            Anchored(new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, 0), new Vector2(0, 32)));
+        var itemToggle = item.AddComponent<Toggle>();
+
+        var itemText = CreateText(item.transform, "Item Text", "Option", 12, TextAnchor.MiddleLeft,
+            Anchored(new Vector2(0, 0), new Vector2(1, 1), new Vector2(10, 0), new Vector2(-10, 0)));
+        itemText.color = TEXT_WHITE;
+
+        itemToggle.targetGraphic = item.GetComponent<Image>();
+
+        template.SetActive(false);
+
+        var dropdown = root.AddComponent<Dropdown>();
+        dropdown.targetGraphic = root.GetComponent<Image>();
+        dropdown.captionText = label;
+        dropdown.template = template.GetComponent<RectTransform>();
+        dropdown.itemText = itemText;
+
+        dropdown.ClearOptions();
+        dropdown.AddOptions(options);
+        dropdown.value = 0;
+
+        return dropdown;
+    }
 }

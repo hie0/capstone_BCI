@@ -34,9 +34,9 @@ public class CardView : MonoBehaviour
     public Text rightStatusText;
 
     [Header("연출 파라미터")]
-    public float maxTiltDeg = 10f;
-    public float maxTranslateX = 60f;
-    public float followLerp = 14f;
+    public float maxTiltDeg = 6.0f;       // [합의 11] ±6° 수준으로 카드 회전 각도 제한
+    public float maxTranslateX = 15f;     // 과도한 좌우 흔들림 방지 (미세 이동)
+    public float followLerp = 9f;         // 부드러운 카드 자세 복원
     public float swipeSpeed = 2600f;
     public float swipeRotate = 25f;
 

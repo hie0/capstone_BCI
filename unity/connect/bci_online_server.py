@@ -508,52 +508,71 @@ class MockEEGStreamer:
 # Pure Dummy Streamer (머신러닝 패키지 없이도 즉시 테스트 가능한 시뮬레이터)
 # =============================================================================
 class PureDummyGenerator:
-    """가상 BCI 패킷 생성기 (초경량 모드)."""
+    """가상 BCI 패킷 생성기 (온프 neuro_feedback4_scaled.py Chae et al., 2012 Dynamic Fading 누적 이식)."""
 
     def __init__(self):
         self.phase = 0.0
-        self.level = 0
-        self.candidate = "NONE"
+        self.selection_level = 0
+        self.candidate: Optional[str] = None
+        self.last_eval_time = 0.0
+        self.eval_interval = 0.5  # 온프와 동일한 0.5초 윈도우 평가
+        self.trigger_duration = 0.0
 
     def next_packet(self, elapsed: float) -> dict:
         self.phase += 0.15
-        # 16초 주기: 0~6s LEFT, 6~8s Neutral, 8~14s RIGHT, 14~16s Neutral
+        # 16초 주기: 0~6s LEFT (~5s 집중 후 발화), 6~8s Neutral, 8~14s RIGHT (~5s 집중 후 발화), 14~16s Neutral
         cycle = elapsed % 16.0
 
         if cycle < 6.0:
-            target = 0.85
-            direction = "LEFT"
+            target = 0.78
         elif cycle < 8.0:
             target = 0.50
-            direction = "NEUTRAL"
         elif cycle < 14.0:
-            target = 0.15
-            direction = "RIGHT"
+            target = 0.22
         else:
             target = 0.50
-            direction = "NEUTRAL"
 
-        # 부드러운 노이즈
-        noise = (random.random() - 0.5) * 0.08
+        # 현실적인 뇌파 노이즈
+        noise = (random.random() - 0.5) * 0.10
         left_prob = float(np.clip(target + math.sin(self.phase) * 0.05 + noise, 0.05, 0.95))
         right_prob = 1.0 - left_prob
 
-        # Dynamic Fading Level
-        if left_prob >= 0.80 or right_prob >= 0.80:
-            self.level = 4
-            trigger = "LEFT" if left_prob >= 0.80 else "RIGHT"
-        elif left_prob >= 0.70 or right_prob >= 0.70:
-            self.level = 3
-            trigger = "NONE"
-        elif left_prob >= 0.60 or right_prob >= 0.60:
-            self.level = 2
-            trigger = "NONE"
-        elif left_prob >= 0.55 or right_prob >= 0.55:
-            self.level = 1
-            trigger = "NONE"
+        # 0.5초마다 온프 공식 Dynamic Fading 누적
+        if elapsed - self.last_eval_time >= self.eval_interval:
+            self.last_eval_time = elapsed
+
+            if left_prob >= 0.58:
+                win_pred = "LEFT"
+            elif right_prob >= 0.58:
+                win_pred = "RIGHT"
+            else:
+                win_pred = "NONE"
+
+            # 온프 누적 규칙 (Chae et al., 2012)
+            if win_pred in {"LEFT", "RIGHT"}:
+                if self.selection_level == 0:
+                    self.candidate = win_pred
+                    self.selection_level = 1
+                elif win_pred == self.candidate:
+                    self.selection_level = min(4, self.selection_level + 1)
+                else:
+                    self.selection_level = max(0, self.selection_level - 1)
+            else:
+                self.selection_level = max(0, self.selection_level - 1)
+
+        # 트리거 판정 (Level 4 도달 시에만 Trigger 발화 -> 약 4.5~5.0초 소요!)
+        trigger = "NONE"
+        if self.selection_level >= 4 and self.candidate in {"LEFT", "RIGHT"}:
+            trigger = self.candidate
+            self.trigger_duration += 0.25
+            if self.trigger_duration > 2.0:  # 2초 유지 후 초기화
+                self.selection_level = 0
+                self.candidate = None
+                self.trigger_duration = 0.0
         else:
-            self.level = 0
-            trigger = "NEUTRAL" if (0.45 <= left_prob <= 0.55) else "NONE"
+            self.trigger_duration = 0.0
+            if self.selection_level == 0 and 0.45 <= left_prob <= 0.55:
+                trigger = "NEUTRAL"
 
         c3_uV = round(7.0 + (1.0 - right_prob) * 4.0 + math.sin(self.phase * 1.5) * 1.0, 2)
         c4_uV = round(7.0 + (1.0 - left_prob) * 4.0 + math.cos(self.phase * 1.3) * 1.0, 2)
@@ -562,7 +581,7 @@ class PureDummyGenerator:
             "left_prob": round(left_prob, 3),
             "right_prob": round(right_prob, 3),
             "trigger": trigger,
-            "level": self.level,
+            "level": self.selection_level,
             "c3_uV": c3_uV,
             "c4_uV": c4_uV,
             "elapsed_sec": round(elapsed, 2),
@@ -706,6 +725,30 @@ class BCIOnlineTCPServer:
             self._server_sock = None
         print("\n[*] BCI TCP Server stopped cleanly.")
 
+    def _client_rx_loop(self, client_sock, addr):
+        buf = ""
+        while self._running:
+            try:
+                data = client_sock.recv(1024)
+                if not data:
+                    break
+                buf += data.decode("utf-8", errors="ignore")
+                while "\n" in buf:
+                    line, buf = buf.split("\n", 1)
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        msg = json.loads(line)
+                        if msg.get("type") == "handshake":
+                            subj = msg.get("subject", "Unknown")
+                            model = msg.get("model", "Default")
+                            print(f"\n[Handshake] Unity Client Session Handshake: Subject={subj}, Model={model}")
+                    except Exception:
+                        pass
+            except Exception:
+                break
+
     def _accept_loop(self):
         while self._running:
             try:
@@ -713,6 +756,7 @@ class BCIOnlineTCPServer:
                 with self._clients_lock:
                     self._clients.append(client_sock)
                 print(f"\n[+] Unity Connected from {addr[0]}:{addr[1]}")
+                threading.Thread(target=self._client_rx_loop, args=(client_sock, addr), daemon=True).start()
             except socket.timeout:
                 continue
             except Exception as e:
@@ -754,6 +798,11 @@ class BCIOnlineTCPServer:
             last_stream_sample = self.runtime.sample_count
             print("[*] Stream ready! Starting real-time classification broadcast.\n")
 
+        last_fading_eval_time = 0.0
+        current_level = 0
+        current_candidate = None
+        current_trigger = "NONE"
+
         while self._running:
             tick_start = time.time()
             elapsed = time.time() - start_time
@@ -776,8 +825,13 @@ class BCIOnlineTCPServer:
                         right_prob = float(np.clip(right_prob, 0.01, 0.99))
                         left_prob = 1.0 - right_prob
 
-                        # Dynamic Fading 누적
-                        level, candidate, trigger = self.fading_tracker.update(direction)
+                        # [온프 동기화] 0.5초 단위 윈도우에서만 Fading Tracker 누적 갱신
+                        if elapsed - last_fading_eval_time >= 0.5:
+                            last_fading_eval_time = elapsed
+                            current_level, current_candidate, current_trigger = self.fading_tracker.update(direction)
+                            if current_level >= 4:
+                                # 트리거 달성 후 2초간 유지 후 리셋
+                                pass
 
                         # C3, C4 실시간 전압 추출
                         segment = self.runtime.get_processed_segment(current_sample - 25, 25, timeout=0.2)
@@ -786,8 +840,8 @@ class BCIOnlineTCPServer:
                         packet = {
                             "left_prob": round(left_prob, 3),
                             "right_prob": round(right_prob, 3),
-                            "trigger": trigger,
-                            "level": level,
+                            "trigger": current_trigger,
+                            "level": current_level,
                             "c3_uV": c3_uV,
                             "c4_uV": c4_uV,
                             "elapsed_sec": round(elapsed, 2),
