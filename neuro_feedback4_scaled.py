@@ -138,6 +138,14 @@ def parse_arguments():
             f"[{THRESHOLD_MIN:.2f}, {THRESHOLD_MAX:.2f}]."
         ),
     )
+    parser.add_argument(
+        "--allow-low-quality-new",
+        action="store_true",
+        help=(
+            "Keep requested NEW blocks even when today's NEW classifier fails "
+            "the OOF quality gate. A warning is still displayed and logged."
+        ),
+    )
     args = parser.parse_args()
 
     if args.fixed_threshold is not None and args.fixed_model is None:
@@ -1554,10 +1562,13 @@ class OnlineTestUI:
         new_oof_ba: float,
         new_quality_gate_passed: bool,
         new_quality_gate_reason: str,
+        allow_low_quality_new: bool,
         main_order_text: str,
     ):
         gate_text = "PASS" if new_quality_gate_passed else f"FAIL ({new_quality_gate_reason})"
         fallback_text = "" if new_quality_gate_passed else "\nNEW 차단 → NEW 블록은 OLD로 자동 대체"
+        if not new_quality_gate_passed and allow_low_quality_new:
+            fallback_text = "\nWARNING: 품질 미달 NEW 허요 옵션 → NEW 블록 유지"
         self.calibration_summary_text.text = (
             "Calibration 완료\n\n"
             f"Offline threshold : {offline_threshold:.4f}\n"
@@ -1771,6 +1782,7 @@ def main():
     print(f"Requested order      : {' -> '.join(requested_model_order)}")
     print(f"Fixed model          : {args.fixed_model or 'none'}")
     print(f"Fixed threshold      : {args.fixed_threshold if args.fixed_threshold is not None else 'none'}")
+    print(f"Allow low-quality NEW: {args.allow_low_quality_new}")
     print(f"Threshold guardrail  : [{THRESHOLD_MIN:.2f}, {THRESHOLD_MAX:.2f}]")
     print(f"NEW quality gate     : OOF AUC >= {NEW_MIN_OOF_AUC:.2f}, OOF BA >= {NEW_MIN_OOF_BALANCED_ACCURACY:.2f}, both directions")
     print("Old threshold choice : Offline vs 40:60 Applied (higher calibration BA)")
@@ -1946,9 +1958,13 @@ def main():
                 new_choice["source"] = "cli_fixed"
                 new_choice["metrics"] = threshold_metrics(y_binary, new_oof_prob, new_selected_threshold)
 
-            # NEW is never used when today's grouped OOF result is unreliable.
-            # This also protects --fixed-model NEW: safety takes precedence.
-            if not new_choice["quality_gate_passed"]:
+            # Default safety: replace unreliable NEW blocks with OLD.  Researchers
+            # may explicitly retain them for a diagnostic comparison with
+            # --allow-low-quality-new; the failed gate is still shown and logged.
+            if (
+                not new_choice["quality_gate_passed"]
+                and not args.allow_low_quality_new
+            ):
                 main_model_order = ["OLD" if mode == "NEW" else mode for mode in main_model_order]
 
             clipping_diag = runtime.clipping_exceedance_fraction(X_cal)
@@ -2000,6 +2016,7 @@ def main():
                     "old_probability_mean", "old_probability_std",
                     "new_oof_probability_mean", "new_oof_probability_std",
                     "requested_order", "applied_order", "fixed_model", "fixed_threshold",
+                    "allow_low_quality_new",
                 ]
                 sw = csv.DictWriter(f, fieldnames=fields)
                 sw.writeheader()
@@ -2048,6 +2065,7 @@ def main():
                     "applied_order": "->".join(main_model_order),
                     "fixed_model": args.fixed_model or "",
                     "fixed_threshold": "" if args.fixed_threshold is None else f"{args.fixed_threshold:.8f}",
+                    "allow_low_quality_new": int(args.allow_low_quality_new),
                 })
 
             print("\n" + "=" * 84)
@@ -2075,6 +2093,7 @@ def main():
                 new_choice["oof_balanced_accuracy"],
                 new_choice["quality_gate_passed"],
                 new_choice["quality_gate_reason"],
+                args.allow_low_quality_new,
                 " -> ".join(main_model_order),
             )
 
