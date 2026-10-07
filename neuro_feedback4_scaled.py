@@ -80,6 +80,15 @@ MAX_PREDICTIONS = int(MAX_CLASSIFICATION_DURATION / CLASSIFICATION_WINDOW)  # 30
 RESULT_DISPLAY_DURATION = 1.0
 FINAL_RESULT_DURATION = 5.0
 
+# Threshold and daily-model safety rules agreed after the 2026-10-06 test.
+THRESHOLD_MIN = 0.35
+THRESHOLD_MAX = 0.65
+# Team-wide minimum safety gate from the 2026-10-06 protocol review.
+# These are not participant-specific performance targets.  A participant may
+# adopt a stricter criterion (for example 0.60) during later model selection.
+NEW_MIN_OOF_AUC = 0.55
+NEW_MIN_OOF_BALANCED_ACCURACY = 0.55
+
 
 
 class ExperimentAbort(Exception):
@@ -106,7 +115,51 @@ def parse_arguments():
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--screen", type=int, default=0)
     parser.add_argument("--windowed", action="store_true")
-    return parser.parse_args()
+    parser.add_argument(
+        "--order",
+        default=",".join(MAIN_MODEL_ORDER),
+        help=(
+            "Four comma-separated 10-trial block models, for example "
+            "NEW,OLD,NEW,OLD or OLD,NEW,OLD,NEW."
+        ),
+    )
+    parser.add_argument(
+        "--fixed-model",
+        choices=("OLD", "NEW", "old", "new"),
+        default=None,
+        help="Use only OLD or only NEW for all four main-test blocks.",
+    )
+    parser.add_argument(
+        "--fixed-threshold",
+        type=float,
+        default=None,
+        help=(
+            "Force the threshold for --fixed-model. The value must be within "
+            f"[{THRESHOLD_MIN:.2f}, {THRESHOLD_MAX:.2f}]."
+        ),
+    )
+    args = parser.parse_args()
+
+    if args.fixed_threshold is not None and args.fixed_model is None:
+        parser.error("--fixed-threshold requires --fixed-model OLD or NEW.")
+    if args.fixed_threshold is not None and not (
+        THRESHOLD_MIN <= args.fixed_threshold <= THRESHOLD_MAX
+    ):
+        parser.error(
+            f"--fixed-threshold must be within [{THRESHOLD_MIN}, {THRESHOLD_MAX}]."
+        )
+
+    if args.fixed_model is not None:
+        args.fixed_model = args.fixed_model.upper()
+        args.model_order = [args.fixed_model] * (N_TRIALS // BLOCK_REST_INTERVAL)
+    else:
+        args.model_order = [item.strip().upper() for item in args.order.split(",")]
+        expected_blocks = N_TRIALS // BLOCK_REST_INTERVAL
+        if len(args.model_order) != expected_blocks:
+            parser.error(f"--order must contain exactly {expected_blocks} block names.")
+        if any(item not in {"NEW", "OLD"} for item in args.model_order):
+            parser.error("--order may contain only NEW and OLD.")
+    return args
 
 
 # =============================================================================
@@ -147,8 +200,10 @@ def find_best_balanced_threshold(
     y_true: np.ndarray,
     prob_right: np.ndarray,
     reference_threshold: float,
+    min_bound: float = THRESHOLD_MIN,
+    max_bound: float = THRESHOLD_MAX,
 ) -> tuple[float, dict]:
-    """Maximize balanced accuracy; ties go to the reference threshold."""
+    """Maximize BA inside a safe interval; never escape to all-one extremes."""
     y_true = np.asarray(y_true, dtype=int)
     prob_right = np.asarray(prob_right, dtype=float)
     if set(np.unique(y_true)) != {0, 1}:
@@ -156,25 +211,28 @@ def find_best_balanced_threshold(
     if not np.isfinite(prob_right).all():
         raise ValueError("P(RIGHT) contains NaN/Inf.")
 
+    if not (0.0 <= min_bound < max_bound <= 1.0):
+        raise ValueError("Invalid threshold guardrail bounds.")
+
+    reference_metrics = threshold_metrics(y_true, prob_right, float(reference_threshold))
+    # Crucial: judge the calibration at the original reference before searching.
+    # Otherwise an all-LEFT/all-RIGHT threshold with BA=0.50 can look like an
+    # improvement over a poor reference BA and recreate the wall-riding failure.
+    if reference_metrics["balanced_accuracy"] < 0.50:
+        return float(reference_threshold), reference_metrics
+
+    safe_reference = float(np.clip(reference_threshold, min_bound, max_bound))
     unique_scores = np.unique(prob_right)
     midpoints = (unique_scores[:-1] + unique_scores[1:]) / 2.0
-    candidates = np.unique(
-        np.clip(
-            np.concatenate([
-                np.asarray([0.0, 1.0, float(reference_threshold)]),
-                midpoints,
-            ]),
-            0.0,
-            1.0,
-        )
-    )
+    in_bounds = midpoints[(midpoints >= min_bound) & (midpoints <= max_bound)]
+    candidates = np.unique(np.concatenate([[safe_reference], in_bounds]))
 
-    best_threshold = float(reference_threshold)
+    best_threshold = safe_reference
     best_metrics = threshold_metrics(y_true, prob_right, best_threshold)
     best_distance = 0.0
     for threshold in candidates:
         metrics = threshold_metrics(y_true, prob_right, float(threshold))
-        distance = abs(float(threshold) - float(reference_threshold))
+        distance = abs(float(threshold) - safe_reference)
         if (
             metrics["balanced_accuracy"] > best_metrics["balanced_accuracy"] + 1e-12
             or (
@@ -185,6 +243,11 @@ def find_best_balanced_threshold(
             best_threshold = float(threshold)
             best_metrics = metrics
             best_distance = distance
+    # When even the best safe threshold is below chance, threshold tuning has
+    # no evidence of useful separation. Keep the reference instead.
+    if best_metrics["balanced_accuracy"] < 0.50:
+        fallback = float(reference_threshold)
+        return fallback, threshold_metrics(y_true, prob_right, fallback)
     return best_threshold, best_metrics
 
 
@@ -501,6 +564,22 @@ class BundleRuntime:
 
     def pipeline_summary(self) -> str:
         return self.pipeline_description
+
+    def clipping_exceedance_fraction(self, epochs: np.ndarray) -> dict:
+        """Describe how much input lies outside the joblib's stored clip bounds."""
+        if not self.clip_enabled:
+            return {"below": float("nan"), "above": float("nan"), "total": float("nan")}
+        x = np.asarray(epochs, dtype=np.float64)
+        if x.ndim != 3 or x.shape[1] != len(self.selected_channels):
+            raise ValueError(
+                "Clipping diagnostics expect (epochs, selected_channels, samples), "
+                f"got {x.shape}."
+            )
+        lower = self.clip_lower[None, :, None]
+        upper = self.clip_upper[None, :, None]
+        below = float(np.mean(x < lower))
+        above = float(np.mean(x > upper))
+        return {"below": below, "above": above, "total": below + above}
 
     # ------------------------------------------------------------------
     # Live continuous preprocessing
@@ -1010,17 +1089,27 @@ def select_old_threshold(
     applied_40_60 = float(np.clip(
         ORIGINAL_THRESHOLD_WEIGHT * offline_threshold
         + CALIBRATION_THRESHOLD_WEIGHT * calibration_opt,
-        0.0,
-        1.0,
+        THRESHOLD_MIN,
+        THRESHOLD_MAX,
     ))
-    choice = choose_between_thresholds(
-        labels,
-        old_prob,
-        offline_threshold,
-        "offline",
-        applied_40_60,
-        "40:60_applied",
-    )
+    if calibration_opt_metrics["balanced_accuracy"] < 0.50:
+        offline_metrics = threshold_metrics(labels, old_prob, offline_threshold)
+        choice = {
+            "threshold": float(offline_threshold),
+            "source": "offline_fallback_calibration_below_chance",
+            "metrics": offline_metrics,
+            "candidate_a": offline_metrics,
+            "candidate_b": threshold_metrics(labels, old_prob, applied_40_60),
+        }
+    else:
+        choice = choose_between_thresholds(
+            labels,
+            old_prob,
+            offline_threshold,
+            "offline",
+            applied_40_60,
+            "40:60_applied",
+        )
     choice["calibration_optimal_threshold"] = float(calibration_opt)
     choice["calibration_optimal_metrics"] = calibration_opt_metrics
     choice["applied_40_60_threshold"] = float(applied_40_60)
@@ -1040,6 +1129,19 @@ def select_new_threshold(labels: np.ndarray, new_oof_prob: np.ndarray) -> dict:
     choice["oof_optimal_threshold"] = float(oof_opt)
     choice["oof_optimal_metrics"] = oof_opt_metrics
     choice["oof_auc"] = float(roc_auc_score(labels, new_oof_prob))
+    selected_pred = (np.asarray(new_oof_prob) >= float(choice["threshold"])).astype(int)
+    choice["oof_balanced_accuracy"] = float(choice["metrics"]["balanced_accuracy"])
+    choice["oof_left_predictions"] = int(np.sum(selected_pred == 0))
+    choice["oof_right_predictions"] = int(np.sum(selected_pred == 1))
+    failures = []
+    if choice["oof_auc"] < NEW_MIN_OOF_AUC:
+        failures.append(f"AUC<{NEW_MIN_OOF_AUC:.2f}")
+    if choice["oof_balanced_accuracy"] < NEW_MIN_OOF_BALANCED_ACCURACY:
+        failures.append(f"BA<{NEW_MIN_OOF_BALANCED_ACCURACY:.2f}")
+    if choice["oof_left_predictions"] == 0 or choice["oof_right_predictions"] == 0:
+        failures.append("one_direction_only")
+    choice["quality_gate_passed"] = not failures
+    choice["quality_gate_reason"] = "passed" if not failures else ";".join(failures)
     return choice
 
 
@@ -1062,7 +1164,13 @@ def build_output_paths(args):
     log_path = output_dir / f"{session_name}_online_trial_log.csv"
     calibration_log_path = output_dir / f"{session_name}_calibration_trial_log.csv"
     calibration_summary_path = output_dir / f"{session_name}_calibration_summary.csv"
-    return output_dir, eeg_base, log_path, calibration_log_path, calibration_summary_path
+    return (
+        output_dir,
+        eeg_base,
+        log_path,
+        calibration_log_path,
+        calibration_summary_path,
+    )
 
 
 def check_escape():
@@ -1443,14 +1551,20 @@ class OnlineTestUI:
         new_selected_threshold: float,
         new_threshold_source: str,
         new_oof_auc: float,
+        new_oof_ba: float,
+        new_quality_gate_passed: bool,
+        new_quality_gate_reason: str,
         main_order_text: str,
     ):
+        gate_text = "PASS" if new_quality_gate_passed else f"FAIL ({new_quality_gate_reason})"
+        fallback_text = "" if new_quality_gate_passed else "\nNEW 차단 → NEW 블록은 OLD로 자동 대체"
         self.calibration_summary_text.text = (
             "Calibration 완료\n\n"
             f"Offline threshold : {offline_threshold:.4f}\n"
             f"Old threshold : {old_selected_threshold:.4f} ({old_threshold_source})\n"
             f"New threshold : {new_selected_threshold:.4f} ({new_threshold_source})\n"
-            f"New OOF AUC : {new_oof_auc:.3f}\n"
+            f"New OOF AUC / BA : {new_oof_auc:.3f} / {new_oof_ba:.3f}\n"
+            f"New quality gate : {gate_text}{fallback_text}\n"
             f"Main order : {main_order_text}\n\n"
             f"SPACE : {N_TRIALS}-trial 본 실험 시작\n"
             "ESC : 종료"
@@ -1613,7 +1727,8 @@ def main():
     calibration_schedule = make_balanced_target_schedule(
         CALIBRATION_TRIALS, CALIBRATION_BLOCK_SIZE, seed=calibration_seed
     )
-    main_model_order = list(MAIN_MODEL_ORDER)
+    requested_model_order = list(args.model_order)
+    main_model_order = list(requested_model_order)
 
     model_path, bundle = load_bundle(subject, args.model_file, args.model_dir)
     runtime = BundleRuntime(bundle)
@@ -1624,13 +1739,19 @@ def main():
     if calibration_predictions * CLASSIFICATION_WINDOW != CALIBRATION_MI_DURATION:
         raise ValueError("Calibration MI duration must divide exactly into 0.5-s windows.")
 
-    output_dir, eeg_base, log_path, calibration_log_path, calibration_summary_path = build_output_paths(args)
+    (
+        output_dir,
+        eeg_base,
+        log_path,
+        calibration_log_path,
+        calibration_summary_path,
+    ) = build_output_paths(args)
     for p in (log_path, calibration_log_path, calibration_summary_path):
         if p.exists():
             raise FileExistsError(f"{p} exists. Use a different -f name or --timestamp.")
 
     print("=" * 84)
-    print("NEW/OLD DYNAMIC FADING MOTOR IMAGERY BCI TEST (FIXED NEW -> OLD -> NEW -> OLD)")
+    print("SAFE NEW/OLD DYNAMIC FADING MOTOR IMAGERY BCI TEST")
     print("=" * 84)
     print(f"Subject              : {subject}")
     print(f"Model                : {model_path}")
@@ -1647,7 +1768,11 @@ def main():
     print(f"Calibration          : {CALIBRATION_TRIALS} trials x 3.0 s -> 120 x 0.5-s windows")
     print(f"Calibration OOF      : {CALIBRATION_OOF_FOLDS}-fold, grouped by trial")
     print(f"Main                 : {N_TRIALS} trials = 4 blocks x 10")
-    print(f"Main model order     : {' -> '.join(main_model_order)}")
+    print(f"Requested order      : {' -> '.join(requested_model_order)}")
+    print(f"Fixed model          : {args.fixed_model or 'none'}")
+    print(f"Fixed threshold      : {args.fixed_threshold if args.fixed_threshold is not None else 'none'}")
+    print(f"Threshold guardrail  : [{THRESHOLD_MIN:.2f}, {THRESHOLD_MAX:.2f}]")
+    print(f"NEW quality gate     : OOF AUC >= {NEW_MIN_OOF_AUC:.2f}, OOF BA >= {NEW_MIN_OOF_BALANCED_ACCURACY:.2f}, both directions")
     print("Old threshold choice : Offline vs 40:60 Applied (higher calibration BA)")
     print("New threshold choice : 0.5 vs Calibration OOF optimal (higher OOF BA)")
     print("=" * 84)
@@ -1687,6 +1812,7 @@ def main():
         "subject", "trial", "block", "model_mode", "target_direction",
         "threshold_used", "threshold_source",
         "offline_threshold", "old_selected_threshold", "new_selected_threshold",
+        "new_quality_gate_passed", "new_quality_gate_reason",
         "prediction_sequence", "predicted_label_sequence", "right_probability_sequence",
         "selection_level_sequence", "candidate_sequence",
         "initial_candidate_decision", "candidate_decision", "final_decision",
@@ -1808,6 +1934,31 @@ def main():
             old_selected_threshold = float(old_choice["threshold"])
             new_selected_threshold = float(new_choice["threshold"])
 
+            # A fixed threshold applies only to the explicitly fixed model.
+            if args.fixed_threshold is not None and args.fixed_model == "OLD":
+                old_selected_threshold = float(args.fixed_threshold)
+                old_choice["threshold"] = old_selected_threshold
+                old_choice["source"] = "cli_fixed"
+                old_choice["metrics"] = threshold_metrics(y_binary, old_prob, old_selected_threshold)
+            elif args.fixed_threshold is not None and args.fixed_model == "NEW":
+                new_selected_threshold = float(args.fixed_threshold)
+                new_choice["threshold"] = new_selected_threshold
+                new_choice["source"] = "cli_fixed"
+                new_choice["metrics"] = threshold_metrics(y_binary, new_oof_prob, new_selected_threshold)
+
+            # NEW is never used when today's grouped OOF result is unreliable.
+            # This also protects --fixed-model NEW: safety takes precedence.
+            if not new_choice["quality_gate_passed"]:
+                main_model_order = ["OLD" if mode == "NEW" else mode for mode in main_model_order]
+
+            clipping_diag = runtime.clipping_exceedance_fraction(X_cal)
+            feature_diag = {
+                "mean": float(np.mean(calibration_features)),
+                "std": float(np.std(calibration_features)),
+                "min": float(np.min(calibration_features)),
+                "max": float(np.max(calibration_features)),
+            }
+
             # Per-trial calibration log (probability sequences are 6 windows/trial).
             for meta in calibration_trial_metadata:
                 tid = int(meta["trial"])
@@ -1840,7 +1991,15 @@ def main():
                     "new_oof_auc", "new_oof_optimal_threshold",
                     "new_ba_at_0.5", "new_ba_oof_optimal",
                     "new_selected_threshold", "new_threshold_source",
-                    "main_order",
+                    "new_oof_selected_ba", "new_oof_left_predictions", "new_oof_right_predictions",
+                    "new_quality_gate_passed", "new_quality_gate_reason",
+                    "threshold_guardrail_min", "threshold_guardrail_max",
+                    "calibration_clip_below_fraction", "calibration_clip_above_fraction",
+                    "calibration_clip_total_fraction", "calibration_feature_mean",
+                    "calibration_feature_std", "calibration_feature_min", "calibration_feature_max",
+                    "old_probability_mean", "old_probability_std",
+                    "new_oof_probability_mean", "new_oof_probability_std",
+                    "requested_order", "applied_order", "fixed_model", "fixed_threshold",
                 ]
                 sw = csv.DictWriter(f, fieldnames=fields)
                 sw.writeheader()
@@ -1867,7 +2026,28 @@ def main():
                     "new_ba_oof_optimal": f"{new_choice['candidate_b']['balanced_accuracy']:.8f}",
                     "new_selected_threshold": f"{new_selected_threshold:.8f}",
                     "new_threshold_source": new_choice["source"],
-                    "main_order": "->".join(main_model_order),
+                    "new_oof_selected_ba": f"{new_choice['oof_balanced_accuracy']:.8f}",
+                    "new_oof_left_predictions": new_choice["oof_left_predictions"],
+                    "new_oof_right_predictions": new_choice["oof_right_predictions"],
+                    "new_quality_gate_passed": int(new_choice["quality_gate_passed"]),
+                    "new_quality_gate_reason": new_choice["quality_gate_reason"],
+                    "threshold_guardrail_min": f"{THRESHOLD_MIN:.8f}",
+                    "threshold_guardrail_max": f"{THRESHOLD_MAX:.8f}",
+                    "calibration_clip_below_fraction": f"{clipping_diag['below']:.8f}",
+                    "calibration_clip_above_fraction": f"{clipping_diag['above']:.8f}",
+                    "calibration_clip_total_fraction": f"{clipping_diag['total']:.8f}",
+                    "calibration_feature_mean": f"{feature_diag['mean']:.8f}",
+                    "calibration_feature_std": f"{feature_diag['std']:.8f}",
+                    "calibration_feature_min": f"{feature_diag['min']:.8f}",
+                    "calibration_feature_max": f"{feature_diag['max']:.8f}",
+                    "old_probability_mean": f"{float(np.mean(old_prob)):.8f}",
+                    "old_probability_std": f"{float(np.std(old_prob)):.8f}",
+                    "new_oof_probability_mean": f"{float(np.mean(new_oof_prob)):.8f}",
+                    "new_oof_probability_std": f"{float(np.std(new_oof_prob)):.8f}",
+                    "requested_order": "->".join(requested_model_order),
+                    "applied_order": "->".join(main_model_order),
+                    "fixed_model": args.fixed_model or "",
+                    "fixed_threshold": "" if args.fixed_threshold is None else f"{args.fixed_threshold:.8f}",
                 })
 
             print("\n" + "=" * 84)
@@ -1880,7 +2060,9 @@ def main():
             print(f"NEW OOF optimal             : {new_choice['oof_optimal_threshold']:.6f} | OOF BA={new_choice['candidate_b']['balanced_accuracy']:.4f}")
             print(f"NEW OOF AUC                 : {new_choice['oof_auc']:.4f}")
             print(f"NEW selected                : {new_selected_threshold:.6f} ({new_choice['source']})")
-            print(f"Main order                  : {' -> '.join(main_model_order)}")
+            print(f"NEW quality gate            : {'PASS' if new_choice['quality_gate_passed'] else 'FAIL'} ({new_choice['quality_gate_reason']})")
+            print(f"Requested order             : {' -> '.join(requested_model_order)}")
+            print(f"Applied order               : {' -> '.join(main_model_order)}")
             print("=" * 84)
 
             ui.show_calibration_summary(
@@ -1890,6 +2072,9 @@ def main():
                 new_selected_threshold,
                 new_choice["source"],
                 new_choice["oof_auc"],
+                new_choice["oof_balanced_accuracy"],
+                new_choice["quality_gate_passed"],
+                new_choice["quality_gate_reason"],
                 " -> ".join(main_model_order),
             )
 
@@ -2001,6 +2186,8 @@ def main():
                     "offline_threshold": f"{offline_threshold:.8f}",
                     "old_selected_threshold": f"{old_selected_threshold:.8f}",
                     "new_selected_threshold": f"{new_selected_threshold:.8f}",
+                    "new_quality_gate_passed": int(new_choice["quality_gate_passed"]),
+                    "new_quality_gate_reason": new_choice["quality_gate_reason"],
                     "prediction_sequence": ",".join(prediction_sequence),
                     "predicted_label_sequence": ",".join(predicted_label_sequence),
                     "right_probability_sequence": ",".join(probability_sequence),
