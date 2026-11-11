@@ -5,7 +5,7 @@
 - **실행:** `cd website && npm ci && npm run dev`
 - **빌드:** `cd website && npm run build`
 - **공유 사이트:** GitHub Pages 배포 후 `https://hie0.github.io/capstone_BCI/`
-- **배포 준비:** Settings → Pages → Source → GitHub Actions 선택. main의 웹사이트 변경을 push하면 자동 빌드합니다.
+- **배포 준비:** Settings → Pages → Source → GitHub Actions 선택. game의 웹사이트 변경을 push하면 자동 빌드합니다.
 - **구현/데이터 출처/미연결 항목:** [웹사이트 README](website/README.md)
 - **화면 미리보기:** [Smart Home](website/tests/artifacts/smart-home-1440.png) · [Wearable](website/tests/artifacts/wearable-3d-1440.png)
 

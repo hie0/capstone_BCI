@@ -1,7 +1,7 @@
 name: Deploy NEUROLINK to GitHub Pages
 on:
   push:
-    branches: [main]
+    branches: [game]
     paths:
       - 'website/**'
       - '.github/workflows/pages.yml'

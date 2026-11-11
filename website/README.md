@@ -72,7 +72,7 @@ HashRouter와 Vite `base: './'`를 사용하므로 저장소 서브경로에서�
 저장소 루트 `.github/workflows/pages.yml`이 `website/`에서 의존성 설치와 빌드를 수행하고 **website/dist만** 배포합니다.
 
 1. GitHub 저장소 Settings → Pages → Build and deployment → Source를 **GitHub Actions**로 설정합니다.
-2. main 브랜치에 웹사이트 변경을 push하거나 Actions → Deploy NEUROLINK to GitHub Pages → Run workflow를 실행합니다.
+2. game 브랜치에 웹사이트 변경을 push하거나 Actions → Deploy NEUROLINK to GitHub Pages → Run workflow에서 game을 선택해 실행합니다.
 3. 배포 성공 후 Pages에 표시되는 주소로 접속합니다. 예상 주소: `https://hie0.github.io/capstone_BCI/` (배포 전에는 접속되지 않을 수 있음).
 
 루트의 기존 Python 모델과 Unity 프로젝트는 사이트 빌드에 포함하지 않습니다. `node_modules`, 연구 데이터, 모델 파일을 사이트 배포물에 복사하지 않습니다.
