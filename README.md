@@ -1,3 +1,20 @@
+# MI-BCI Interactive Research Website
+
+운동 상상 EEG 연구를 소개하고 스마트홈 및 웨어러블 BCI를 직접 체험하는 웹사이트를 `website/`에 추가했습니다.
+
+- **실행:** `cd website && npm ci && npm run dev`
+- **빌드:** `cd website && npm run build`
+- **공유 사이트:** GitHub Pages 배포 후 `https://hie0.github.io/capstone_BCI/`
+- **배포 준비:** Settings → Pages → Source → GitHub Actions 선택. main의 웹사이트 변경을 push하면 자동 빌드합니다.
+- **구현/데이터 출처/미연결 항목:** [웹사이트 README](website/README.md)
+- **화면 미리보기:** [Smart Home](website/tests/artifacts/smart-home-1440.png) · [Wearable](website/tests/artifacts/wearable-3d-1440.png)
+
+연구 결과와 합성 데모를 구분하여 표시합니다. 실제 EEG·모델·장비는 미연결이며 7채널은 검증 전 콘셉트입니다. 기존 Python/Unity 파일은 별도로 유지합니다.
+
+---
+
+## 기존 프로젝트 문서
+
 # 캡스톤 디자인 주제 
 
 ## 1. 주제
