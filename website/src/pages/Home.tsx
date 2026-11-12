@@ -10,7 +10,8 @@ import {
   Scan,
   House,
 } from "lucide-react";
-import { Brain, Scene, Atlas2D } from "../components/Scenes";
+import { Scene, Atlas2D } from "../components/Scenes";
+import { HeroBust } from "../components/HeroBust";
 import { ResultChart } from "../components/Comparison";
 export function Pipeline() {
   return (
@@ -84,25 +85,9 @@ export default function Home() {
                 />
               }
             >
-              <Brain selected={selected} onSelect={setSelected} />
+              <HeroBust selected={selected} onSelect={setSelected} />
             </Scene>
           </div>
-          <div className="brain-label">
-            <i className="status-dot" /> SENSORIMOTOR NETWORK
-            <small>F3 · F4 · C3 · Cz · C4</small>
-          </div>
-          <div className="floating-stat">
-            <span>OPTIMIZED CHANNELS</span>
-            <strong>
-              16 <ArrowRight size={22} /> <b>5–7</b>
-            </strong>
-            <small>가능성을 남기고, 복잡함을 줄이다</small>
-          </div>
-          <span className="visual-coordinate">
-            CONCEPTUAL EEG VISUALIZATION
-            <br />
-            DRAG TO EXPLORE ↗
-          </span>
         </div>
       </section>
       <section className="container metrics">
