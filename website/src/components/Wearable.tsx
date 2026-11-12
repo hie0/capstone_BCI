@@ -219,11 +219,9 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
               <td>{count * count}</td>
             </tr>
             <tr>
-              <td>온라인 사후 재분석 · TTA 적용 BA</td>
-              <td>70.11%</td>
-              <td colSpan={2}>
-                Low-channel 통합 74.66% · 5ch/7ch 개별 값 미제공
-              </td>
+              <td>온라인 50세션 · 영점조절 적용 BA</td>
+              <td>54.50%</td>
+              <td colSpan={2}>5~7ch + 영점조절 74.71% · 3,910회 전수 실증</td>
             </tr>
             <tr>
               <td>웨어러블 가능성</td>

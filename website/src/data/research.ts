@@ -63,10 +63,82 @@ export const channelInfo = (name: string) =>
                 ? "측두부 · 측두근 근전도 영향을 고려해야 합니다."
                 : "전두·두정 주변 영역 · 보조 채널의 기여는 피험자별로 다를 수 있습니다.";
 export const comparison = [
-  { name: "16ch", ba: 69.28, channels: "16ch", tta: false },
-  { name: "16ch + TTA", ba: 70.11, channels: "16ch", tta: true },
-  { name: "Low-ch", ba: 72.09, channels: "low", tta: false },
-  { name: "Low-ch + TTA", ba: 74.66, channels: "low", tta: true },
+  { name: "Offline 4인", ba: 76.06, channels: "low", tta: true },
+  { name: "Online 18", ba: 75.7, channels: "low", tta: true },
+  { name: "Online 32", ba: 74.15, channels: "low", tta: true },
+  { name: "Online 50", ba: 74.71, channels: "low", tta: true },
+];
+export type SubjectResult = {
+  id: "WMJ" | "KGE" | "OYJ" | "KHY";
+  name: string;
+  sessions: string;
+  trials: number;
+  channels: "5ch" | "7ch";
+  model: string;
+  baselineBA: number;
+  proposedBA: number;
+  baselineAUC: number;
+  proposedAUC: number;
+  ceilingBA: number;
+  ceilingAUC: number;
+};
+export const subjectResults: SubjectResult[] = [
+  {
+    id: "WMJ",
+    name: "우민지",
+    sessions: "5개 런",
+    trials: 400,
+    channels: "7ch",
+    model: "Reg-CSP + LDA",
+    baselineBA: 77.1,
+    proposedBA: 83.33,
+    baselineAUC: 0.8512,
+    proposedAUC: 0.9022,
+    ceilingBA: 89.5,
+    ceilingAUC: 0.95,
+  },
+  {
+    id: "KGE",
+    name: "강고은",
+    sessions: "4개 런",
+    trials: 320,
+    channels: "5ch",
+    model: "Riemann TS + SVC",
+    baselineBA: 70,
+    proposedBA: 78.43,
+    baselineAUC: 0.7512,
+    proposedAUC: 0.8252,
+    ceilingBA: 81.25,
+    ceilingAUC: 0.865,
+  },
+  {
+    id: "OYJ",
+    name: "오예진",
+    sessions: "5개 런",
+    trials: 400,
+    channels: "5ch",
+    model: "Hybrid TS+CSP",
+    baselineBA: 68,
+    proposedBA: 75.82,
+    baselineAUC: 0.742,
+    proposedAUC: 0.8123,
+    ceilingBA: 78.5,
+    ceilingAUC: 0.841,
+  },
+  {
+    id: "KHY",
+    name: "김희영",
+    sessions: "4개 런",
+    trials: 320,
+    channels: "7ch",
+    model: "Ensure-SPD + TS",
+    baselineBA: 58,
+    proposedBA: 66.65,
+    baselineAUC: 0.611,
+    proposedAUC: 0.7003,
+    ceilingBA: 72.7,
+    ceilingAUC: 0.7825,
+  },
 ];
 export const sourceNote =
-  "출처: 사용자 제공 캡스톤 개발 요청서의 보고서 요약값. 온라인 50세션 사후 재분석 평균이며 현장 라이브 평가와 다른 조건입니다. 개별 피험자·5ch/7ch별 성능은 제공되지 않았습니다.";
+  "출처: 2026 캡스톤 최종발표자료 완성본. LOSO는 4인 18개 런·1,440회 평가이며, 온라인 50세션(3,910회) 결과와 평가 조건이 다릅니다.";

@@ -2488,3 +2488,732 @@ td:first-child {
   overflow: hidden;
   padding: 0;
 }
+
+/* Clinical Blue & Sage design system */
+:root {
+  color-scheme: light;
+  color: #263746;
+  background: #f5f7fa;
+  --background: #f5f7fa;
+  --surface: #ffffff;
+  --surface-secondary: #eaf0f5;
+  --primary: #253f55;
+  --secondary: #527c98;
+  --accent: #82b5ad;
+  --accent-strong: #39776f;
+  --accent-light: #d8eae5;
+  --text-primary: #263746;
+  --text-secondary: #526574;
+  --text-muted: #697b89;
+  --text-muted-aa: #627482;
+  --border: #dce5eb;
+  --left-mi: #527c98;
+  --right-mi: #8a79af;
+  --idle: #a8b3bd;
+  --baseline: #9caab6;
+  --proposed: #39776f;
+  --electrode-active: #82b5ad;
+  --electrode-inactive: #cbd5df;
+  --error: #c76b67;
+  --cyan: #527c98;
+  --purple: #8a79af;
+  --muted: #697b89;
+  --line: #dce5eb;
+  --card-shadow: 0 12px 32px rgba(37, 63, 85, 0.08);
+}
+
+body {
+  color: var(--text-primary);
+  background:
+    radial-gradient(
+      circle at 87% 8%,
+      rgba(216, 234, 229, 0.7),
+      transparent 30%
+    ),
+    linear-gradient(180deg, #f8fafb 0%, var(--background) 44%, #f3f6f8 100%);
+}
+
+::selection {
+  color: #ffffff;
+  background: var(--secondary);
+}
+
+h1,
+h2,
+h3,
+strong {
+  color: var(--text-primary);
+}
+
+p,
+.muted,
+.small {
+  color: var(--text-secondary);
+}
+
+:focus-visible {
+  outline-color: var(--accent-strong);
+}
+
+header {
+  border-bottom-color: var(--border);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 4px 18px rgba(37, 63, 85, 0.04);
+  backdrop-filter: blur(18px);
+}
+
+.brand,
+nav a.active {
+  color: var(--primary);
+}
+
+.brand-symbol {
+  color: var(--accent-strong);
+  border-color: #bfd5d0;
+  background: var(--accent-light);
+}
+
+.brand small,
+nav a,
+.header-link {
+  color: var(--text-secondary);
+}
+
+nav a.active::after {
+  background: var(--accent-strong);
+}
+
+.nav-dot,
+.status-dot {
+  background: var(--accent-strong);
+  box-shadow: none;
+}
+
+.header-link,
+.button {
+  color: var(--primary);
+  border-color: var(--secondary);
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.header-link:hover,
+.button:hover {
+  color: #ffffff;
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.button.primary {
+  color: #ffffff;
+  border-color: var(--primary);
+  background: var(--primary);
+  box-shadow: 0 8px 18px rgba(37, 63, 85, 0.14);
+}
+
+.button.primary:hover {
+  border-color: #34546c;
+  background: #34546c;
+}
+
+.button.subtle,
+.text-button {
+  color: var(--secondary);
+  background: transparent;
+}
+
+.eyebrow {
+  color: var(--accent-strong);
+}
+
+.badge {
+  color: var(--primary);
+  border-color: #c7d8e2;
+  background: var(--surface-secondary);
+}
+
+.badge.research {
+  color: var(--accent-strong);
+  border-color: #b8d5ce;
+  background: var(--accent-light);
+}
+
+.panel,
+.settings,
+.room-panel,
+.monitor,
+.wearable-settings,
+.head-panel,
+.channel-details,
+.comparison-table,
+.replay-main {
+  color: var(--text-primary);
+  border-color: var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+}
+
+.panel-title,
+.panel-title svg,
+.workspace-heading h2,
+.workspace-heading h2 span {
+  color: var(--primary);
+}
+
+.breadcrumb,
+.page-heading p,
+.hero-copy p,
+.section-title p,
+.problem-grid p,
+.research-intro > p,
+.channel-details p,
+.source-note,
+.visual-coordinate,
+.hero-caption,
+.pipeline small,
+.metrics small,
+.channel-stat span {
+  color: var(--text-secondary);
+}
+
+.lab-status {
+  color: var(--text-secondary);
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+}
+
+.lab-status svg,
+.lab-status small {
+  color: var(--accent-strong);
+}
+
+.main-tabs {
+  border-bottom-color: var(--border);
+}
+
+.main-tabs > button {
+  color: var(--text-secondary);
+}
+
+.main-tabs > button.active {
+  color: var(--accent-strong);
+  border-bottom-color: var(--accent-strong);
+}
+
+.tab-tag {
+  color: var(--accent-strong);
+  border-color: #b8d5ce;
+  background: var(--accent-light);
+}
+
+.shared-config {
+  color: var(--text-secondary);
+}
+
+.app-picker > button,
+.problem-grid article,
+.metrics,
+.pipeline,
+.how-it-works,
+.insight-row > div,
+.application-preview > a,
+.conclusion {
+  color: var(--text-primary);
+  border-color: var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+}
+
+.app-picker > button.active {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  box-shadow: var(--card-shadow);
+}
+
+.app-icon {
+  color: var(--secondary);
+  border-color: #c7d8e2;
+  background: var(--surface-secondary);
+}
+
+.active .app-icon {
+  color: var(--accent-strong);
+  border-color: #b8d5ce;
+  background: #ffffff;
+}
+
+.app-picker span,
+.app-picker > button > svg,
+.workspace-heading h2 span {
+  color: var(--text-secondary);
+}
+
+.settings label,
+.comparison-filters label,
+.replay-main label,
+.wearable-model,
+.toggle-row,
+.note {
+  color: var(--text-secondary);
+}
+
+.settings select,
+select {
+  color: var(--text-primary);
+  border-color: var(--border);
+  background: var(--surface-secondary);
+}
+
+select:focus {
+  border-color: var(--secondary);
+}
+
+.switch {
+  background: var(--idle);
+}
+
+.switch i {
+  background: #ffffff;
+}
+
+.switch.on {
+  background: var(--accent-strong);
+}
+
+input[type="range"] {
+  accent-color: var(--accent-strong);
+}
+
+.note,
+.source-note,
+.log-heading,
+.command-history > div,
+.monitor-stats,
+.mini-metrics,
+th,
+td {
+  border-color: var(--border);
+}
+
+.room-top,
+.scene-caption,
+.head-footer {
+  color: var(--text-muted-aa);
+}
+
+.room-scene {
+  background: #f2f0ea;
+}
+
+.device-menu button {
+  color: var(--text-secondary);
+  border-color: var(--border);
+  background: var(--surface-secondary);
+}
+
+.device-menu button small {
+  color: var(--text-primary);
+}
+
+.device-menu button.active {
+  color: var(--accent-strong);
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.mode-line,
+.command-zone p {
+  color: var(--text-secondary);
+}
+
+.dwell {
+  border-bottom-color: var(--accent-strong);
+}
+
+.command-buttons > button {
+  color: var(--left-mi);
+  border-color: #b7cbd8;
+  background: #edf3f6;
+}
+
+.command-buttons .right-command {
+  color: #6f6094;
+  border-color: #d4cde2;
+  background: #f2eff7;
+}
+
+.command-buttons kbd {
+  color: var(--text-muted-aa);
+  border-color: #cbd6de;
+}
+
+.prediction {
+  color: var(--left-mi);
+}
+
+.prediction.purple,
+.purple {
+  color: #6f6094;
+}
+
+.cyan {
+  color: #466d88;
+}
+
+.prediction span,
+.confidence,
+.confidence small,
+.monitor-stats dt,
+.log-heading,
+.command-history small,
+.command-history .mono {
+  color: var(--text-muted-aa);
+}
+
+.confidence b,
+.monitor-stats dd,
+.command-history p {
+  color: var(--text-primary);
+}
+
+.progress {
+  background: var(--surface-secondary);
+}
+
+.progress i {
+  background: var(--accent-strong);
+}
+
+.waveform {
+  border-color: var(--border);
+  background: #fbfcfd;
+}
+
+.wave-header,
+.wave-header svg {
+  color: var(--secondary);
+}
+
+.how-it-works,
+.data-legend {
+  color: var(--text-secondary);
+}
+
+.how-it-works b,
+.how-it-works > span,
+.how-it-works i {
+  color: var(--accent-strong);
+}
+
+.legend-dot.research {
+  background: var(--accent-strong);
+}
+
+.legend-dot.synthetic {
+  background: var(--left-mi);
+}
+
+.legend-dot.application {
+  background: var(--right-mi);
+}
+
+footer {
+  border-top-color: var(--border);
+}
+
+footer svg,
+footer span,
+footer p {
+  color: var(--text-secondary);
+}
+
+.config-card {
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.config-card.active {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.config-card i {
+  border-color: var(--idle);
+}
+
+.config-card.active i {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+}
+
+.segmented {
+  border-color: var(--border);
+  background: var(--surface-secondary);
+}
+
+.segmented button {
+  color: var(--text-secondary);
+}
+
+.segmented button.active {
+  color: var(--primary);
+  background: var(--accent-light);
+}
+
+.segmented button.purple {
+  color: #5f517e;
+  background: #e7e2ef;
+}
+
+.electrode {
+  color: var(--primary);
+  border-color: var(--secondary);
+  background: #ffffff;
+  box-shadow: 0 4px 10px rgba(37, 63, 85, 0.1);
+}
+
+.electrode.selected {
+  color: var(--accent-strong);
+  border-color: var(--accent-strong);
+  background: var(--accent-light);
+}
+
+.electrode-name,
+.mini-metrics strong,
+.metric-empty strong {
+  color: var(--accent-strong);
+}
+
+.mini-metrics span,
+.channel-details .badge,
+.head-footer {
+  color: var(--text-secondary);
+}
+
+.comparison-table {
+  background: var(--surface);
+}
+
+.subject-comparison-panel {
+  margin-top: 24px;
+}
+
+.comparison-filters.compact {
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
+
+.subject-detail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-secondary);
+}
+
+.subject-detail > div {
+  padding: 16px;
+  border-right: 1px solid var(--border);
+}
+
+.subject-detail > div:last-child {
+  border-right: 0;
+}
+
+.subject-detail span,
+.subject-detail strong {
+  display: block;
+}
+
+.subject-detail span {
+  margin-bottom: 6px;
+  color: var(--text-muted-aa);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.subject-detail strong {
+  color: var(--primary);
+  font-size: 14px;
+}
+
+@media (max-width: 760px) {
+  .subject-detail {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .subject-detail > div:nth-child(2) {
+    border-right: 0;
+  }
+}
+
+th {
+  color: var(--primary);
+  background: #f8fafb;
+}
+
+td,
+td:first-child {
+  color: var(--text-secondary);
+}
+
+.insight-row > div {
+  border-left-color: var(--accent);
+}
+
+.insight-row span {
+  color: var(--accent-strong);
+}
+
+.metric-empty {
+  color: var(--text-secondary);
+}
+
+.timeline button {
+  color: var(--left-mi);
+  border-color: #b7cbd8;
+  background: #edf3f6;
+}
+
+.timeline button.right {
+  color: var(--right-mi);
+  border-color: #d4cde2;
+  background: #f2eff7;
+}
+
+.timeline button.selected {
+  outline-color: var(--primary);
+}
+
+.replay-prediction span {
+  color: var(--text-secondary);
+}
+
+.gradient-text {
+  color: var(--accent-strong);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.hero-english {
+  color: var(--secondary);
+}
+
+.hero-visual {
+  background: radial-gradient(
+    ellipse,
+    rgba(216, 234, 229, 0.85),
+    transparent 68%
+  );
+}
+
+.orbit {
+  border-color: #c9d9df;
+}
+
+.brain-label,
+.brain-label small,
+.floating-stat > span,
+.floating-stat small {
+  color: var(--text-secondary);
+}
+
+.floating-stat {
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--card-shadow);
+}
+
+.floating-stat b {
+  color: var(--accent-strong);
+}
+
+.metrics > div,
+.pipeline > div {
+  border-color: var(--border);
+}
+
+.metrics span,
+.pipeline .mono,
+.problem-grid a,
+.application-preview span {
+  color: var(--accent-strong);
+}
+
+.outline-number {
+  color: #dce5eb;
+}
+
+.channel-preview {
+  border-color: var(--border);
+}
+
+.channel-stat hr {
+  border-top-color: var(--border);
+}
+
+.pipeline svg,
+.application-preview > a > svg:first-child {
+  color: var(--secondary);
+}
+
+.live-metric,
+.live-metric small {
+  color: var(--text-secondary);
+}
+
+.live-metric strong {
+  color: var(--error);
+}
+
+.application-preview > a,
+.application-preview > a:nth-child(2) {
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.application-preview > a:hover {
+  border-color: var(--accent);
+  box-shadow: 0 16px 36px rgba(37, 63, 85, 0.12);
+  transform: translateY(-2px);
+}
+
+.conclusion {
+  background: linear-gradient(115deg, #ffffff, #eef5f3);
+}
+
+.loading {
+  color: var(--accent-strong);
+}
+
+.skip-link {
+  color: #ffffff;
+  background: var(--primary);
+}
+
+.room-fallback {
+  color: var(--text-primary);
+  background: linear-gradient(#f4f1ea 65%, #d8c8b2 65%);
+}
+
+.room-fallback.lit {
+  background: linear-gradient(#fffdf7 65%, #d8c8b2 65%);
+}
+
+.fallback-tv {
+  background: var(--secondary);
+  border-color: var(--primary);
+}
+
+.tv-content {
+  color: #ffffff;
+}
+
+.temperature-label {
+  color: var(--primary);
+}

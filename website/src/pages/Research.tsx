@@ -4,7 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import { Atlas2D } from "../components/Scenes";
 import { channelInfo, type ChannelMode, sourceNote } from "../data/research";
 import { Pipeline } from "./Home";
-import { ResultChart } from "../components/Comparison";
+import { ResultChart, SubjectResultChart } from "../components/Comparison";
 export default function Research() {
   const [mode, setMode] = useState<ChannelMode>("5ch");
   const [excluded, setExcluded] = useState(false);
@@ -16,9 +16,9 @@ export default function Research() {
         <div>
           <span className="eyebrow">MOTOR IMAGERY · EEG</span>
           <h1>
-            운동 상상 EEG의
+            감각운동 저채널 EEG의
             <br />
-            시공간 제약 극복을 위한 연구
+            실용화를 위한 안정화 연구
           </h1>
           <p>국립부경대학교 컴퓨터·인공지능공학부 · 캡스톤디자인</p>
         </div>
@@ -31,24 +31,23 @@ export default function Research() {
         <span className="eyebrow">01 / BACKGROUND</span>
         <h2>더 많은 채널이 항상 더 좋은 선택일까요?</h2>
         <p>
-          운동 상상 BCI는 신체의 실제 움직임 없이 운동을 상상할 때 나타나는 EEG
-          패턴을 인터페이스 명령으로 연결합니다. 이 연구는 16채널 입력의
-          복잡성을 줄이는 공간적 최적화와, 세션마다 달라지는 신호 분포에
-          대응하는 시간적 안정화를 함께 탐색합니다.
+          4인 피험자의 오프라인 3,009 트라이얼과 온라인 50세션 3,910회를
+          분석했습니다. 16채널의 비운동 잡음을 물리적으로 격리하고, 5~7채널
+          공분산 안정화와 실시간 영점 정렬을 결합했습니다.
         </p>
         <div className="problem-grid">
           <article>
             <h3>기존 16채널의 한계</h3>
             <p>
-              더 많은 입력 차원은 공분산 추정의 복잡성을 높입니다. 안구·근전도
-              등 비운동 영역 잡음도 함께 유입될 수 있습니다.
+              공분산 조건수 74.80, 비운동 채널 CSP 에너지 누설 38.9%, 전두부
+              안구 잡음 32.7%가 타 날짜 일반화를 방해했습니다.
             </p>
           </article>
           <article>
             <h3>5~7채널 선정 근거</h3>
             <p>
-              감각운동 피질 부근의 C3·Cz·C4와 전운동 관련 F3·F4를 중심으로
-              구성합니다. 보조 전극의 기여는 피험자에 따라 검증되어야 합니다.
+              C3·Cz·C4와 F3·F4를 중심으로 전극을 68.8%, 공분산 모수를 136개에서
+              15개로 89% 줄이고 착용 시간을 15분에서 3분으로 단축했습니다.
             </p>
           </article>
         </div>
@@ -102,9 +101,9 @@ export default function Research() {
               교육용 개념도이며 개인의 정확한 해부학적 좌표를 나타내지 않습니다.
             </p>
             <p className="source-note">
-              16ch 순서: 로컬 docs/00_requests.md의 전극 매핑. Core 5ch: 제공
-              요청서. Extended 7ch: Core + T7/T8 미검증 콘셉트. 피험자별 연구
-              프로파일은 아직 연결되지 않았습니다.
+              Core 5ch는 F3·F4·C3·Cz·C4입니다. 발표자료의 피험자별 최적 구성은
+              WMJ·KHY 7ch, KGE·OYJ 5ch이며 7ch 보조 채널은 모델별 검증 구성을
+              나타냅니다.
             </p>
           </div>
         </div>
@@ -116,10 +115,10 @@ export default function Research() {
         <div className="research-intro">
           <h3>세션 간 변동과 TTA</h3>
           <p>
-            Test-time adaptation은 테스트 시점의 신호 분포 차이에 대응하기 위한
-            적응 과정입니다. 이 사이트는 보고된 공분산·영점 안정화의 취지를
-            설명하며, 브라우저에서 모델을 학습하거나 TTA를 실행하지 않습니다.
-            효과는 피험자와 평가 조건별로 확인해야 합니다.
+            ① 5~7ch 물리 격리 ② OAS 수축 공분산과 리만 접공간 추정 ③
+            CausalEA·CausalLogitCenter 기반 무감독 온라인 영점 정렬의
+            3단계입니다. 16ch 조건수 74.80은 5ch에서 14.20, OAS 결합 후 8.16으로
+            안정화됐습니다.
           </p>
         </div>
       </section>
@@ -130,36 +129,43 @@ export default function Research() {
           <ResultChart />
           <p className="source-note">{sourceNote}</p>
         </div>
+        <div className="panel subject-comparison-panel">
+          <div className="panel-title">
+            피험자별 LOSO 성능{" "}
+            <span className="badge research">16ch vs 5~7ch</span>
+          </div>
+          <SubjectResultChart />
+        </div>
         <div className="insight-row">
           <div>
             <span>LOSO AUC</span>
-            <strong>0.8191</strong>
-            <p>LOSO 교차 검증 평균</p>
+            <strong>0.8100</strong>
+            <p>4인 LOSO 제안 모델 평균</p>
           </div>
           <div>
             <span>LOSO BA</span>
-            <strong>76.64%</strong>
-            <p>LOSO 교차 검증 평균</p>
+            <strong>76.06%</strong>
+            <p>18개 런 · 1,440회</p>
           </div>
           <div>
-            <span>LIVE BA</span>
-            <strong>54.48%</strong>
-            <p>현장 라이브 · 별도 평가 조건</p>
+            <span>ONLINE 50 SESSIONS</span>
+            <strong>74.71%</strong>
+            <p>영점조절 적용 · 3,910회</p>
           </div>
         </div>
         <p className="muted">
-          Ablation: 16ch only 69.28% → 16ch + TTA 70.11%; Low-channel only
-          72.09% → Low-channel + TTA 74.66%. 보고된 평균값의 비교이며 통계적
-          유의성이나 모든 피험자에서의 개선을 의미하지 않습니다.
+          저채널 물리 격리는 +10.5%p, 실시간 영점조절은 +12.3%p의 독립 기여를
+          보였으며 결합 후 온라인 BA가 54.50%에서 74.71%로 +20.21%p
+          향상됐습니다(p &lt; 10⁻¹⁷).
         </p>
       </section>
       <section className="section conclusion">
         <span className="eyebrow">05 / NEXT STEPS</span>
         <h2>연구실의 가능성을 일상의 안정성으로.</h2>
         <p>
-          채널 축소와 적응의 가능성을 확인하되, 현장 라이브 성능과 사후 재분석
-          사이의 차이를 해결해야 합니다. 향후 독립 세션 평가, 피험자별 채널
-          검증, 실제 장비와의 연결을 통해 신뢰성을 확인할 필요가 있습니다.
+          전극 56~69% 감축, 연산 92~97% 절감, LOSO 4전 4승을 확인했습니다. 다음
+          단계는 5~7전극 헤드밴드와 1~2분 고속 영점 보정을 실제 웨어러블
+          환경에서 검증하는 것입니다.
         </p>
         <Link className="button primary" to="/simulation">
           인터랙티브 시뮬레이션 <ArrowUpRight size={17} />

@@ -149,7 +149,7 @@ export function Waveform({
             <path
               d="M25 0H0V24"
               fill="none"
-              stroke="#214057"
+              stroke="#DCE5EB"
               strokeWidth=".5"
             />
           </pattern>
@@ -157,7 +157,7 @@ export function Waveform({
         <rect width="500" height="100%" fill="url(#grid)" />
         {channels.map((c, j) => (
           <g key={c}>
-            <text x="4" y={j * 48 + 25} fill="#8aa2b9" fontSize="11">
+            <text x="4" y={j * 48 + 25} fill="#697B89" fontSize="11">
               {c}
             </text>
             <path
@@ -167,7 +167,7 @@ export function Waveform({
                   `${i === 0 ? "M" : "L"}${35 + i * 1.95},${24 + j * 48 + Math.sin(i * 0.36 + tick + phase + j * 2) * 8 + Math.sin(i * 0.89 + tick * 2 + phase + j) * 4 + Math.cos(i * 0.13 + tick) * 3}`,
               ).join(" ")}
               fill="none"
-              stroke={j % 2 ? "#b58cff" : "#38dbe6"}
+              stroke={j % 2 ? "#8A79AF" : "#527C98"}
               strokeWidth="1.2"
             />
           </g>

@@ -92,7 +92,7 @@ test("wearable configuration shares state and research never fabricates missing 
     .selectOption("AUC");
   await expect(page.getByText("미제공", { exact: true })).toBeVisible();
   await page.getByLabel("Evaluation dataset").selectOption("loso");
-  await expect(page.getByText("0.8191", { exact: true })).toBeVisible();
+  await expect(page.getByText("0.8100", { exact: true })).toBeVisible();
 });
 test("home research replay and mobile layout", async ({ page }) => {
   await page.goto("/");
@@ -114,6 +114,10 @@ test("home research replay and mobile layout", async ({ page }) => {
     page.getByRole("heading", { name: "구성 요소에 따른 성능 변화" }),
   ).toBeVisible();
   await page.getByRole("link", { name: "연구 내용", exact: true }).click();
+  await page.screenshot({
+    path: "tests/artifacts/research-1440.png",
+    fullPage: true,
+  });
   await page.getByRole("button", { name: "Excluded Channels" }).click();
   await page
     .getByRole("button", { name: "전극 Fp2", exact: true })

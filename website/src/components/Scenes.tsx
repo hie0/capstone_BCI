@@ -1,5 +1,9 @@
 import {
+  BufferGeometry,
+  CatmullRomCurve3,
+  Float32BufferAttribute,
   MathUtils,
+  Vector3,
   type Group,
   type AmbientLight,
   type DirectionalLight,
@@ -127,17 +131,17 @@ export function Atlas2D({
         cy="205"
         rx="150"
         ry="160"
-        fill="#102b42"
-        stroke="#47718c"
+        fill="#F2F5F7"
+        stroke="#9CAAB6"
       />
       <path
         d="M180 45 L200 24 L220 45 M45 175 Q12 205 45 235 M355 175 Q388 205 355 235"
         fill="none"
-        stroke="#47718c"
+        stroke="#9CAAB6"
       />
       <path
         d="M200 48V362 M52 205H348"
-        stroke="#2a4960"
+        stroke="#DCE5EB"
         strokeDasharray="4 8"
       />
       {electrodeNames.map((n) => {
@@ -174,18 +178,18 @@ export function Atlas2D({
               fill={
                 motor && enabled
                   ? direction === "LEFT"
-                    ? "#00e5ff"
-                    : "#b58cff"
+                    ? "#527C98"
+                    : "#8A79AF"
                   : enabled
-                    ? "#55a9bb"
-                    : "#203c51"
+                    ? "#82B5AD"
+                    : "#CBD5DF"
               }
-              stroke={selected === n ? "white" : "#45748c"}
+              stroke={selected === n ? "#253F55" : "#9CAAB6"}
             />
             <text
               x={200 + x * 144}
               y={205 + y * 150 + 29}
-              fill={enabled ? "#e6f6ff" : "#8397a9"}
+              fill={enabled ? "#263746" : "#697B89"}
               textAnchor="middle"
               fontSize="12"
             >
@@ -197,6 +201,184 @@ export function Atlas2D({
     </svg>
   );
 }
+function WearableConceptBrain({
+  mode = "5ch",
+  direction = "LEFT",
+  selected = "C4",
+  onSelect = () => {},
+}: {
+  mode?: ChannelMode;
+  direction?: Direction;
+  selected?: string;
+  onSelect?: (n: string) => void;
+}) {
+  const active = activeChannels(mode);
+  const headGeometry = useMemo(() => createMannequinHead(), []);
+  const sensorPositions: Record<string, [number, number, number]> = {
+    Fp1: [-0.3, 0.53, 0.79],
+    Fp2: [0.3, 0.53, 0.79],
+    F7: [-0.63, 0.38, 0.57],
+    F3: [-0.22, 0.62, 0.81],
+    F4: [0.22, 0.62, 0.81],
+    F8: [0.63, 0.38, 0.57],
+    T7: [-0.78, 0.15, 0.03],
+    C3: [-0.55, 0.91, 0.18],
+    Cz: [0, 1.18, 0.02],
+    C4: [0.55, 0.91, 0.18],
+    T8: [0.78, 0.15, 0.03],
+    P7: [-0.62, 0.46, -0.5],
+    Pz: [0, 0.84, -0.58],
+    P8: [0.62, 0.46, -0.5],
+    O1: [-0.28, 0.23, -0.73],
+    O2: [0.28, 0.23, -0.73],
+  };
+  const labelOffsets: Partial<Record<string, [number, number, number]>> = {
+    F3: [-0.04, -0.18, 0.22],
+    F4: [0.18, 0.22, 0.12],
+    C3: [-0.12, 0.18, 0],
+    Cz: [0, 0.19, 0],
+    C4: [0.12, 0.18, 0],
+  };
+  return (
+    <>
+      <BrainCamera />
+      <color attach="background" args={["#F5F7FA"]} />
+      <ambientLight intensity={1.25} />
+      <directionalLight position={[4, 6, 5]} intensity={2.5} color="#FFFFFF" />
+      <directionalLight
+        position={[-4, 2, 3]}
+        intensity={1.15}
+        color="#C8DDD8"
+      />
+      <pointLight position={[0, -1, 4]} intensity={2.2} color="#FFFFFF" />
+      <group rotation={[-0.03, 0, 0]} scale={1.02} position={[0, 0.1, 0]}>
+        <mesh geometry={headGeometry} castShadow receiveShadow>
+          <meshPhysicalMaterial
+            color="#DDE6EC"
+            roughness={0.82}
+            metalness={0.02}
+            clearcoat={0.08}
+          />
+        </mesh>
+        <EEGHardware mode={mode} />
+        {active.map((n) => {
+          const position = sensorPositions[n];
+          const motor =
+            (direction === "LEFT" && n === "C4") ||
+            (direction === "RIGHT" && n === "C3");
+          const front = n.startsWith("F");
+          const side = n === "T7" || n === "T8";
+          return (
+            <group key={n} position={position}>
+              <mesh
+                rotation={
+                  front
+                    ? [Math.PI / 2, 0, 0]
+                    : side
+                      ? [0, 0, Math.PI / 2]
+                      : [0, 0, 0]
+                }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect(n);
+                }}
+              >
+                <cylinderGeometry args={[0.105, 0.105, 0.065, 32]} />
+                <meshStandardMaterial
+                  color={
+                    selected === n ? "#39776F" : motor ? "#527C98" : "#82B5AD"
+                  }
+                  roughness={0.32}
+                  metalness={0.22}
+                />
+              </mesh>
+              <mesh position={[0, front ? 0.04 : 0.055, front ? 0.04 : 0]}>
+                <cylinderGeometry args={[0.062, 0.062, 0.022, 24]} />
+                <meshStandardMaterial
+                  color="#C7D0D7"
+                  metalness={0.62}
+                  roughness={0.28}
+                />
+              </mesh>
+              {!(["F3", "F4"] as string[]).includes(n) && (
+                <Html
+                  center
+                  distanceFactor={3.2}
+                  position={labelOffsets[n] ?? [0, 0.18, 0]}
+                  zIndexRange={[1000 - active.indexOf(n), 0]}
+                >
+                  <button
+                    className={`electrode ${selected === n ? "selected" : ""}`}
+                    onClick={() => onSelect(n)}
+                    title={channelInfo(n)}
+                  >
+                    {n}
+                  </button>
+                </Html>
+              )}
+            </group>
+          );
+        })}
+        {active.includes("F3") && (
+          <Html
+            center
+            distanceFactor={3.2}
+            position={[-0.29, 0.55, 1.03]}
+            zIndexRange={[1100, 0]}
+          >
+            <button
+              className={`electrode ${selected === "F3" ? "selected" : ""}`}
+              onClick={() => onSelect("F3")}
+              title={channelInfo("F3")}
+            >
+              F3
+            </button>
+          </Html>
+        )}
+        {active.includes("F4") && (
+          <Html
+            center
+            distanceFactor={3.2}
+            position={[0.28, 0.73, 1.02]}
+            zIndexRange={[1090, 0]}
+          >
+            <button
+              className={`electrode ${selected === "F4" ? "selected" : ""}`}
+              onClick={() => onSelect("F4")}
+              title={channelInfo("F4")}
+            >
+              F4
+            </button>
+          </Html>
+        )}
+        <group position={[0.77, 0.05, -0.27]} rotation={[0, 0.2, 0]}>
+          <RoundedBox args={[0.18, 0.42, 0.32]} radius={0.055} smoothness={4}>
+            <meshStandardMaterial
+              color="#253F55"
+              roughness={0.42}
+              metalness={0.12}
+            />
+          </RoundedBox>
+          <mesh position={[0.095, 0.08, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.035, 0.035, 0.012, 20]} />
+            <meshStandardMaterial color="#82B5AD" />
+          </mesh>
+        </group>
+      </group>
+      <OrbitControls
+        enablePan={false}
+        enableZoom
+        target={[0, -0.12, 0]}
+        minDistance={3.8}
+        maxDistance={7.2}
+        minPolarAngle={0.35}
+        maxPolarAngle={1.75}
+        autoRotate={false}
+      />
+    </>
+  );
+}
+
 export function Brain({
   mode = "5ch",
   direction = "LEFT",
@@ -227,24 +409,25 @@ export function Brain({
   );
   return (
     <>
-      <ambientLight intensity={1} />
-      <pointLight position={[3, 4, 5]} intensity={30} color="#5fe7ff" />
+      <ambientLight intensity={1.45} />
+      <pointLight position={[3, 4, 5]} intensity={17} color="#FFFFFF" />
+      <pointLight position={[-3, 2, 2]} intensity={7} color="#D8EAE5" />
       <group rotation={[-0.18, 0, 0]}>
         <mesh scale={[0.96, 1.25, 1.08]}>
           <sphereGeometry args={[1, 48, 40]} />
           <meshPhysicalMaterial
-            color="#254b65"
-            roughness={0.4}
+            color="#91AEB4"
+            roughness={0.52}
             transparent
-            opacity={0.62}
-            metalness={0.3}
+            opacity={0.72}
+            metalness={0.12}
           />
         </mesh>
         {paths.map((p, i) => (
           <Line
             key={i}
             points={p}
-            color="#498498"
+            color="#527C98"
             transparent
             opacity={0.42}
             lineWidth={0.7}
@@ -258,12 +441,12 @@ export function Brain({
             [0, 0, 1.1],
             [0, -0.8, 0.8],
           ]}
-          color="#071822"
+          color="#253F55"
           lineWidth={3}
         />
         <mesh position={[0, -0.1, 1.08]} scale={[0.12, 0.25, 0.16]}>
           <sphereGeometry />
-          <meshStandardMaterial color="#284d65" />
+          <meshStandardMaterial color="#78959F" />
         </mesh>
         {[-1, 1].map((s) => (
           <mesh
@@ -272,7 +455,7 @@ export function Brain({
             scale={[0.12, 0.3, 0.18]}
           >
             <sphereGeometry />
-            <meshStandardMaterial color="#284d65" />
+            <meshStandardMaterial color="#78959F" />
           </mesh>
         ))}
         {electrodeNames.map((n) => {
@@ -295,16 +478,18 @@ export function Brain({
                   color={
                     motor
                       ? direction === "LEFT"
-                        ? "#00e5ff"
-                        : "#b58cff"
+                        ? "#527C98"
+                        : "#8A79AF"
                       : enabled
-                        ? "#00e5ff"
-                        : "#3e5667"
+                        ? "#82B5AD"
+                        : "#CBD5DF"
                   }
                   emissive={
-                    motor && direction === "RIGHT" ? "#9a64ff" : "#00e5ff"
+                    motor && direction === "RIGHT" ? "#8A79AF" : "#82B5AD"
                   }
-                  emissiveIntensity={enabled ? 1 : 0.1}
+                  emissiveIntensity={enabled ? 0.18 : 0}
+                  roughness={0.38}
+                  metalness={0.12}
                 />
               </mesh>
               {enabled && (
@@ -330,6 +515,158 @@ export function Brain({
         autoRotate={false}
       />
     </>
+  );
+}
+
+function BrainCamera() {
+  const { camera } = useThree();
+  useEffect(() => {
+    camera.position.set(3.7, 1.65, 6.2);
+    camera.lookAt(0, -0.08, 0);
+    camera.updateProjectionMatrix();
+  }, [camera]);
+  return null;
+}
+
+function createMannequinHead() {
+  const geometry = new BufferGeometry();
+  const rings = [
+    [-1.72, 0.34, 0.32, -0.12],
+    [-1.34, 0.4, 0.36, -0.08],
+    [-1.16, 0.3, 0.44, 0.16],
+    [-0.96, 0.5, 0.58, 0.14],
+    [-0.7, 0.66, 0.67, 0.1],
+    [-0.36, 0.76, 0.75, 0.08],
+    [0.02, 0.77, 0.8, 0.06],
+    [0.4, 0.74, 0.81, 0.02],
+    [0.72, 0.73, 0.76, -0.02],
+    [0.98, 0.62, 0.64, -0.05],
+    [1.17, 0.34, 0.35, -0.06],
+    [1.24, 0.05, 0.05, -0.06],
+  ] as const;
+  const segments = 64;
+  const vertices: number[] = [];
+  const indices: number[] = [];
+  rings.forEach(([y, width, depth, zShift]) => {
+    for (let i = 0; i < segments; i += 1) {
+      const angle = (i / segments) * Math.PI * 2;
+      const front = Math.max(0, Math.cos(angle));
+      const jawTaper = y < -0.7 ? 0.92 + front * 0.08 : 1;
+      vertices.push(
+        Math.sin(angle) * width * jawTaper,
+        y,
+        Math.cos(angle) * depth +
+          zShift +
+          front * (y > -0.9 && y < 0.45 ? 0.055 : 0),
+      );
+    }
+  });
+  for (let ring = 0; ring < rings.length - 1; ring += 1) {
+    for (let i = 0; i < segments; i += 1) {
+      const next = (i + 1) % segments;
+      const a = ring * segments + i;
+      const b = ring * segments + next;
+      const c = (ring + 1) * segments + i;
+      const d = (ring + 1) * segments + next;
+      indices.push(a, c, b, b, c, d);
+    }
+  }
+  const bottomCenter = vertices.length / 3;
+  vertices.push(0, rings[0][0], rings[0][3]);
+  const topCenter = vertices.length / 3;
+  const top = rings[rings.length - 1];
+  vertices.push(0, top[0], top[3]);
+  for (let i = 0; i < segments; i += 1) {
+    const next = (i + 1) % segments;
+    indices.push(bottomCenter, next, i);
+    const topStart = (rings.length - 1) * segments;
+    indices.push(topCenter, topStart + i, topStart + next);
+  }
+  geometry.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function DeviceBand({
+  points,
+  radius = 0.045,
+  color = "#253F55",
+}: {
+  points: [number, number, number][];
+  radius?: number;
+  color?: string;
+}) {
+  const curve = useMemo(
+    () => new CatmullRomCurve3(points.map((point) => new Vector3(...point))),
+    [points],
+  );
+  return (
+    <mesh castShadow>
+      <tubeGeometry args={[curve, 48, radius, 10, false]} />
+      <meshStandardMaterial color={color} roughness={0.46} metalness={0.12} />
+    </mesh>
+  );
+}
+
+function EEGHardware({ mode }: { mode: ChannelMode }) {
+  const frontBand: [number, number, number][] = [
+    [-0.73, 0.42, 0.5],
+    [-0.38, 0.59, 0.76],
+    [0, 0.64, 0.82],
+    [0.38, 0.59, 0.76],
+    [0.73, 0.42, 0.5],
+  ];
+  const motorBand: [number, number, number][] = [
+    [-0.73, 0.43, 0.08],
+    [-0.55, 0.91, 0.18],
+    [0, 1.18, 0.02],
+    [0.55, 0.91, 0.18],
+    [0.73, 0.43, 0.08],
+  ];
+  const sideBand: [number, number, number][] = [
+    [-0.78, 0.14, 0.03],
+    [-0.7, 0.55, -0.35],
+    [0, 0.86, -0.62],
+    [0.7, 0.55, -0.35],
+    [0.78, 0.14, 0.03],
+  ];
+  return (
+    <group>
+      <DeviceBand points={frontBand} radius={0.055} />
+      <DeviceBand points={motorBand} radius={0.05} color="#527C98" />
+      {mode !== "5ch" && (
+        <DeviceBand points={sideBand} radius={0.042} color="#527C98" />
+      )}
+      {mode === "16ch" && (
+        <>
+          <DeviceBand
+            points={[
+              [-0.7, 0.35, 0.5],
+              [-0.7, 0.7, 0],
+              [-0.6, 0.45, -0.52],
+            ]}
+            radius={0.032}
+          />
+          <DeviceBand
+            points={[
+              [0.7, 0.35, 0.5],
+              [0.7, 0.7, 0],
+              [0.6, 0.45, -0.52],
+            ]}
+            radius={0.032}
+          />
+          <DeviceBand
+            points={[
+              [0, 0.64, 0.82],
+              [0, 1.18, 0.02],
+              [0, 0.84, -0.62],
+            ]}
+            radius={0.036}
+          />
+        </>
+      )}
+    </group>
   );
 }
 function Box({
@@ -359,28 +696,28 @@ export function Room() {
   const s = useBCI();
   return (
     <>
-      <color attach="background" args={["#0b1c2b"]} />
+      <color attach="background" args={["#F4F1EA"]} />
       <RoomLighting on={s.light} />
-      <Box position={[0, -0.1, 0]} size={[6, 0.2, 4.8]} color="#64757c" />
-      <Box position={[0, 1.55, -2.4]} size={[6, 3.3, 0.13]} color="#8b9da5" />
-      <Box position={[-3, 1.55, 0]} size={[0.13, 3.3, 4.8]} color="#6a808d" />
+      <Box position={[0, -0.1, 0]} size={[6, 0.2, 4.8]} color="#D8C8B2" />
+      <Box position={[0, 1.55, -2.4]} size={[6, 3.3, 0.13]} color="#F7F4EC" />
+      <Box position={[-3, 1.55, 0]} size={[0.13, 3.3, 4.8]} color="#E9EEF0" />
       {Array.from({ length: 12 }, (_, i) => (
         <Box
           key={i}
           position={[-2.8 + i * 0.5, 0.012, 0]}
           size={[0.012, 0.01, 4.7]}
-          color="#53656c"
+          color="#BCA98F"
         />
       ))}
       <Box
         position={[-1.45, 1.8, -2.3]}
         size={[2.4, 2.1, 0.08]}
-        color="#c4e8f3"
+        color="#DDECF0"
       />
       <Box
         position={[-1.45, 1.8, -2.22]}
         size={[0.055, 2.1, 0.06]}
-        color="#4f6876"
+        color="#9CAAB6"
       />
       {[-1, 1].map((side) => (
         <Curtain key={side} side={side} open={s.curtains} />
@@ -388,13 +725,13 @@ export function Room() {
       <Box
         position={[1.48, 1.65, -2.23]}
         size={[2.05, 1.25, 0.12]}
-        color="#10202b"
+        color="#253F55"
       />
       <mesh position={[1.48, 1.65, -2.155]}>
         <planeGeometry args={[1.88, 1.08]} />
         <meshBasicMaterial
           color={
-            ["#264e68", "#246f69", "#655177", "#92684b", "#32648b"][s.tv - 1]
+            ["#527C98", "#82B5AD", "#8A79AF", "#C59D78", "#759CB5"][s.tv - 1]
           }
         />
       </mesh>
@@ -410,20 +747,20 @@ export function Room() {
       <Box
         position={[1.4, 0.39, -1.97]}
         size={[2.5, 0.65, 0.65]}
-        color="#b6a58d"
+        color="#C8AA82"
       />
-      <Box position={[-1.6, 0.4, 0.8]} size={[2.2, 0.58, 1]} color="#b4c3c6" />
+      <Box position={[-1.6, 0.4, 0.8]} size={[2.2, 0.58, 1]} color="#E9EEEC" />
       <Box
         position={[-1.6, 0.86, 1.19]}
         size={[2.2, 0.68, 0.24]}
-        color="#a1b3b9"
+        color="#C4D4CF"
       />
       {[-2.65, -0.55].map((x) => (
         <Box
           key={x}
           position={[x, 0.66, 0.75]}
           size={[0.22, 0.65, 1.15]}
-          color="#a1b3b9"
+          color="#C4D4CF"
         />
       ))}
       {[-2.15, -1.12].map((x) => (
@@ -431,38 +768,38 @@ export function Room() {
           key={x}
           position={[x, 0.77, 0.72]}
           size={[0.9, 0.15, 0.75]}
-          color="#d1dcdd"
+          color="#F8FAF9"
         />
       ))}
       <Box
         position={[-0.2, 0.04, 0.35]}
         size={[3.3, 0.03, 2.4]}
-        color="#3c5869"
+        color="#AFC7C2"
       />
       <Box
         position={[0.05, 0.4, 0.3]}
         size={[1.3, 0.12, 0.8]}
-        color="#cfbba1"
+        color="#D6B891"
       />
       {[-0.48, 0.48].map((x) => (
         <Box
           key={x}
           position={[x, 0.2, 0.3]}
           size={[0.06, 0.4, 0.5]}
-          color="#283c48"
+          color="#527C6F"
         />
       ))}
       <Box
         position={[1.5, 2.7, -2.2]}
         size={[1.65, 0.35, 0.22]}
-        color="#d3e0e3"
+        color="#F4F7F7"
       />
       <Html position={[1.5, 2.7, -2.05]} center>
         <span className="temperature-label">{s.temperature}°</span>
       </Html>
       <mesh position={[2.35, 0.32, 1.35]}>
         <cylinderGeometry args={[0.24, 0.18, 0.6, 20]} />
-        <meshStandardMaterial color="#a2aaa3" />
+        <meshStandardMaterial color="#D4DAD5" />
       </mesh>
       {Array.from({ length: 7 }, (_, i) => (
         <mesh
@@ -476,13 +813,13 @@ export function Room() {
           scale={[0.13, 0.5, 0.13]}
         >
           <sphereGeometry />
-          <meshStandardMaterial color="#3d8975" />
+          <meshStandardMaterial color="#6E9C84" />
         </mesh>
       ))}
       <mesh position={[0, 2.8, 0]}>
         <cylinderGeometry args={[0.45, 0.65, 0.18, 32]} />
         <meshStandardMaterial
-          color="#e4d6b3"
+          color="#F1E7D3"
           emissive="#ffe3a1"
           emissiveIntensity={s.light ? 1 : 0}
         />
@@ -492,7 +829,7 @@ export function Room() {
           [0, 2.8, 0],
           [0, 3.4, 0],
         ]}
-        color="#647481"
+        color="#9CAAB6"
       />
       <OrbitControls
         enablePan={false}
@@ -552,7 +889,7 @@ function Curtain({ side, open }: { side: number; open: boolean }) {
           key={i}
           position={[(i - 3) * 0.16, 0, Math.sin(i) * 0.025]}
           size={[0.19, 2.24, 0.09]}
-          color={i % 2 ? "#335064" : "#3c5c70"}
+          color={i % 2 ? "#82B5AD" : "#A9CBC4"}
         />
       ))}
     </group>
@@ -592,7 +929,7 @@ function RoomLighting({ on }: { on: boolean }) {
         ref={directional}
         position={[0, 6, 3]}
         intensity={3}
-        color="#d8f2ff"
+        color="#FFFDF7"
       />
       <pointLight
         ref={point}

@@ -54,9 +54,9 @@ export default function Home() {
           </h1>
           <div className="hero-english">Fewer Electrodes, More Stable BCI</div>
           <p>
-            16채널 EEG의 복잡성과 세션 간 변동 문제를 해결하기 위해
+            4인 피험자 · 오프라인 3,009회 · 온라인 50세션 전수 실증
             <br className="desktop" /> 감각운동 중심 5~7채널 최적화와
-            <br className="desktop" /> 공분산·영점 안정화 기법을 연구했습니다.
+            <br className="desktop" /> 공분산·실시간 영점 안정화를 검증했습니다.
           </p>
           <div className="hero-actions">
             <Link className="button primary" to="/simulation">
@@ -108,9 +108,9 @@ export default function Home() {
       <section className="container metrics">
         {[
           ["16 → 5–7", "CHANNEL OPTIMIZATION", "핵심 채널 중심 최적화"],
-          ["0.8191", "LOSO · MEAN AUC", "LOSO 교차 검증"],
-          ["76.64%", "LOSO · MEAN BA", "LOSO 교차 검증"],
-          ["74.66%", "OFFLINE REANALYSIS", "온라인 50세션 사후 재분석"],
+          ["0.8100", "LOSO · MEAN AUC", "4인 제안 모델 평균"],
+          ["76.06%", "LOSO · MEAN BA", "18개 런 · 1,440회"],
+          ["74.71%", "ONLINE · 50 SESSIONS", "3,910회 · 영점조절 적용"],
         ].map(([v, l, d]) => (
           <div
             key={l}
@@ -214,12 +214,12 @@ export default function Home() {
             함께 읽는 결과.
           </h2>
           <p>
-            온라인 50세션을 사후 재분석한 Low-channel + TTA의 평균 BA는
-            74.66%입니다.
+            실전 온라인 50세션 3,910회에서 적응형 영점조절 적용 후 평균 BA는
+            74.71%입니다.
           </p>
           <div className="live-metric">
-            현장 라이브 평균 BA <strong>54.48%</strong>
-            <small>별도 평가 조건 · 사후 재분석 결과와 구분</small>
+            영점조절 전 평균 BA <strong>54.50%</strong>
+            <small>적용 후 +20.21%p · p &lt; 10⁻¹⁷</small>
           </div>
           <Link to="/research" className="text-button">
             실험 결과와 평가 조건 <ArrowRight size={16} />
