@@ -4,6 +4,8 @@
 
 ## 실행
 
+### https://hie0.github.io/capstone_BCI/
+
 Node.js 20.19+ 또는 22.12+ 권장. 개발 시 검증한 환경은 Node 24입니다.
 
 ```sh
