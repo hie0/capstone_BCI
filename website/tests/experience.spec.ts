@@ -103,7 +103,17 @@ test("home research replay and mobile layout", async ({ page }) => {
     path: "tests/artifacts/home-1440.png",
     fullPage: true,
   });
-  await page.getByRole("link", { name: "Research", exact: true }).click();
+  await page.getByRole("link", { name: "연구 과정", exact: true }).click();
+  await expect(page).toHaveURL(/#\/research#research-process$/);
+  await expect(
+    page.getByRole("heading", { name: "신호 처리 파이프라인" }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "실험 결과", exact: true }).click();
+  await expect(page).toHaveURL(/#\/research#research-results$/);
+  await expect(
+    page.getByRole("heading", { name: "구성 요소에 따른 성능 변화" }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "연구 내용", exact: true }).click();
   await page.getByRole("button", { name: "Excluded Channels" }).click();
   await page
     .getByRole("button", { name: "전극 Fp2", exact: true })
@@ -184,16 +194,18 @@ test("wearable core and extended concepts, 3D selection and shared model", async
   await page.getByRole("button", { name: "C3", exact: true }).click();
   await expect(page.locator(".electrode-name")).toHaveText("C3");
   await page.getByRole("button", { name: "RIGHT MI" }).click();
-  await page.getByRole("combobox", { name: "Model", exact: true }).selectOption("baseline");
+  await page
+    .getByRole("combobox", { name: "Model", exact: true })
+    .selectOption("baseline");
   await page.getByRole("switch", { name: "Wearable TTA" }).click();
   await page.screenshot({
     path: "tests/artifacts/wearable-3d-1440.png",
     fullPage: true,
   });
   await page.getByRole("button", { name: /이 구성으로 스마트홈 체험/ }).click();
-  await expect(page.getByRole("combobox", { name: "Model", exact: true })).toHaveValue(
-    "baseline",
-  );
+  await expect(
+    page.getByRole("combobox", { name: "Model", exact: true }),
+  ).toHaveValue("baseline");
   await expect(
     page.getByRole("switch", { name: "TTA", exact: true }),
   ).toHaveAttribute("aria-checked", "false");

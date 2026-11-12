@@ -9,15 +9,15 @@
     "Noto Sans KR",
     sans-serif;
   color: #e6f6ff;
-  background: #081220;
+  background: #10283a;
   font-synthesis: none;
   font-weight: 400;
   font-size: 14px;
   line-height: 1.6;
   --cyan: #00e5ff;
   --purple: #b58cff;
-  --muted: #94a3b8;
-  --line: #233649;
+  --muted: #b3c7d8;
+  --line: #38617b;
 }
 * {
   box-sizing: border-box;
@@ -25,7 +25,8 @@
 body {
   margin: 0;
   background:
-    radial-gradient(ellipse at 85% 15%, #0d263944, transparent 48%), #081220;
+    radial-gradient(ellipse at 85% 10%, #2d78945c, transparent 48%),
+    radial-gradient(ellipse at 12% 35%, #285a7440, transparent 42%), #10283a;
 }
 a {
   color: inherit;
@@ -111,8 +112,8 @@ svg {
 }
 header {
   height: 80px;
-  border-bottom: 1px solid #ffffff0c;
-  background: #081220e8;
+  border-bottom: 1px solid #85cce02b;
+  background: #123049ed;
   position: relative;
   z-index: 10;
 }
@@ -154,13 +155,13 @@ header {
 nav {
   display: flex;
   height: 100%;
-  gap: 36px;
+  gap: 25px;
 }
 nav a {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #8da1b5;
+  color: #b3c9da;
   font-size: 13px;
   position: relative;
 }
@@ -204,11 +205,11 @@ nav a.active:after {
   padding: 11px 17px;
   font-size: 12px;
   font-weight: 550;
-  background: #102033;
+  background: #1c415a;
   white-space: nowrap;
 }
 .button:hover {
-  background: #1a354a;
+  background: #285b77;
 }
 .button.primary {
   background: #00d8e7;
@@ -273,8 +274,8 @@ nav a.active:after {
   background: #103c3233;
 }
 .panel {
-  background: linear-gradient(140deg, #102236, #0e1d2e);
-  border: 1px solid #26394d;
+  background: linear-gradient(140deg, #1a405a, #16344c);
+  border: 1px solid #47718b;
   border-radius: 10px;
   overflow: hidden;
 }
@@ -327,7 +328,7 @@ nav a.active:after {
   gap: 12px;
   color: #95b0c7;
   border: 1px solid #253a4d;
-  background: #112134;
+  background: #1a3b53;
   padding: 14px 18px;
   border-radius: 7px;
   font-size: 10px;
@@ -399,12 +400,12 @@ nav a.active:after {
   align-items: center;
   padding: 17px 20px;
   border: 1px solid #27394d;
-  background: #0e1e2f;
+  background: #18384f;
   border-radius: 8px;
 }
 .app-picker > button.active {
   border-color: #227e89;
-  background: linear-gradient(100deg, #10313e, #102332);
+  background: linear-gradient(100deg, #1b5362, #1a3e56);
   box-shadow: inset 0 0 25px #00e5ff04;
 }
 .app-picker > button > svg {
@@ -479,7 +480,7 @@ nav a.active:after {
 select {
   display: block;
   border: 1px solid #30475b;
-  background: #0c1b2b;
+  background: #17364d;
   color: #c3d5e5;
   border-radius: 5px;
   padding: 9px 8px;
@@ -635,7 +636,7 @@ input[type="range"] {
   gap: 5px;
   border: 1px solid #2a3e52;
   border-radius: 6px;
-  background: #14283b;
+  background: #1d425b;
   min-width: 0;
   padding: 10px 2px;
   color: #8da4bb;
@@ -899,7 +900,7 @@ input[type="range"] {
   align-items: center;
   gap: 20px;
   border: 1px solid #21384c;
-  background: #0e2030;
+  background: #193b52;
   border-radius: 7px;
   padding: 19px 22px;
   margin-top: 21px;
@@ -959,7 +960,7 @@ input[type="range"] {
   background: #b58cff;
 }
 footer {
-  border-top: 1px solid #203244;
+  border-top: 1px solid #41677f;
   padding: 27px 0 32px;
   display: flex;
   justify-content: space-between;
@@ -1200,7 +1201,7 @@ td:first-child {
 .insight-row > div {
   border-left: 2px solid #2f6574;
   padding: 15px 22px;
-  background: #102338;
+  background: #1a3d55;
 }
 .insight-row span {
   font-size: 9px;
@@ -1449,7 +1450,7 @@ td:first-child {
   grid-template-columns: repeat(4, 1fr);
   border: 1px solid #263a4e;
   border-radius: 8px;
-  background: #0d2032;
+  background: #193b52;
 }
 .metrics > div {
   padding: 28px 30px;
@@ -1508,7 +1509,7 @@ td:first-child {
   padding: 30px;
   border: 1px solid #253b4f;
   border-radius: 9px;
-  background: linear-gradient(130deg, #11283a, #0c1b2c);
+  background: linear-gradient(130deg, #1c435c, #17364d);
   overflow: hidden;
 }
 .problem-grid h3 {
@@ -1815,6 +1816,70 @@ td:first-child {
   color: #fff2bf;
   font-size: 13px;
 }
+.scroll-section {
+  scroll-margin-top: 105px;
+}
+
+/* Brighter laboratory palette: preserves the scientific dark theme with clearer surfaces. */
+.header-link,
+.config-card,
+.comparison-table,
+.timeline button,
+.command-buttons > button,
+.channel-preview,
+.pipeline,
+.pipeline > div,
+.conclusion,
+.application-preview > a,
+.atlas-panel,
+.replay-main,
+.wearable-settings,
+.channel-details,
+.head-panel,
+.room-panel,
+.monitor,
+.settings {
+  border-color: #416a84;
+}
+.settings,
+.monitor,
+.room-panel,
+.wearable-settings,
+.head-panel,
+.channel-details,
+.comparison-table,
+.replay-main {
+  box-shadow: 0 18px 55px #03111f29;
+}
+.page-heading p,
+.hero-copy p,
+.section-title p,
+.problem-grid p,
+.research-intro > p,
+.channel-details p,
+.source-note,
+.muted {
+  color: #b5c9d8;
+}
+.breadcrumb,
+.visual-coordinate,
+.hero-caption,
+.pipeline small,
+.metrics small,
+.channel-stat span {
+  color: #8db0c5;
+}
+.metrics,
+.pipeline,
+.how-it-works,
+.comparison-table {
+  box-shadow: 0 22px 60px #05152326;
+}
+.main-tabs,
+.section,
+.channel-preview {
+  border-color: #375c75;
+}
 @media (min-width: 1400px) {
   .smart-layout {
     grid-template-columns: 250px minmax(0, 1fr) 260px;
@@ -1966,7 +2031,11 @@ td:first-child {
     width: calc(100% - 32px);
   }
   header {
-    height: 68px;
+    height: 112px;
+  }
+  .header-inner {
+    flex-wrap: wrap;
+    padding: 8px 0 0;
   }
   .brand {
     font-size: 15px;
@@ -1984,10 +2053,16 @@ td:first-child {
     display: none;
   }
   nav {
-    gap: 19px;
+    order: 3;
+    width: 100%;
+    height: 48px;
+    justify-content: space-between;
+    gap: 0;
   }
   nav a {
-    font-size: 11px;
+    justify-content: center;
+    font-size: 9.5px;
+    white-space: nowrap;
   }
   .page-heading {
     padding: 25px 0;

@@ -1,13 +1,6 @@
 import React, { Suspense, lazy, useEffect } from "react";
 import ReactDOM from "react-dom/client";
-import {
-  HashRouter,
-  NavLink,
-  Route,
-  Routes,
-  Link,
-  useLocation,
-} from "react-router-dom";
+import { HashRouter, Route, Routes, Link, useLocation } from "react-router-dom";
 import { BrainCircuit, ArrowUpRight } from "lucide-react";
 import "./styles.css";
 const Home = lazy(() => import("./pages/Home"));
@@ -16,8 +9,47 @@ const Simulation = lazy(() => import("./pages/Simulation"));
 function App() {
   const location = useLocation();
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
+    if (location.hash) {
+      window.requestAnimationFrame(() => {
+        document
+          .getElementById(location.hash.slice(1))
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [location.pathname, location.hash]);
+
+  const navItems = [
+    { label: "연구 개요", to: "/", active: location.pathname === "/" },
+    {
+      label: "연구 내용",
+      to: "/research#research-content",
+      active:
+        location.pathname === "/research" &&
+        (!location.hash || location.hash === "#research-content"),
+    },
+    {
+      label: "연구 과정",
+      to: "/research#research-process",
+      active:
+        location.pathname === "/research" &&
+        location.hash === "#research-process",
+    },
+    {
+      label: "실험 결과",
+      to: "/research#research-results",
+      active:
+        location.pathname === "/research" &&
+        location.hash === "#research-results",
+    },
+    {
+      label: "응용",
+      to: "/simulation",
+      active: location.pathname === "/simulation",
+      featured: true,
+    },
+  ];
   return (
     <>
       <a
@@ -42,16 +74,20 @@ function App() {
             </span>
           </Link>
           <nav aria-label="메인 내비게이션">
-            <NavLink to="/" end>
-              Home
-            </NavLink>
-            <NavLink to="/research">Research</NavLink>
-            <NavLink to="/simulation">
-              Simulation <span className="nav-dot" />
-            </NavLink>
+            {navItems.map((item) => (
+              <Link
+                key={item.label}
+                to={item.to}
+                className={item.active ? "active" : undefined}
+                aria-current={item.active ? "page" : undefined}
+              >
+                {item.label}
+                {item.featured && <span className="nav-dot" />}
+              </Link>
+            ))}
           </nav>
           <Link className="header-link" to="/simulation">
-            Enter the lab <ArrowUpRight size={16} />
+            응용 체험 <ArrowUpRight size={16} />
           </Link>
         </div>
       </header>

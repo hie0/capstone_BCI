@@ -24,7 +24,10 @@ export default function Research() {
         </div>
         <span className="badge research">Research overview</span>
       </div>
-      <section className="section research-intro">
+      <section
+        id="research-content"
+        className="section research-intro scroll-section"
+      >
         <span className="eyebrow">01 / BACKGROUND</span>
         <h2>더 많은 채널이 항상 더 좋은 선택일까요?</h2>
         <p>
@@ -106,7 +109,7 @@ export default function Research() {
           </div>
         </div>
       </section>
-      <section className="section">
+      <section id="research-process" className="section scroll-section">
         <span className="eyebrow">03 / PROCESSING PIPELINE</span>
         <h2>신호 처리 파이프라인</h2>
         <Pipeline />
@@ -120,7 +123,7 @@ export default function Research() {
           </p>
         </div>
       </section>
-      <section className="section">
+      <section id="research-results" className="section scroll-section">
         <span className="eyebrow">04 / RESULTS & ABLATION</span>
         <h2>구성 요소에 따른 성능 변화</h2>
         <div className="panel">
