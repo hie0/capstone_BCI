@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Html, OrbitControls, useGLTF } from '@react-three/drei';
 import * as T from 'three';
+import { MeshBVH, acceleratedRaycast } from 'three-mesh-bvh';
 import { channelInfo, core } from '../data/research';
 
 export function HeroBust({selected,onSelect}:{selected:string;onSelect:(name:string)=>void}) {
@@ -11,8 +12,9 @@ export function HeroBust({selected,onSelect}:{selected:string;onSelect:(name:str
  const {model,equipment,sensors}=useMemo(()=>{
   const model=asset.clone(true);const bounds=new T.Box3().setFromObject(model);const scale=2.8/bounds.getSize(new T.Vector3()).y;
   model.position.copy(bounds.getCenter(new T.Vector3())).multiplyScalar(-scale);model.scale.setScalar(scale);
-  model.traverse(o=>{if(o instanceof T.Mesh){o.geometry=o.geometry.clone();o.geometry.computeVertexNormals();o.material=new T.MeshStandardMaterial({color:'#ECEEF0',roughness:.7});}});model.updateMatrixWorld(true);
+  model.traverse(o=>{if(o instanceof T.Mesh){o.geometry=o.geometry.clone();o.geometry.computeVertexNormals();o.geometry.boundsTree=new MeshBVH(o.geometry);o.raycast=acceleratedRaycast;o.material=new T.MeshStandardMaterial({color:'#ECEEF0',roughness:.7});}});model.updateMatrixWorld(true);
   const ray=new T.Raycaster();const origin=new T.Vector3(0,.65,0);
+  ray.firstHitOnly=true;
   const surface=(theta:number,phi:number)=>{const d=new T.Vector3(Math.sin(theta)*Math.cos(phi),Math.cos(theta),Math.sin(theta)*Math.sin(phi));ray.set(origin.clone().addScaledVector(d,4),d.clone().negate());const h=ray.intersectObject(model,true)[0];return h?{p:h.point,n:h.face!.normal.clone().transformDirection(h.object.matrixWorld)}:null;};
   const channels:[string,number,number][]=[['Fp1',1.1,1.92],['Fp2',1.1,1.22],['F7',1.1,2.65],['F3',.65,2.2],['F4',.65,.94],['F8',1.1,.49],['T7',1.5,3.14],['C3',.8,3.14],['Cz',0,0],['C4',.8,0],['T8',1.5,0],['P7',1.1,3.7],['Pz',.65,4.71],['P8',1.1,5.72],['O1',1.3,4.3],['O2',1.3,5.12]];
   const equipment=new T.Group();const cable=new T.MeshStandardMaterial({color:'#E6EBEF',roughness:.6});
