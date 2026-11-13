@@ -19,7 +19,7 @@ import {
 } from "../data/research";
 
 export function SubjectResultChart() {
-  const [subject, setSubject] = useState("ALL");
+  const [subject, setSubject] = useState("KGE");
   const [metric, setMetric] = useState<"BA" | "AUC">("BA");
   const selected = subjectResults.find((item) => item.id === subject);
   const rows = (selected ? [selected] : subjectResults).map((item) => ({
@@ -27,103 +27,151 @@ export function SubjectResultChart() {
     baseline: metric === "BA" ? item.baselineBA : item.baselineAUC,
     proposed: metric === "BA" ? item.proposedBA : item.proposedAUC,
   }));
+  const improvement = selected
+    ? metric === "BA"
+      ? selected.proposedBA - selected.baselineBA
+      : selected.proposedAUC - selected.baselineAUC
+    : null;
+  const formatValue = (value: number) =>
+    metric === "BA" ? `${value.toFixed(2)}%` : value.toFixed(4);
   return (
-    <div className="subject-results">
-      <div className="comparison-filters compact">
-        <label>
-          피험자
-          <select value={subject} onChange={(e) => setSubject(e.target.value)}>
-            <option value="ALL">4인 전체 비교</option>
-            {subjectResults.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name} ({item.id})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          지표
-          <select
-            value={metric}
-            onChange={(e) => setMetric(e.target.value as "BA" | "AUC")}
+    <div className="subject-results-dashboard">
+      <div className="subject-toolbar">
+        <div className="subject-tabs" aria-label="피험자 선택">
+          {subjectResults.map((item) => (
+            <button
+              key={item.id}
+              className={subject === item.id ? "active" : ""}
+              aria-pressed={subject === item.id}
+              onClick={() => setSubject(item.id)}
+            >
+              <strong>{item.id}</strong>
+              <span>{item.name}</span>
+            </button>
+          ))}
+          <button
+            className={subject === "ALL" ? "active" : ""}
+            aria-pressed={subject === "ALL"}
+            onClick={() => setSubject("ALL")}
           >
-            <option value="BA">균형정확도 BA</option>
-            <option value="AUC">ROC-AUC</option>
-          </select>
-        </label>
-      </div>
-      <div className="result-chart">
-        <ResponsiveContainer width="100%" height={330}>
-          <BarChart
-            data={rows}
-            margin={{ top: 25, right: 20, left: 0, bottom: 8 }}
-          >
-            <CartesianGrid stroke="#DCE5EB" vertical={false} />
-            <XAxis
-              dataKey="name"
-              tick={{ fill: "#526574" }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              domain={metric === "BA" ? [50, 100] : [0.5, 1]}
-              tickFormatter={(v) =>
-                metric === "BA" ? `${v}%` : Number(v).toFixed(1)
-              }
-              tick={{ fill: "#526574", fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              formatter={(value, name) => [
-                metric === "BA" ? `${value}%` : Number(value).toFixed(4),
-                name === "baseline" ? "16ch baseline" : "5~7ch proposed",
-              ]}
-              contentStyle={{
-                background: "#fff",
-                border: "1px solid #DCE5EB",
-                borderRadius: 12,
-              }}
-            />
-            <Bar
-              dataKey="baseline"
-              name="16ch baseline"
-              fill="#9CAAB6"
-              radius={[5, 5, 0, 0]}
-            />
-            <Bar
-              dataKey="proposed"
-              name="5~7ch proposed"
-              fill="#39776F"
-              radius={[5, 5, 0, 0]}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-      {selected && (
-        <div className="subject-detail">
-          <div>
-            <span>최적 구성</span>
-            <strong>{selected.channels}</strong>
-          </div>
-          <div>
-            <span>배포 모델</span>
-            <strong>{selected.model}</strong>
-          </div>
-          <div>
-            <span>검증 규모</span>
-            <strong>
-              {selected.sessions} · {selected.trials}회
-            </strong>
-          </div>
-          <div>
-            <span>잠재력 상한</span>
-            <strong>
-              {selected.ceilingBA}% BA · {selected.ceilingAUC.toFixed(4)} AUC
-            </strong>
-          </div>
+            <strong>ALL</strong>
+            <span>4인 비교</span>
+          </button>
         </div>
-      )}
+        <div className="metric-tabs" aria-label="평가 지표 선택">
+          {(["BA", "AUC"] as const).map((item) => (
+            <button
+              key={item}
+              className={metric === item ? "active" : ""}
+              aria-pressed={metric === item}
+              onClick={() => setMetric(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="subject-dashboard-body">
+        <div className="subject-chart-card">
+          <div className="chart-legend">
+            <span>
+              <i className="baseline" />
+              16채널 기준
+            </span>
+            <span>
+              <i className="proposed" />
+              5~7채널 개선 모델
+            </span>
+          </div>
+          <ResponsiveContainer width="100%" height={330}>
+            <BarChart
+              data={rows}
+              margin={{ top: 24, right: 14, left: 0, bottom: 8 }}
+            >
+              <CartesianGrid stroke="#DCE5EB" vertical={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fill: "#526574", fontWeight: 700 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                domain={metric === "BA" ? [50, 100] : [0.5, 1]}
+                tickFormatter={(v) =>
+                  metric === "BA" ? `${v}%` : Number(v).toFixed(1)
+                }
+                tick={{ fill: "#526574", fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                formatter={(value, _name, item) => [
+                  formatValue(Number(value)),
+                  item.dataKey === "baseline"
+                    ? "16채널 기준"
+                    : "5~7채널 개선 모델",
+                ]}
+                contentStyle={{
+                  background: "#fff",
+                  border: "1px solid #DCE5EB",
+                  borderRadius: 12,
+                }}
+              />
+              <Bar
+                dataKey="baseline"
+                name="16채널 기준"
+                fill="#A6B4C0"
+                radius={[7, 7, 0, 0]}
+              />
+              <Bar
+                dataKey="proposed"
+                name="5~7채널 개선 모델"
+                fill="#42BFAE"
+                radius={[7, 7, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <aside className="subject-summary" aria-live="polite">
+          <span className="eyebrow">선택 결과</span>
+          <div className="subject-identity">
+            <strong>{selected?.id ?? "ALL"}</strong>
+            <span>{selected?.name ?? "4인 전체 비교"}</span>
+          </div>
+          <dl>
+            <div>
+              <dt>채널 수</dt>
+              <dd>{selected?.channels ?? "5ch / 7ch"}</dd>
+            </div>
+            <div>
+              <dt>개선 폭</dt>
+              <dd>
+                {improvement === null
+                  ? "피험자별 상이"
+                  : metric === "BA"
+                    ? `+${improvement.toFixed(2)}%p`
+                    : `+${improvement.toFixed(4)}`}
+              </dd>
+            </div>
+            <div>
+              <dt>모델명</dt>
+              <dd>{selected?.model ?? "개별 최적 모델"}</dd>
+            </div>
+            <div>
+              <dt>평가 규모</dt>
+              <dd>
+                {selected
+                  ? `${selected.sessions} · ${selected.trials}회`
+                  : "18개 런 · 1,440회"}
+              </dd>
+            </div>
+          </dl>
+        </aside>
+      </div>
+      <p className="subject-source-warning">
+        평가 조건: 피험자 독립 LOSO · 4인 · 18개 런 · 1,440회. 현재 표시값은
+        기존 저장소 기입값이며, 최종 보고서 PDF p.12 원문 대조가 필요합니다.
+      </p>
     </div>
   );
 }

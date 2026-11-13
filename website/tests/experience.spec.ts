@@ -36,17 +36,23 @@ test("all smart home commands, dwell, logs, reset and synthetic playback", async
   await page.getByRole("button", { name: /RIGHT.*온도/ }).click();
   await expect(
     page.getByRole("button", { name: "Temperature 메뉴" }),
-  ).toContainText("25°C");
+  ).toContainText("23°C");
   await page.getByRole("button", { name: /LEFT.*온도/ }).click();
   await expect(
     page.getByRole("button", { name: "Temperature 메뉴" }),
-  ).toContainText("24°C");
+  ).toContainText("22°C");
+  await expect(page.locator(".scene-wall-temperature")).toContainText("22°C");
   await page.getByRole("button", { name: "Television 메뉴" }).click();
-  await page.getByRole("button", { name: /RIGHT.*다음 채널/ }).click();
+  await page.getByRole("button", { name: /RIGHT.*TV 켜기/ }).click();
   await expect(
     page.getByRole("button", { name: "Television 메뉴" }),
-  ).toContainText("CH 2");
-  await expect(page.getByTestId("command-count")).toHaveText("009");
+  ).toContainText("ON");
+  await page.getByRole("button", { name: /LEFT.*TV 끄기/ }).click();
+  await expect(
+    page.getByRole("button", { name: "Television 메뉴" }),
+  ).toContainText("OFF");
+  await page.getByRole("button", { name: /RIGHT.*TV 켜기/ }).click();
+  await expect(page.getByTestId("command-count")).toHaveText("011");
   await page.screenshot({
     path: "tests/artifacts/smart-home-1440.png",
     fullPage: true,
@@ -55,7 +61,7 @@ test("all smart home commands, dwell, logs, reset and synthetic playback", async
   await expect(page.getByTestId("command-count")).toHaveText("000");
   await expect(
     page.getByRole("button", { name: "Television 메뉴" }),
-  ).toContainText("CH 1");
+  ).toContainText("OFF");
   await page.getByLabel("Input mode").selectOption("synthetic");
   await page.getByRole("button", { name: "자동 데모 시작" }).click();
   await expect(page.getByTestId("command-count")).not.toHaveText("000", {
@@ -118,11 +124,29 @@ test("home research replay and mobile layout", async ({ page }) => {
     path: "tests/artifacts/research-1440.png",
     fullPage: true,
   });
-  await page.getByRole("button", { name: "Excluded Channels" }).click();
+  await page
+    .locator(".subject-comparison-panel .recharts-bar-rectangle")
+    .first()
+    .hover();
+  await expect(
+    page.locator(".subject-comparison-panel .recharts-tooltip-wrapper"),
+  ).toContainText("16채널 기준");
+  await page.getByRole("button", { name: "제외 채널" }).click();
   await page
     .getByRole("button", { name: "전극 Fp2", exact: true })
     .press("Enter");
   await expect(page.locator(".electrode-name")).toHaveText("Fp2");
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: "tests/artifacts/research-mobile-390.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1100 });
   await page.getByRole("link", { name: /인터랙티브 시뮬레이션/ }).click();
   await page.getByRole("tab", { name: "EEG Replay" }).click();
   await page.getByRole("button", { name: "Play", exact: true }).click();

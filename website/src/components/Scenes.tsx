@@ -126,6 +126,23 @@ export function Atlas2D({
       className="atlas-svg"
       aria-label="EEG 두피 전극 배치도"
     >
+      <defs>
+        <filter
+          id="electrode-neutral-glow"
+          x="-120%"
+          y="-120%"
+          width="340%"
+          height="340%"
+        >
+          <feGaussianBlur stdDeviation="5" result="blur" />
+          <feFlood floodColor="#6F879A" floodOpacity="0.48" />
+          <feComposite in2="blur" operator="in" />
+          <feMerge>
+            <feMergeNode />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
       <ellipse
         cx="200"
         cy="205"
@@ -156,9 +173,11 @@ export function Atlas2D({
         return (
           <g
             key={n}
+            className={`electrode-node ${selected === n ? "selected" : ""}`}
             role="button"
             tabIndex={0}
             aria-label={`전극 ${n}`}
+            aria-pressed={selected === n}
             onClick={() => onSelect(n)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -171,10 +190,27 @@ export function Atlas2D({
             <title>
               {n}: {channelInfo(n)}
             </title>
+            {selected === n && (
+              <>
+                <circle
+                  className="electrode-diffusion-ring ring-one"
+                  cx={200 + x * 144}
+                  cy={205 + y * 150}
+                  r="18"
+                />
+                <circle
+                  className="electrode-diffusion-ring ring-two"
+                  cx={200 + x * 144}
+                  cy={205 + y * 150}
+                  r="18"
+                />
+              </>
+            )}
             <circle
+              className="electrode-dot"
               cx={200 + x * 144}
               cy={205 + y * 150}
-              r={selected === n ? 15 : 11}
+              r={selected === n ? 14 : 11}
               fill={
                 motor && enabled
                   ? direction === "LEFT"
@@ -184,7 +220,11 @@ export function Atlas2D({
                     ? "#82B5AD"
                     : "#CBD5DF"
               }
-              stroke={selected === n ? "#253F55" : "#9CAAB6"}
+              stroke={selected === n ? "#607D92" : "#9CAAB6"}
+              strokeWidth={selected === n ? 3 : 1.5}
+              filter={
+                selected === n ? "url(#electrode-neutral-glow)" : undefined
+              }
             />
             <text
               x={200 + x * 144}
@@ -692,6 +732,53 @@ function Box({
     </RoundedBox>
   );
 }
+
+function Television({ on }: { on: boolean }) {
+  const screen = useRef<Group>(null);
+  useFrame((_, dt) => {
+    if (!screen.current) return;
+    screen.current.scale.y = MathUtils.damp(
+      screen.current.scale.y,
+      on ? 1 : 0.015,
+      8,
+      dt,
+    );
+    screen.current.scale.x = MathUtils.damp(
+      screen.current.scale.x,
+      on ? 1 : 0.55,
+      8,
+      dt,
+    );
+  });
+  return (
+    <group>
+      <Box
+        position={[1.48, 1.65, -2.23]}
+        size={[2.05, 1.25, 0.12]}
+        color="#1C2B36"
+      />
+      <mesh position={[1.48, 1.65, -2.155]}>
+        <planeGeometry args={[1.88, 1.08]} />
+        <meshBasicMaterial color="#030608" />
+      </mesh>
+      <group ref={screen} position={[1.48, 1.65, -2.145]}>
+        <mesh>
+          <planeGeometry args={[1.86, 1.06]} />
+          <meshBasicMaterial color="#7CCED5" />
+        </mesh>
+      </group>
+      <mesh position={[2.35, 1.08, -2.14]}>
+        <sphereGeometry args={[0.035, 16, 16]} />
+        <meshStandardMaterial
+          color={on ? "#55E7C7" : "#59646B"}
+          emissive={on ? "#55E7C7" : "#000000"}
+          emissiveIntensity={on ? 1.4 : 0}
+        />
+      </mesh>
+    </group>
+  );
+}
+
 export function Room() {
   const s = useBCI();
   return (
@@ -722,28 +809,7 @@ export function Room() {
       {[-1, 1].map((side) => (
         <Curtain key={side} side={side} open={s.curtains} />
       ))}
-      <Box
-        position={[1.48, 1.65, -2.23]}
-        size={[2.05, 1.25, 0.12]}
-        color="#253F55"
-      />
-      <mesh position={[1.48, 1.65, -2.155]}>
-        <planeGeometry args={[1.88, 1.08]} />
-        <meshBasicMaterial
-          color={
-            ["#527C98", "#82B5AD", "#8A79AF", "#C59D78", "#759CB5"][s.tv - 1]
-          }
-        />
-      </mesh>
-      <Html position={[1.48, 1.65, -2.05]} center>
-        <div className="tv-content">
-          <small>NEUROLINK TV</small>
-          <strong>
-            {["OCEAN", "FOREST", "COSMOS", "DESERT", "SKY"][s.tv - 1]}
-          </strong>
-          <span>CH. 0{s.tv}</span>
-        </div>
-      </Html>
+      <Television on={s.tv} />
       <Box
         position={[1.4, 0.39, -1.97]}
         size={[2.5, 0.65, 0.65]}
@@ -789,14 +855,6 @@ export function Room() {
           color="#527C6F"
         />
       ))}
-      <Box
-        position={[1.5, 2.7, -2.2]}
-        size={[1.65, 0.35, 0.22]}
-        color="#F4F7F7"
-      />
-      <Html position={[1.5, 2.7, -2.05]} center>
-        <span className="temperature-label">{s.temperature}°</span>
-      </Html>
       <mesh position={[2.35, 0.32, 1.35]}>
         <cylinderGeometry args={[0.24, 0.18, 0.6, 20]} />
         <meshStandardMaterial color="#D4DAD5" />
@@ -852,14 +910,13 @@ export function RoomFallback() {
         <i />
         <i />
       </div>
-      <div className="fallback-tv">
-        CH. {s.tv}
-        <strong>
-          {["OCEAN", "FOREST", "COSMOS", "DESERT", "SKY"][s.tv - 1]}
-        </strong>
+      <div
+        className={`fallback-tv ${s.tv ? "on" : "off"}`}
+        aria-label={`TV 전원 ${s.tv ? "켜짐" : "꺼짐"}`}
+      >
+        <i aria-hidden="true" />
       </div>
       <div className="sofa">━━━</div>
-      <div className="room-temp">{s.temperature}°C</div>
       <div className="lamp">◉ {s.light ? "ON" : "OFF"}</div>
     </div>
   );

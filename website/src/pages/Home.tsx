@@ -8,30 +8,48 @@ import {
   Layers,
   Waves,
   Scan,
+  ShieldCheck,
   House,
 } from "lucide-react";
 import { Scene, Atlas2D } from "../components/Scenes";
 import { HeroBust } from "../components/HeroBust";
 import { ResultChart } from "../components/Comparison";
 export function Pipeline() {
+  const steps = [
+    {
+      icon: Waves,
+      title: "EEG 입력",
+      desc: "감각운동 상상 신호 수집",
+    },
+    {
+      icon: Scan,
+      title: "핵심 채널 선택",
+      desc: "16ch에서 5~7ch로 축소",
+    },
+    {
+      icon: ShieldCheck,
+      title: "잡음 제거",
+      desc: "ArtGate90으로 이상 신호 차단",
+    },
+    {
+      icon: Layers,
+      title: "공분산·영점 보정",
+      desc: "세션 변화에 맞춰 분포 정렬",
+    },
+    {
+      icon: BrainCircuit,
+      title: "좌우 분류",
+      desc: "운동 상상 명령으로 변환",
+    },
+  ];
   return (
-    <div className="pipeline">
-      {[
-        { icon: Waves, title: "EEG acquisition", desc: "운동 상상 뇌파 입력" },
-        { icon: Scan, title: "Channel selection", desc: "감각운동 중심 5~7ch" },
-        { icon: Layers, title: "Stabilization", desc: "공분산 · 영점 안정화" },
-        {
-          icon: BrainCircuit,
-          title: "Classification",
-          desc: "LEFT / RIGHT 분류",
-        },
-        { icon: House, title: "Application", desc: "일상 속 인터페이스" },
-      ].map((p, i) => (
-        <div key={p.title}>
+    <div className="pipeline" aria-label="EEG 신호 처리 파이프라인">
+      {steps.map((step, i) => (
+        <div className="pipeline-step" key={step.title}>
           <span className="mono">0{i + 1}</span>
-          <p.icon size={25} />
-          <strong>{p.title}</strong>
-          <small>{p.desc}</small>
+          <step.icon size={24} aria-hidden="true" />
+          <strong>{step.title}</strong>
+          <small>{step.desc}</small>
         </div>
       ))}
     </div>
@@ -169,16 +187,20 @@ export default function Home() {
         </div>
         <Atlas2D mode="5ch" selected={selected} onSelect={setSelected} />
         <div className="channel-stat">
-          <strong>
-            68.75<small>%</small>
-          </strong>
-          <span>16ch → 5ch 전극 감축률</span>
-          <p className="small">
-            {selected} · {channelInfo(selected)}
-          </p>
+          <div className="channel-achievement">
+            <span>가장 간결한 핵심 구성</span>
+            <strong>16ch → 5ch</strong>
+            <b>68.75% 감소</b>
+          </div>
+          <div className="selected-channel-card" aria-live="polite">
+            <span>선택 전극</span>
+            <strong>{selected}</strong>
+            <p>{channelInfo(selected)}</p>
+          </div>
           <hr />
-          <strong>136 → 15</strong>
-          <span>대칭 공분산의 독립 원소 수</span>
+          <p className="reduction-note">
+            7채널 구성은 <b>56.25% 감소</b> · 공분산 독립 원소 136 → 15
+          </p>
         </div>
       </section>
       <section className="container section">

@@ -18,7 +18,7 @@ const actions = [
   ["조명 끄기", "조명 켜기"],
   ["커튼 닫기", "커튼 열기"],
   ["온도 −1°C", "온도 +1°C"],
-  ["이전 채널", "다음 채널"],
+  ["TV 끄기", "TV 켜기"],
 ];
 export default function SmartHome() {
   const s = useBCI();
@@ -40,7 +40,7 @@ export default function SmartHome() {
     s.light ? "ON" : "OFF",
     s.curtains ? "OPEN" : "CLOSED",
     `${s.temperature}°C`,
-    `CH ${s.tv}`,
+    s.tv ? "ON" : "OFF",
   ];
   return (
     <>
@@ -68,6 +68,14 @@ export default function SmartHome() {
             <Scene room fallback={<RoomFallback />}>
               <Room />
             </Scene>
+            <div
+              className="scene-wall-temperature"
+              aria-live="polite"
+              aria-label={`현재 온도 ${s.temperature}도`}
+            >
+              <i className="classic-thermometer" aria-hidden="true" />
+              <strong>{s.temperature}°C</strong>
+            </div>
             <div className="scene-caption">
               드래그하여 공간 둘러보기 <span>01 / LIVING ROOM</span>
             </div>

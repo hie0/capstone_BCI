@@ -2806,6 +2806,7 @@ td {
 
 .room-scene {
   background: #f2f0ea;
+  isolation: isolate;
 }
 
 .device-menu button {
@@ -3216,4 +3217,482 @@ td:first-child {
 
 .temperature-label {
   color: var(--primary);
+}
+
+/* Refined electrode focus, processing flow and research dashboard */
+.electrode-node {
+  outline: none;
+}
+
+.electrode-node .electrode-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    r 180ms ease,
+    fill 180ms ease,
+    stroke 180ms ease;
+}
+
+.electrode-node:hover .electrode-dot,
+.electrode-node:focus-visible .electrode-dot {
+  stroke: #607d92;
+  stroke-width: 3;
+}
+
+.electrode-node:focus-visible .electrode-dot {
+  filter: url(#electrode-neutral-glow);
+}
+
+.electrode-diffusion-ring {
+  fill: none;
+  stroke: #71899c;
+  stroke-width: 1.6;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: electrode-ripple 2.1s ease-out infinite;
+  pointer-events: none;
+}
+
+.electrode-diffusion-ring.ring-two {
+  animation-delay: 0.9s;
+}
+
+@keyframes electrode-ripple {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.72);
+  }
+  75%,
+  100% {
+    opacity: 0;
+    transform: scale(2.1);
+  }
+}
+
+.atlas-insight {
+  display: grid;
+  gap: 18px;
+}
+
+.reduction-hero {
+  padding: 22px 24px;
+  border: 1px solid #9edfd5;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #e9faf7, #f8fffe);
+  box-shadow: 0 16px 34px rgba(39, 135, 123, 0.1);
+}
+
+.reduction-hero > span,
+.reduction-hero > strong,
+.reduction-hero > b,
+.reduction-hero > small {
+  display: block;
+}
+
+.reduction-hero > span {
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.reduction-hero > strong {
+  color: var(--primary);
+  font-size: clamp(28px, 3vw, 42px);
+  letter-spacing: -0.04em;
+}
+
+.reduction-hero > b {
+  margin-top: 5px;
+  color: #169a89;
+  font-size: 22px;
+}
+
+.reduction-hero > small {
+  margin-top: 10px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.electrode-role-card {
+  min-height: 185px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-left: 5px solid #42cdb8;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: var(--card-shadow);
+}
+
+.electrode-role-card .electrode-name {
+  display: block;
+  margin: 6px 0 10px;
+  color: #159887;
+  font-size: 48px;
+  line-height: 1;
+}
+
+.electrode-role-card h3 {
+  margin: 0;
+  color: var(--primary);
+  font-size: 18px;
+  line-height: 1.75;
+}
+
+.channel-achievement {
+  padding: 22px;
+  border: 1px solid #9edfd5;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #e9faf7, #ffffff);
+}
+
+.channel-achievement > * {
+  display: block;
+}
+
+.channel-achievement span {
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.channel-achievement strong {
+  color: var(--primary);
+  font-size: clamp(27px, 3vw, 40px);
+  letter-spacing: -0.05em;
+}
+
+.channel-achievement b {
+  margin-top: 7px;
+  color: #169a89;
+  font-size: 19px;
+}
+
+.selected-channel-card {
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: #ffffff;
+}
+
+.selected-channel-card span,
+.selected-channel-card strong {
+  display: block;
+}
+
+.selected-channel-card strong {
+  margin: 5px 0 8px;
+  color: #169a89;
+  font-size: 30px;
+}
+
+.selected-channel-card p,
+.reduction-note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.subject-results-dashboard {
+  padding: 8px 22px 22px;
+}
+
+.subject-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.subject-tabs,
+.metric-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.subject-tabs button,
+.metric-tabs button {
+  min-height: 48px;
+  padding: 9px 15px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  background: #f7fafb;
+  text-align: left;
+}
+
+.subject-tabs button strong,
+.subject-tabs button span {
+  display: block;
+}
+
+.subject-tabs button strong {
+  color: var(--primary);
+  font-size: 13px;
+}
+
+.subject-tabs button span {
+  margin-top: 2px;
+  font-size: 9px;
+}
+
+.subject-tabs button.active,
+.metric-tabs button.active {
+  border-color: #69cdbf;
+  color: #117d70;
+  background: #e7f8f5;
+  box-shadow: 0 6px 18px rgba(35, 151, 136, 0.1);
+}
+
+.metric-tabs button {
+  min-width: 58px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.subject-dashboard-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 250px;
+  gap: 18px;
+}
+
+.subject-chart-card,
+.subject-summary {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fbfdfe;
+}
+
+.subject-chart-card {
+  min-width: 0;
+  padding: 15px 12px 0;
+}
+
+.chart-legend {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.chart-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: #a6b4c0;
+}
+
+.chart-legend i.proposed {
+  background: #42bfae;
+}
+
+.subject-summary {
+  padding: 22px;
+  background: linear-gradient(155deg, #f4fbfa, #ffffff);
+}
+
+.subject-identity {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.subject-identity strong,
+.subject-identity span {
+  display: block;
+}
+
+.subject-identity strong {
+  color: #159887;
+  font-size: 34px;
+}
+
+.subject-identity span {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.subject-summary dl {
+  display: grid;
+  gap: 14px;
+  margin: 18px 0 0;
+}
+
+.subject-summary dl > div {
+  display: grid;
+  gap: 4px;
+}
+
+.subject-summary dt {
+  color: var(--text-muted-aa);
+  font-size: 9px;
+}
+
+.subject-summary dd {
+  margin: 0;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.subject-source-warning {
+  margin: 15px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: #6a5960;
+  background: #fff7f3;
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.scene-wall-temperature {
+  position: absolute;
+  z-index: 999;
+  top: 25%;
+  left: 17%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #263746;
+  pointer-events: none;
+}
+
+.scene-wall-temperature strong {
+  color: #263746;
+  font: 800 15px/1 monospace;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
+}
+
+.classic-thermometer {
+  position: relative;
+  width: 8px;
+  height: 31px;
+  border: 2px solid #657b8b;
+  border-radius: 999px;
+  background: linear-gradient(to bottom, #dc6666 0 48%, #5d94c4 48% 100%);
+}
+
+.classic-thermometer::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #657b8b;
+  border-radius: 50%;
+  background: #5d94c4;
+  transform: translateX(-50%);
+}
+
+.fallback-tv {
+  overflow: hidden;
+  color: #ffffff;
+  background: #020405;
+  transition:
+    background 320ms ease,
+    box-shadow 320ms ease;
+}
+
+.fallback-tv.on {
+  background: linear-gradient(135deg, #58a7bd, #73d0c0);
+  box-shadow: 0 0 22px rgba(74, 195, 178, 0.45);
+}
+
+.fallback-tv i {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #616b70;
+}
+
+.fallback-tv.on i {
+  background: #61f0ce;
+  box-shadow: 0 0 8px #61f0ce;
+}
+
+@media (max-width: 980px) {
+  .subject-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .subject-tabs {
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .subject-tabs button {
+    flex: 0 0 auto;
+  }
+
+  .subject-dashboard-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .atlas-panel {
+    gap: 24px;
+  }
+
+  .reduction-hero,
+  .electrode-role-card {
+    padding: 18px;
+  }
+
+  .channel-preview {
+    gap: 22px;
+  }
+
+  .channel-stat {
+    display: block;
+  }
+
+  .subject-results-dashboard {
+    padding: 6px 12px 16px;
+  }
+
+  .subject-toolbar {
+    margin-top: 5px;
+  }
+
+  .subject-tabs button {
+    padding: 8px 12px;
+  }
+
+  .metric-tabs button {
+    flex: 1;
+  }
+
+  .chart-legend {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .scene-wall-temperature {
+    top: 22%;
+    left: 14%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .electrode-diffusion-ring {
+    animation: none;
+  }
 }

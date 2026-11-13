@@ -28,7 +28,7 @@ type State = Settings & {
   light: boolean;
   curtains: boolean;
   temperature: number;
-  tv: number;
+  tv: boolean;
   currentCommand: Direction | null;
   confidence: number | null;
   count: number;
@@ -49,8 +49,8 @@ const initial = {
   pending: false,
   light: true,
   curtains: true,
-  temperature: 24,
-  tv: 1,
+  temperature: 22,
+  tv: false,
   currentCommand: null,
   confidence: null,
   count: 0,
@@ -94,8 +94,8 @@ export const useBCI = create<State>((set) => ({
             message = `온도 ${next.temperature}°C`;
             break;
           case 3:
-            next = { tv: ((s.tv - 1 + delta + 5) % 5) + 1 };
-            message = `TV 채널 ${next.tv}`;
+            next = { tv: direction === "RIGHT" };
+            message = `TV 전원 ${direction === "RIGHT" ? "ON" : "OFF"}`;
         }
       }
       return {

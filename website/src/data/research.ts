@@ -1,5 +1,9 @@
 export type Direction = "LEFT" | "RIGHT";
 export type ChannelMode = "16ch" | "5ch" | "7ch";
+export const channelReduction = {
+  "5ch": 68.75,
+  "7ch": 56.25,
+} as const;
 export type PredictionRecord = {
   trialId: number;
   timestamp: number;
@@ -79,24 +83,8 @@ export type SubjectResult = {
   proposedBA: number;
   baselineAUC: number;
   proposedAUC: number;
-  ceilingBA: number;
-  ceilingAUC: number;
 };
 export const subjectResults: SubjectResult[] = [
-  {
-    id: "WMJ",
-    name: "우민지",
-    sessions: "5개 런",
-    trials: 400,
-    channels: "7ch",
-    model: "Reg-CSP + LDA",
-    baselineBA: 77.1,
-    proposedBA: 83.33,
-    baselineAUC: 0.8512,
-    proposedAUC: 0.9022,
-    ceilingBA: 89.5,
-    ceilingAUC: 0.95,
-  },
   {
     id: "KGE",
     name: "강고은",
@@ -108,22 +96,6 @@ export const subjectResults: SubjectResult[] = [
     proposedBA: 78.43,
     baselineAUC: 0.7512,
     proposedAUC: 0.8252,
-    ceilingBA: 81.25,
-    ceilingAUC: 0.865,
-  },
-  {
-    id: "OYJ",
-    name: "오예진",
-    sessions: "5개 런",
-    trials: 400,
-    channels: "5ch",
-    model: "Hybrid TS+CSP",
-    baselineBA: 68,
-    proposedBA: 75.82,
-    baselineAUC: 0.742,
-    proposedAUC: 0.8123,
-    ceilingBA: 78.5,
-    ceilingAUC: 0.841,
   },
   {
     id: "KHY",
@@ -136,9 +108,31 @@ export const subjectResults: SubjectResult[] = [
     proposedBA: 66.65,
     baselineAUC: 0.611,
     proposedAUC: 0.7003,
-    ceilingBA: 72.7,
-    ceilingAUC: 0.7825,
+  },
+  {
+    id: "OYJ",
+    name: "오예진",
+    sessions: "5개 런",
+    trials: 400,
+    channels: "5ch",
+    model: "Hybrid TS+CSP",
+    baselineBA: 68,
+    proposedBA: 75.82,
+    baselineAUC: 0.742,
+    proposedAUC: 0.8123,
+  },
+  {
+    id: "WMJ",
+    name: "우민지",
+    sessions: "5개 런",
+    trials: 400,
+    channels: "7ch",
+    model: "Reg-CSP + LDA",
+    baselineBA: 77.1,
+    proposedBA: 83.33,
+    baselineAUC: 0.8512,
+    proposedAUC: 0.9022,
   },
 ];
 export const sourceNote =
-  "출처: 2026 캡스톤 최종발표자료 완성본. LOSO는 4인 18개 런·1,440회 평가이며, 온라인 50세션(3,910회) 결과와 평가 조건이 다릅니다.";
+  "현재 저장소 기입값: 4인 LOSO · 18개 런 · 1,440회. 최종 보고서 PDF p.12가 전달되지 않아 피험자별 BA/AUC는 원문 대조가 필요합니다. 온라인 50세션(3,910회) 결과와는 별도 평가입니다.";

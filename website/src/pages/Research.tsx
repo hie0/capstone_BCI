@@ -46,8 +46,9 @@ export default function Research() {
           <article>
             <h3>5~7채널 선정 근거</h3>
             <p>
-              C3·Cz·C4와 F3·F4를 중심으로 전극을 68.8%, 공분산 모수를 136개에서
-              15개로 89% 줄이고 착용 시간을 15분에서 3분으로 단축했습니다.
+              C3·Cz·C4와 F3·F4를 중심으로 5채널은 68.75%, 확장 7채널은 56.25%의
+              전극 수를 줄입니다. 핵심 신호에 집중하면서 공분산 추정의 복잡도를
+              낮추는 구성입니다.
             </p>
           </article>
         </div>
@@ -55,8 +56,8 @@ export default function Research() {
       <section className="section">
         <div className="section-title">
           <div>
-            <span className="eyebrow">02 / INTERACTIVE EEG CHANNEL ATLAS</span>
-            <h2>전극 하나하나의 역할을 탐색하세요.</h2>
+            <span className="eyebrow">02 / 핵심 채널 탐색</span>
+            <h2>핵심은, 필요한 신호에 집중하는 것.</h2>
           </div>
         </div>
         <div className="atlas-panel panel">
@@ -72,17 +73,17 @@ export default function Research() {
                   }}
                 >
                   {m === "16ch"
-                    ? "All 16Ch"
+                    ? "전체 16채널"
                     : m === "5ch"
-                      ? "Core 5Ch"
-                      : "Extended 7Ch"}
+                      ? "핵심 5채널"
+                      : "확장 7채널"}
                 </button>
               ))}
               <button
                 className={excluded ? "active" : ""}
                 onClick={() => setExcluded(true)}
               >
-                Excluded Channels
+                제외 채널
               </button>
             </div>
             <Atlas2D
@@ -92,18 +93,27 @@ export default function Research() {
               excluded={excluded}
             />
           </div>
-          <div>
-            <span className="eyebrow">CHANNEL ANATOMY</span>
-            <strong className="electrode-name">{selected}</strong>
-            <h3>{channelInfo(selected)}</h3>
+          <div className="atlas-insight">
+            <div className="reduction-hero">
+              <span>가장 큰 구조적 변화</span>
+              <strong>16ch → 5ch</strong>
+              <b>68.75% 감소</b>
+              <small>7채널 구성은 56.25% 감소</small>
+            </div>
+            <div className="electrode-role-card" aria-live="polite">
+              <span className="eyebrow">선택 전극의 역할</span>
+              <strong className="electrode-name">{selected}</strong>
+              <h3>{channelInfo(selected)}</h3>
+            </div>
             <p>
-              전극에 마우스를 올리거나 클릭하여 설명을 확인하세요. 배치도는
-              교육용 개념도이며 개인의 정확한 해부학적 좌표를 나타내지 않습니다.
+              전극을 클릭하거나 Tab 키로 이동한 뒤 Enter를 눌러 역할을
+              확인하세요. 배치도는 교육용 개념도이며 개인의 정확한 해부학적
+              좌표를 나타내지 않습니다.
             </p>
             <p className="source-note">
-              Core 5ch는 F3·F4·C3·Cz·C4입니다. 발표자료의 피험자별 최적 구성은
-              WMJ·KHY 7ch, KGE·OYJ 5ch이며 7ch 보조 채널은 모델별 검증 구성을
-              나타냅니다.
+              핵심 5ch는 F3·F4·C3·Cz·C4입니다. 현재 저장소에는 WMJ·KHY 7ch,
+              KGE·OYJ 5ch로 기입되어 있으나 최종 보고서 PDF p.12와의 대조가
+              필요합니다.
             </p>
           </div>
         </div>
@@ -163,7 +173,7 @@ export default function Research() {
         <span className="eyebrow">05 / NEXT STEPS</span>
         <h2>연구실의 가능성을 일상의 안정성으로.</h2>
         <p>
-          전극 56~69% 감축, 연산 92~97% 절감, LOSO 4전 4승을 확인했습니다. 다음
+          5채널 68.75%, 7채널 56.25%의 전극 감축 구성을 확인했습니다. 다음
           단계는 5~7전극 헤드밴드와 1~2분 고속 영점 보정을 실제 웨어러블
           환경에서 검증하는 것입니다.
         </p>
