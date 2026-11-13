@@ -1,20 +1,14 @@
 import { test, expect } from "@playwright/test";
-test("all smart home commands, dwell, logs, reset and synthetic playback", async ({
+test("all smart home commands, immediate selection, logs, reset and synthetic playback", async ({
   page,
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/#/simulation");
-  const left = page.getByRole("button", { name: /LEFT.*이전 메뉴/ });
-  await left.click();
-  await expect(
-    page.getByRole("button", { name: "Television 메뉴" }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: /RIGHT.*다음 메뉴/ }).click();
-  await expect(
-    page.getByRole("button", { name: "Lighting 메뉴" }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByText("DEVICE CONTROL", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Lighting 메뉴" }).click();
+  await expect(page.getByText("DEVICE CONTROL", { exact: true })).toBeVisible({
+    timeout: 500,
+  });
   await page.getByRole("button", { name: /LEFT.*조명 끄기/ }).click();
   await expect(
     page.getByRole("button", { name: "Lighting 메뉴" }),
@@ -52,7 +46,7 @@ test("all smart home commands, dwell, logs, reset and synthetic playback", async
     page.getByRole("button", { name: "Television 메뉴" }),
   ).toContainText("OFF");
   await page.getByRole("button", { name: /RIGHT.*TV 켜기/ }).click();
-  await expect(page.getByTestId("command-count")).toHaveText("011");
+  await expect(page.getByTestId("command-count")).toHaveText("009");
   await page.screenshot({
     path: "tests/artifacts/smart-home-1440.png",
     fullPage: true,
@@ -73,7 +67,7 @@ test("all smart home commands, dwell, logs, reset and synthetic playback", async
   await expect(page.getByTestId("command-count")).toHaveText(count!);
   expect(errors).toEqual([]);
 });
-test("wearable configuration shares state and research never fabricates missing results", async ({
+test("wearable configuration shares state with smart home", async ({
   page,
 }) => {
   await page.goto("/#/simulation");
@@ -91,14 +85,9 @@ test("wearable configuration shares state and research never fabricates missing 
   });
   await page.getByRole("button", { name: /이 구성으로 스마트홈 체험/ }).click();
   await expect(page.getByLabel("Channel configuration")).toHaveValue("16ch");
-  await page.getByRole("tab", { name: "Model Comparison" }).click();
-  await expect(page.getByLabel("Channel configuration")).toHaveValue("16ch");
-  await page
-    .getByRole("combobox", { name: "Metric", exact: true })
-    .selectOption("AUC");
-  await expect(page.getByText("미제공", { exact: true })).toBeVisible();
-  await page.getByLabel("Evaluation dataset").selectOption("loso");
-  await expect(page.getByText("0.8100", { exact: true })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Model Comparison" })).toHaveCount(
+    0,
+  );
 });
 test("home research replay and mobile layout", async ({ page }) => {
   await page.goto("/");

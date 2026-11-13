@@ -23,11 +23,6 @@ const actions = [
 export default function SmartHome() {
   const s = useBCI();
   useEffect(() => {
-    if (!s.pending || s.control) return;
-    const id = setTimeout(() => useBCI.getState().confirm(), 2000);
-    return () => clearTimeout(id);
-  }, [s.pending, s.menu, s.count, s.control]);
-  useEffect(() => {
     if (!s.isPlaying || s.inputMode !== "synthetic") return;
     const id = setInterval(() => {
       const state = useBCI.getState();
@@ -73,8 +68,10 @@ export default function SmartHome() {
               aria-live="polite"
               aria-label={`현재 온도 ${s.temperature}도`}
             >
-              <i className="classic-thermometer" aria-hidden="true" />
-              <strong>{s.temperature}°C</strong>
+              <span className="wall-temperature-readout">
+                <i className="classic-thermometer" aria-hidden="true" />
+                <strong>{s.temperature}°C</strong>
+              </span>
             </div>
             <div className="scene-caption">
               드래그하여 공간 둘러보기 <span>01 / LIVING ROOM</span>
@@ -108,15 +105,7 @@ export default function SmartHome() {
                   <ArrowUpLeft size={14} /> 메뉴로 돌아가기
                 </button>
               ) : (
-                <span>
-                  {s.pending ? (
-                    <span key={`${s.count}-${s.menu}`} className="dwell">
-                      2초 대기 후 {menus[s.menu]} 선택
-                    </span>
-                  ) : (
-                    "좌우로 이동하거나 메뉴를 클릭하세요"
-                  )}
-                </span>
+                <span>좌우로 이동하거나 메뉴를 클릭하세요</span>
               )}
             </div>
             <div className="command-buttons">

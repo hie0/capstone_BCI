@@ -3,14 +3,12 @@ import { useState } from "react";
 import {
   House,
   Scan,
-  ChartNoAxesCombined,
   Activity,
   ArrowUpRight,
   FlaskConical,
 } from "lucide-react";
 import SmartHome from "../components/SmartHome";
 import Wearable from "../components/Wearable";
-import Comparison from "../components/Comparison";
 import Replay from "../components/Replay";
 import { useBCI } from "../store";
 export default function Simulation() {
@@ -48,11 +46,6 @@ export default function Simulation() {
         aria-label="Simulation sections"
       >
         {[
-          {
-            id: "comparison",
-            title: "Model Comparison",
-            icon: ChartNoAxesCombined,
-          },
           { id: "replay", title: "EEG Replay", icon: Activity },
           { id: "applications", title: "BCI Applications", icon: Scan },
         ].map((t) => (
@@ -134,8 +127,6 @@ export default function Simulation() {
             <small>실제 EEG 추론을 수행하지 않는 인터랙티브 데모입니다.</small>
           </div>
         </>
-      ) : tab === "comparison" ? (
-        <Comparison />
       ) : (
         <Replay />
       )}

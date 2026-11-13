@@ -75,8 +75,8 @@ export const useBCI = create<State>((set) => ({
       let message = "";
       if (!s.control) {
         const menu = (s.menu + delta + 4) % 4;
-        next = { menu, pending: true };
-        message = `${menus[menu]} 메뉴 탐색`;
+        next = { menu, pending: false, control: true };
+        message = `${menus[menu]} 메뉴 선택`;
       } else {
         switch (s.menu) {
           case 0:
@@ -117,7 +117,7 @@ export const useBCI = create<State>((set) => ({
         ].slice(0, 50),
       };
     }),
-  choose: (menu) => set({ menu, pending: true, control: false }),
+  choose: (menu) => set({ menu, pending: false, control: true }),
   confirm: () => set({ control: true, pending: false }),
   back: () => set({ control: false, pending: false }),
   play: () => set({ isPlaying: true }),
