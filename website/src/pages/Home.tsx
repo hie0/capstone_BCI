@@ -216,9 +216,9 @@ export default function Home() {
         <div>
           <span className="eyebrow">04 / RESEARCH FINDINGS</span>
           <h2>
-            가능성과 한계를
+            현장 온라인 정확도에서,
             <br />
-            함께 읽는 결과.
+            영점조절 적용 후까지.
           </h2>
           <p>
             실전 온라인 50세션 3,910회에서 적응형 영점조절 적용 후 평균 BA는
@@ -234,7 +234,7 @@ export default function Home() {
         </div>
         <div className="panel">
           <div className="panel-title">
-            온라인 사후 재분석{" "}
+            현장 정확도 → 영점조절 적용 후{" "}
             <span className="badge research">Research Data</span>
           </div>
           <ResultChart />

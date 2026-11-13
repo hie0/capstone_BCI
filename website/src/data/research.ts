@@ -67,10 +67,30 @@ export const channelInfo = (name: string) =>
                 ? "측두부 · 측두근 근전도 영향을 고려해야 합니다."
                 : "전두·두정 주변 영역 · 보조 채널의 기여는 피험자별로 다를 수 있습니다.";
 export const comparison = [
-  { name: "Offline 4인", ba: 76.06, channels: "low", tta: true },
-  { name: "Online 18", ba: 75.7, channels: "low", tta: true },
-  { name: "Online 32", ba: 74.15, channels: "low", tta: true },
-  { name: "Online 50", ba: 74.71, channels: "low", tta: true },
+  {
+    name: "18세션",
+    trials: 1440,
+    baselineBA: 53.9,
+    adjustedBA: 75.7,
+    improvement: 21.8,
+    significance: "p = 0.020",
+  },
+  {
+    name: "32세션",
+    trials: 2470,
+    baselineBA: 54.8,
+    adjustedBA: 74.15,
+    improvement: 19.35,
+    significance: "p < 10⁻¹²",
+  },
+  {
+    name: "50세션",
+    trials: 3910,
+    baselineBA: 54.5,
+    adjustedBA: 74.71,
+    improvement: 20.21,
+    significance: "p < 10⁻¹⁷",
+  },
 ];
 export type SubjectResult = {
   id: "WMJ" | "KGE" | "OYJ" | "KHY";
@@ -135,4 +155,4 @@ export const subjectResults: SubjectResult[] = [
   },
 ];
 export const sourceNote =
-  "현재 저장소 기입값: 4인 LOSO · 18개 런 · 1,440회. 최종 보고서 PDF p.12가 전달되지 않아 피험자별 BA/AUC는 원문 대조가 필요합니다. 온라인 50세션(3,910회) 결과와는 별도 평가입니다.";
+  "출처: 최종 연구발표자료 p.12(4인 LOSO) 및 p.16(실전 온라인 50세션). LOSO와 온라인 검증은 평가 조건이 다른 별도 결과입니다.";

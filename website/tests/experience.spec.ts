@@ -117,7 +117,10 @@ test("home research replay and mobile layout", async ({ page }) => {
   await page.getByRole("link", { name: "실험 결과", exact: true }).click();
   await expect(page).toHaveURL(/#\/research#research-results$/);
   await expect(
-    page.getByRole("heading", { name: "구성 요소에 따른 성능 변화" }),
+    page.getByRole("heading", { name: "영점조절 적용 전후 온라인 성능" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("54.50% → 74.71%", { exact: true }),
   ).toBeVisible();
   await page.getByRole("link", { name: "연구 내용", exact: true }).click();
   await page.screenshot({

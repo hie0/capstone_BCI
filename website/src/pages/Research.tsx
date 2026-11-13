@@ -134,7 +134,7 @@ export default function Research() {
       </section>
       <section id="research-results" className="section scroll-section">
         <span className="eyebrow">04 / RESULTS & ABLATION</span>
-        <h2>구성 요소에 따른 성능 변화</h2>
+        <h2>영점조절 적용 전후 온라인 성능</h2>
         <div className="panel">
           <ResultChart />
           <p className="source-note">{sourceNote}</p>
@@ -164,9 +164,8 @@ export default function Research() {
           </div>
         </div>
         <p className="muted">
-          저채널 물리 격리는 +10.5%p, 실시간 영점조절은 +12.3%p의 독립 기여를
-          보였으며 결합 후 온라인 BA가 54.50%에서 74.71%로 +20.21%p
-          향상됐습니다(p &lt; 10⁻¹⁷).
+          실전 온라인 50세션 3,910회 통합 결과, 현장 BA 54.50%에서 영점조절 적용
+          후 74.71%로 +20.21%p 향상됐습니다(p &lt; 10⁻¹⁷).
         </p>
       </section>
       <section className="section conclusion">

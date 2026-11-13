@@ -7,8 +7,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell,
-  ReferenceLine,
 } from "recharts";
 import { useBCI } from "../store";
 import {
@@ -31,7 +29,9 @@ export function SubjectResultChart() {
     ? metric === "BA"
       ? selected.proposedBA - selected.baselineBA
       : selected.proposedAUC - selected.baselineAUC
-    : null;
+    : metric === "BA"
+      ? 7.78
+      : 0.0711;
   const formatValue = (value: number) =>
     metric === "BA" ? `${value.toFixed(2)}%` : value.toFixed(4);
   return (
@@ -146,11 +146,9 @@ export function SubjectResultChart() {
             <div>
               <dt>개선 폭</dt>
               <dd>
-                {improvement === null
-                  ? "피험자별 상이"
-                  : metric === "BA"
-                    ? `+${improvement.toFixed(2)}%p`
-                    : `+${improvement.toFixed(4)}`}
+                {metric === "BA"
+                  ? `+${improvement.toFixed(2)}%p`
+                  : `+${improvement.toFixed(4)}`}
               </dd>
             </div>
             <div>
@@ -168,17 +166,26 @@ export function SubjectResultChart() {
           </dl>
         </aside>
       </div>
-      <p className="subject-source-warning">
-        평가 조건: 피험자 독립 LOSO · 4인 · 18개 런 · 1,440회. 현재 표시값은
-        기존 저장소 기입값이며, 최종 보고서 PDF p.12 원문 대조가 필요합니다.
+      <p className="subject-source-note">
+        출처: 최종 연구발표자료 p.12 · 피험자 독립 LOSO · 4인 · 18개 런 ·
+        1,440회. 16채널 기준 대비 4명 모두 향상했습니다.
       </p>
     </div>
   );
 }
 export function ResultChart() {
-  const s = useBCI();
   return (
-    <div className="result-chart">
+    <div className="result-chart online-result-chart">
+      <div className="chart-legend online-legend">
+        <span>
+          <i className="baseline" />
+          현장 온라인 정확도
+        </span>
+        <span>
+          <i className="proposed" />
+          영점조절 적용 후
+        </span>
+      </div>
       <ResponsiveContainer width="100%" height={310}>
         <BarChart
           data={comparison}
@@ -206,44 +213,52 @@ export function ResultChart() {
               color: "#263746",
               boxShadow: "0 10px 28px rgba(37, 63, 85, 0.12)",
             }}
-            formatter={(v) => [`${v}%`, "Balanced accuracy"]}
-          />
-          <ReferenceLine
-            y={54.5}
-            stroke="#C76B67"
-            strokeDasharray="5 5"
-            label={{
-              value: "영점조절 전 온라인 평균 54.50%",
-              fill: "#9B4F4B",
-              fontSize: 11,
-              position: "insideTopLeft",
+            formatter={(value, _name, item) => [
+              `${Number(value).toFixed(2)}% BA`,
+              item.dataKey === "baselineBA"
+                ? "현장 온라인 정확도"
+                : "영점조절 적용 후",
+            ]}
+            labelFormatter={(label) => {
+              const row = comparison.find((item) => item.name === label);
+              return row
+                ? `${label} · ${row.trials.toLocaleString()}회 · ${row.significance}`
+                : label;
             }}
           />
           <Bar
             isAnimationActive={false}
-            dataKey="ba"
+            dataKey="baselineBA"
+            name="현장 온라인 정확도"
+            fill="#A6B4C0"
             radius={[5, 5, 0, 0]}
-            maxBarSize={86}
+            maxBarSize={64}
             label={{
               position: "top",
               fill: "#263746",
-              formatter: (v: unknown) => `${v}%`,
+              formatter: (v: unknown) => `${Number(v).toFixed(2)}%`,
             }}
-          >
-            {comparison.map((d) => (
-              <Cell
-                key={d.name}
-                fill={
-                  d.channels === (s.channelMode === "16ch" ? "16ch" : "low") &&
-                  d.tta === s.ttaEnabled
-                    ? "#39776F"
-                    : "#9CAAB6"
-                }
-              />
-            ))}
-          </Bar>
+          />
+          <Bar
+            isAnimationActive={false}
+            dataKey="adjustedBA"
+            name="영점조절 적용 후"
+            fill="#39776F"
+            radius={[5, 5, 0, 0]}
+            maxBarSize={64}
+            label={{
+              position: "top",
+              fill: "#263746",
+              formatter: (v: unknown) => `${Number(v).toFixed(2)}%`,
+            }}
+          />
         </BarChart>
       </ResponsiveContainer>
+      <div className="online-chart-summary">
+        <span>50세션 통합</span>
+        <strong>54.50% → 74.71%</strong>
+        <b>+20.21%p</b>
+      </div>
     </div>
   );
 }
@@ -357,11 +372,11 @@ export default function Comparison() {
           <p>16ch 68.28% → 제안 모델 76.06%</p>
         </div>
         <div>
-          <span>TEST-TIME ADAPTATION</span>
+          <span>ONLINE 18 SESSIONS</span>
           <strong>
-            +12.3 <small>%p</small>
+            +21.80 <small>%p</small>
           </strong>
-          <p>실시간 무감독 영점조절 독립 기여</p>
+          <p>53.90% → 75.70% · p = 0.020</p>
         </div>
         <div>
           <span>ONLINE 50 SESSIONS</span>
