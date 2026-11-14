@@ -1,0 +1,20 @@
+# Raw EEG data, extracted caches, and personal information MUST NOT be committed
+local_cache/
+*.pkl
+*.npz
+*.npy
+*.edf
+*.bdf
+*.gdf
+*.fif
+*ExG.csv
+*Marker.csv
+*trial_log.csv
+data/
+raw_data/
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
