@@ -10,6 +10,7 @@ export const menus = [
 ] as const;
 type Settings = {
   channelMode: ChannelMode;
+  recordedLowChannel: boolean;
   participantId: string;
   sessionId: string;
   ttaEnabled: boolean;
@@ -112,6 +113,7 @@ export const useBCI = create<State>((set, get) => ({
         s.recordedTimeline.find((p) => p.trial_id === index + 1) ?? null,
     })),
   channelMode: "5ch",
+  recordedLowChannel: false,
   participantId: "KGE",
   sessionId: "session-01",
   ttaEnabled: true,
@@ -135,6 +137,12 @@ export const useBCI = create<State>((set, get) => ({
             ? "session-01"
             : (s.sessionId ?? old.sessionId),
         channelMode: mode,
+        recordedLowChannel:
+          (s.inputMode ?? old.inputMode) === "recorded" &&
+          (s.recordedLowChannel ??
+            (s.channelMode || s.inputMode || s.participantId
+              ? mode !== "16ch"
+              : old.recordedLowChannel)),
         modelId:
           (s.inputMode ?? old.inputMode) === "recorded"
             ? "online-calib20"
@@ -145,6 +153,7 @@ export const useBCI = create<State>((set, get) => ({
         s.participantId ||
         s.sessionId ||
         s.channelMode ||
+        s.recordedLowChannel !== undefined ||
         s.ttaEnabled !== undefined
           ? {
               isPlaying: false,

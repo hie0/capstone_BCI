@@ -45,3 +45,9 @@ npm run build
 ```
 
 검증 근거와 스크린샷은 git에서 제외한 `backend/local_cache/migration/`에 있다. 원본 EEG·개인 경로·가상환경·캐시를 저장소에 추가하지 않는다.
+
+
+Phase4에서는 Smart Home과 Wearable 양쪽에서 Participant/Session·16ch/Low Channel·TTA·속도를 설정할 수 있다. Decision score=P(RIGHT), logit, latency, Quality Gate 및 관측 trial Accuracy/BA는 실제 응답으로 표시한다.
+`Low Channel`은 제공된 joblib의 low 키를 그대로 사용한다. TTA ON/OFF 사이 montage가 다를 수 있으므로 고정 모델 TTA 단독 비교로 해석하지 않는다. 상세 조건과 검증 결과는 [PHASE4_INTEGRATION_RESULTS.md](../PHASE4_INTEGRATION_RESULTS.md)에 있다.
+
+Backend는 BLAS 계열 스레드를 프로세스당 1개로 제한하고, 독립 EEG 세션은 최대 2개 동시 로딩한다. 세션별 모델과 EEG는 서버 메모리 캐시를 재사용한다. 추가 Low 검증만 실행하려면 저장소 루트에서 `backend/.venv/bin/python backend/validate_phase4.py`를 실행한다(2개 검증 프로세스, 새 학습 없음). 로그/결과는 `backend/local_cache/phase4/`에 저장한다.

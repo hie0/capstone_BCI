@@ -15,6 +15,7 @@ import { Settings, Waveform, PlayButton } from "./Controls";
 import { Room, RoomFallback, Scene } from "./Scenes";
 import "./SmartHome.css";
 import { configuredChannels } from "../data/channels";
+import { RecordedMetrics } from "./RecordedMetrics";
 import { selectedBackendModel } from "../data/backend";
 const icons = [Lightbulb, PanelsTopLeft, Thermometer, Tv];
 const actions = [
@@ -186,7 +187,9 @@ export default function SmartHome() {
             samples={s.recordedPrediction?.waveform}
           />
           <p className="small muted">
-            {s.participantId} · {s.channelMode} · {channels.join(" · ")}
+            {s.participantId} ·{" "}
+            {recorded && s.recordedLowChannel ? "Low Channel" : s.channelMode} ·{" "}
+            {channels.join(" · ")}
             {recorded && (
               <>
                 <br />
@@ -210,6 +213,7 @@ export default function SmartHome() {
               </dd>
             </div>
           </dl>
+          {recorded && <RecordedMetrics />}
           <div className="log-heading">
             COMMAND HISTORY <span>최근 50개</span>
           </div>

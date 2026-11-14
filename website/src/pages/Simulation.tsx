@@ -71,7 +71,10 @@ export default function Simulation() {
           </button>
         ))}
         <span className="shared-config">
-          {s.channelMode.toUpperCase()} <i /> TTA {s.ttaEnabled ? "ON" : "OFF"}
+          {s.inputMode === "recorded" && s.recordedLowChannel
+            ? "LOW CHANNEL"
+            : s.channelMode.toUpperCase()}{" "}
+          <i /> TTA {s.ttaEnabled ? "ON" : "OFF"}
         </span>
       </div>
       {tab === "applications" ? (

@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { Activity, Settings2, Play, Pause, Info } from "lucide-react";
 import { useBCI } from "../store";
-import type { ChannelMode } from "../data/research";
-import {
-  participantModels,
-  channelConfigurations,
-  type ParticipantId,
-} from "../data/channels";
+import { participantModels, type ParticipantId } from "../data/channels";
 import { selectedBackendModel } from "../data/backend";
-export function Settings({ compact = false }: { compact?: boolean }) {
+export function Settings({
+  compact = false,
+  embedded = false,
+}: {
+  compact?: boolean;
+  embedded?: boolean;
+}) {
   const s = useBCI();
   const recorded = s.inputMode === "recorded";
   const selectedSession = s.backendSessions.find(
@@ -16,7 +17,7 @@ export function Settings({ compact = false }: { compact?: boolean }) {
   );
   const actualModel = selectedBackendModel(s);
   return (
-    <div className="settings panel">
+    <div className={embedded ? "" : "settings panel"}>
       <div className="panel-title">
         <Settings2 size={16} />{" "}
         {compact ? "공유 실험 설정" : "Control settings"}
@@ -109,35 +110,52 @@ export function Settings({ compact = false }: { compact?: boolean }) {
         Channel configuration
         <select
           aria-label="Channel configuration"
-          value={s.channelMode}
+          value={
+            s.channelMode === "16ch" && !s.recordedLowChannel ? "16ch" : "low"
+          }
           onChange={(e) =>
-            s.setSettings({ channelMode: e.target.value as ChannelMode })
+            s.setSettings(
+              e.target.value === "low"
+                ? recorded
+                  ? { recordedLowChannel: true }
+                  : {
+                      channelMode:
+                        participantModels[s.participantId as ParticipantId]
+                          .channelMode,
+                    }
+                : { channelMode: "16ch" },
+            )
           }
         >
-          {Object.entries(channelConfigurations).map(([mode, c]) => (
-            <option
-              key={mode}
-              value={mode}
-              disabled={
-                recorded
-                  ? !selectedSession?.available_models[
-                      `${mode}__tta_${s.ttaEnabled ? "on" : "off"}`
-                    ]
-                  : mode !==
-                    participantModels[s.participantId as ParticipantId]
-                      .channelMode
-              }
-            >
-              {recorded
-                ? `${mode} · ${selectedSession?.available_models[`${mode}__tta_${s.ttaEnabled ? "on" : "off"}`]?.montage ?? "연결 대기"}`
-                : c.name}
-              {!recorded &&
-              mode !==
-                participantModels[s.participantId as ParticipantId].channelMode
-                ? " · 배치 탐색 전용"
-                : ""}
-            </option>
-          ))}
+          <option
+            value="16ch"
+            disabled={
+              recorded
+                ? !selectedSession?.available_models[
+                    `16ch__tta_${s.ttaEnabled ? "on" : "off"}`
+                  ]
+                : true
+            }
+          >
+            16ch
+            {recorded
+              ? ` · ${selectedSession?.available_models[`16ch__tta_${s.ttaEnabled ? "on" : "off"}`]?.montage ?? "연결 대기"}`
+              : " · 실제 추론 미연결"}
+          </option>
+          <option
+            value="low"
+            disabled={
+              recorded &&
+              !selectedSession?.available_models[
+                `low__tta_${s.ttaEnabled ? "on" : "off"}`
+              ]
+            }
+          >
+            Low Channel
+            {recorded
+              ? ` · ${selectedSession?.available_models[`low__tta_${s.ttaEnabled ? "on" : "off"}`]?.montage ?? "연결 대기"}`
+              : ""}
+          </option>
         </select>
       </label>
       <div className="toggle-row">

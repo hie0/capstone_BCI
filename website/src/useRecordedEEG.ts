@@ -13,19 +13,18 @@ export function useRecordedEEG(controlDevices: boolean) {
     participantId,
     sessionId,
     channelMode,
+    recordedLowChannel,
     ttaEnabled,
     isPlaying,
   } = useBCI();
   useEffect(() => {
     if (inputMode !== "recorded") return;
     const controller = new AbortController();
-    useBCI
-      .getState()
-      .setBackend({
-        backendStatus: "연결 중",
-        backendError: null,
-        backendSessions: [],
-      });
+    useBCI.getState().setBackend({
+      backendStatus: "연결 중",
+      backendError: null,
+      backendSessions: [],
+    });
     fetch(apiUrl(`/api/sessions?participant_id=${participantId}`), {
       signal: controller.signal,
     })
@@ -47,12 +46,10 @@ export function useRecordedEEG(controlDevices: boolean) {
       })
       .catch((e) => {
         if (!controller.signal.aborted)
-          useBCI
-            .getState()
-            .setBackend({
-              backendStatus: "연결 실패",
-              backendError: String(e.message),
-            });
+          useBCI.getState().setBackend({
+            backendStatus: "연결 실패",
+            backendError: String(e.message),
+          });
       });
     return () => controller.abort();
   }, [inputMode, participantId]);
@@ -100,6 +97,7 @@ export function useRecordedEEG(controlDevices: boolean) {
         state.participantId !== participantId ||
         state.sessionId !== sessionId ||
         state.channelMode !== channelMode ||
+        state.recordedLowChannel !== recordedLowChannel ||
         state.ttaEnabled !== ttaEnabled
       )
         return;
@@ -111,7 +109,7 @@ export function useRecordedEEG(controlDevices: boolean) {
               action: "set_config",
               participant_id: participantId,
               session_id: sessionId,
-              channel_mode: channelMode,
+              channel_mode: recordedLowChannel ? "low" : channelMode,
               tta_enabled: ttaEnabled,
             }),
           );
@@ -149,6 +147,7 @@ export function useRecordedEEG(controlDevices: boolean) {
     participantId,
     sessionId,
     channelMode,
+    recordedLowChannel,
     ttaEnabled,
     isPlaying,
     controlDevices,

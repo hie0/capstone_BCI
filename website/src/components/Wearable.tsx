@@ -4,7 +4,8 @@ import { useBCI } from "../store";
 import { Brain, Scene, Atlas2D, activeChannels } from "./Scenes";
 import { BaselineSpecification } from "./BaselineSpecification";
 import { selectedBackendModel } from "../data/backend";
-import { PlayButton } from "./Controls";
+import { PlayButton, Settings, Waveform } from "./Controls";
+import { RecordedMetrics } from "./RecordedMetrics";
 import {
   participantModels,
   channelConfigurations,
@@ -42,8 +43,15 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
           </div>
           {(["16ch", "5ch", "7ch"] as ChannelMode[]).map((mode, i) => (
             <button
-              className={`config-card ${s.channelMode === mode ? "active" : ""}`}
+              className={`config-card ${!s.recordedLowChannel && s.channelMode === mode ? "active" : ""}`}
               key={mode}
+              disabled={
+                s.inputMode === "recorded" &&
+                !s.backendSessions.find((x) => x.session_id === s.sessionId)
+                  ?.available_models[
+                  `${mode}__tta_${s.ttaEnabled ? "on" : "off"}`
+                ]
+              }
               onClick={() => s.setSettings({ channelMode: mode })}
             >
               <span className="config-number">
@@ -51,20 +59,48 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
                 <small>CH</small>
               </span>
               <span>
-                <strong>{channelConfigurations[mode].name}</strong>
+                <strong>
+                  {s.inputMode === "recorded"
+                    ? `${mode} · ${s.backendSessions.find((x) => x.session_id === s.sessionId)?.available_models[`${mode}__tta_${s.ttaEnabled ? "on" : "off"}`]?.montage ?? "미지원"}`
+                    : channelConfigurations[mode].name}
+                </strong>
                 <small>
-                  {
-                    [
-                      "전체 전극 구성",
-                      "감각운동 중심 핵심 구성",
-                      "Core 5 + P7 / P8",
-                    ][i]
-                  }
+                  {s.inputMode === "recorded"
+                    ? (s.backendSessions
+                        .find((x) => x.session_id === s.sessionId)
+                        ?.available_models[
+                          `${mode}__tta_${s.ttaEnabled ? "on" : "off"}`
+                        ]?.active_channels.join(" · ") ??
+                      "연결 가능한 모델 없음")
+                    : [
+                        "전체 전극 구성",
+                        "감각운동 중심 핵심 구성",
+                        "Core 5 + P7 / P8",
+                      ][i]}
                 </small>
               </span>
               <i />
             </button>
           ))}
+          {s.inputMode !== "recorded" && (
+            <label>
+              Input mode
+              <select
+                value={s.inputMode}
+                onChange={(e) =>
+                  s.setSettings({
+                    inputMode: e.target.value as
+                      "manual" | "synthetic" | "recorded",
+                  })
+                }
+              >
+                <option value="manual">Manual Demo</option>
+                <option value="synthetic">Simulated EEG</option>
+                <option value="recorded">Recorded EEG · 실제 추론</option>
+              </select>
+            </label>
+          )}
+          {s.inputMode === "recorded" && <Settings compact embedded />}
           {s.inputMode === "recorded" && (
             <>
               <p className="small muted">
@@ -79,54 +115,54 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
           )}
           <p className="note">
             연구 기반 웨어러블 콘셉트입니다. 큰 원형 하우징은 접촉 센서, 작은
-            회색 점은 비활성 채널 위치 마커입니다. KHY의 실제 추론 연결 전 최종
-            joblib 채널·모델 설정을 별도로 검증해야 합니다.
+            회색 점은 비활성 채널 위치 마커입니다. Recorded EEG에서는 실제
+            joblib의 활성 채널을 표시하며 연구용 PM 구성과 다를 수 있습니다.
           </p>
-          <label className="wearable-model">
-            Model
-            <select
-              value={s.modelId}
-              onChange={(e) => s.setSettings({ modelId: e.target.value })}
-            >
-              {s.inputMode === "recorded" ? (
-                <option value="online-calib20">Calib20 · Reg-CSP + sLDA</option>
-              ) : (
-                <>
-                  {s.modelId === "visualization-only" && (
-                    <option value="visualization-only">
-                      배치 탐색 · 모델 미연결
+          {s.inputMode !== "recorded" && (
+            <>
+              <label className="wearable-model">
+                Model
+                <select
+                  value={s.modelId}
+                  onChange={(e) => s.setSettings({ modelId: e.target.value })}
+                >
+                  <>
+                    {s.modelId === "visualization-only" && (
+                      <option value="visualization-only">
+                        배치 탐색 · 모델 미연결
+                      </option>
+                    )}
+                    <option
+                      value={
+                        participantModels[s.participantId as ParticipantId]
+                          .modelId
+                      }
+                    >
+                      {
+                        participantModels[s.participantId as ParticipantId]
+                          .modelName
+                      }
                     </option>
-                  )}
-                  <option
-                    value={
-                      participantModels[s.participantId as ParticipantId]
-                        .modelId
-                    }
-                  >
-                    {
-                      participantModels[s.participantId as ParticipantId]
-                        .modelName
-                    }
-                  </option>
-                  <option value="baseline" disabled>
-                    16ch OAS + TS + LR · 파일 미연결
-                  </option>
-                </>
-              )}
-            </select>
-          </label>
-          <div className="toggle-row">
-            <span>TTA · 설정 공유</span>
-            <button
-              role="switch"
-              aria-label="Wearable TTA"
-              aria-checked={s.ttaEnabled}
-              className={`switch ${s.ttaEnabled ? "on" : ""}`}
-              onClick={() => s.setSettings({ ttaEnabled: !s.ttaEnabled })}
-            >
-              <i />
-            </button>
-          </div>
+                    <option value="baseline" disabled>
+                      16ch OAS + TS + LR · 파일 미연결
+                    </option>
+                  </>
+                </select>
+              </label>
+              <div className="toggle-row">
+                <span>TTA · 설정 공유</span>
+                <button
+                  role="switch"
+                  aria-label="Wearable TTA"
+                  aria-checked={s.ttaEnabled}
+                  className={`switch ${s.ttaEnabled ? "on" : ""}`}
+                  onClick={() => s.setSettings({ ttaEnabled: !s.ttaEnabled })}
+                >
+                  <i />
+                </button>
+              </div>
+            </>
+          )}
           <div className="panel-title">Motor imagery</div>
           <div className="segmented">
             <button
@@ -224,6 +260,19 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
               <span>Channel Reduction</span>
             </div>
           </div>
+          {s.inputMode === "recorded" && (
+            <>
+              <Waveform
+                channels={channels}
+                recorded
+                samples={s.recordedPrediction?.waveform}
+              />
+              <RecordedMetrics />
+              <button className="button subtle" onClick={s.reset}>
+                Reset
+              </button>
+            </>
+          )}
           <button className="button primary" onClick={onHome}>
             이 구성으로 스마트홈 체험 <ArrowRight size={16} />
           </button>

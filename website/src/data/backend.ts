@@ -24,7 +24,16 @@ export type BackendPrediction = {
   active_channels: string[];
   probability_right: number;
   probability_left: number;
-  quality: { is_clean: boolean; status: string };
+  decision_score: number;
+  raw_logit: number;
+  calibrated_logit: number;
+  latency_ms: number;
+  quality: {
+    is_clean: boolean;
+    status: string;
+    eog_ptp_uv: number;
+    threshold_uv: number;
+  };
   waveform?: Record<string, number[]> | null;
 };
 export function selectedBackendModel(s: {
@@ -32,9 +41,12 @@ export function selectedBackendModel(s: {
   sessionId: string;
   channelMode: string;
   ttaEnabled: boolean;
+  recordedLowChannel?: boolean;
 }) {
   return s.backendSessions.find((x) => x.session_id === s.sessionId)
-    ?.available_models[`${s.channelMode}__tta_${s.ttaEnabled ? "on" : "off"}`];
+    ?.available_models[
+    `${s.recordedLowChannel ? "low" : s.channelMode}__tta_${s.ttaEnabled ? "on" : "off"}`
+  ];
 }
 // Production can supply a same-origin API reverse proxy or VITE_BCI_API_BASE.
 const configured =
