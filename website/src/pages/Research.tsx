@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BaselineSpecification } from "../components/BaselineSpecification";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 import { Atlas2D } from "../components/Scenes";
@@ -111,13 +112,13 @@ export default function Research() {
               좌표를 나타내지 않습니다.
             </p>
             <p className="source-note">
-              핵심 5ch는 F3·F4·C3·Cz·C4입니다. 현재 저장소에는 WMJ·KHY 7ch,
-              KGE·OYJ 5ch로 기입되어 있으나 최종 보고서 PDF p.12와의 대조가
-              필요합니다.
+              5ch_PM: F3·F4·C3·Cz·C4. 7ch_PM: Core 5 + P7·P8. WMJ·KHY는 7ch_PM,
+              KGE·OYJ는 5ch_PM입니다.
             </p>
           </div>
         </div>
       </section>
+      <BaselineSpecification />
       <section id="research-process" className="section scroll-section">
         <span className="eyebrow">03 / PROCESSING PIPELINE</span>
         <h2>신호 처리 파이프라인</h2>

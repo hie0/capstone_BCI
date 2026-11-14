@@ -1,0 +1,382 @@
+/* PDF reference: Smart Home only. Shared settings and wearable keep their own styles. */
+.smart-home-active .smart-layout {
+  grid-template-columns: minmax(230px, 0.9fr) minmax(320px, 1.8fr) minmax(
+      260px,
+      1fr
+    );
+  gap: 20px;
+}
+.smart-home-active .smart-layout > * {
+  min-width: 0;
+}
+.smart-home-active .panel {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: white;
+  box-shadow: none;
+}
+.smart-home-active .settings,
+.smart-home-active .monitor {
+  padding: 20px 16px;
+}
+.smart-home-active .panel-title {
+  font-size: 15px;
+  color: var(--primary);
+}
+.smart-home-active .settings {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px 12px;
+  align-content: start;
+}
+.smart-home-active .settings .panel-title {
+  grid-column: 1/-1;
+  margin: 0;
+}
+.smart-home-active .settings .field-pair {
+  display: contents;
+}
+.smart-home-active .settings label {
+  min-width: 0;
+  margin: 0;
+  font-size: 11px;
+}
+.smart-home-active .settings select {
+  min-width: 0;
+  min-height: 36px;
+  padding: 8px 5px;
+  margin-top: 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  background: var(--surface-secondary);
+}
+.smart-home-active .settings > label:nth-of-type(1) {
+  grid-area: 2 / 1;
+}
+.smart-home-active .field-pair label:first-child {
+  grid-area: 2 / 2;
+}
+.smart-home-active .field-pair label:last-child {
+  grid-area: 3 / 1;
+}
+.smart-home-active .settings > label:nth-of-type(2) {
+  grid-area: 3 / 2;
+}
+.smart-home-active .settings > label:nth-of-type(3) {
+  grid-area: 4 / 1;
+}
+.smart-home-active .settings .toggle-row {
+  grid-area: 4 / 2;
+  gap: 4px;
+  margin: 0;
+  font-size: 11px;
+}
+.smart-home-active .toggle-row small {
+  font-size: 9px;
+  margin-top: 6px;
+  color: var(--text-secondary);
+}
+.smart-home-active .switch {
+  flex-shrink: 0;
+}
+.smart-home-active .settings > label:last-of-type {
+  grid-area: 5 / 1;
+}
+.smart-home-active .settings label b {
+  color: var(--text-secondary);
+}
+.smart-home-active .settings .note {
+  grid-column: 1/-1;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  line-height: 1.6;
+  text-align: left;
+}
+.smart-home-active .room-panel {
+  padding: 16px;
+  overflow: hidden;
+}
+.smart-home-active .room-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 0 14px;
+  font-size: 10px;
+  color: var(--accent-strong);
+}
+.smart-home-active .room-top .badge {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+.smart-home-active .room-scene {
+  border-radius: 5px;
+  height: 340px;
+}
+.smart-home-active .scene-caption {
+  display: none;
+}
+.smart-home-active .device-menu {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 14px 0 0;
+}
+.smart-home-active .device-menu button {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 82px;
+  padding: 10px 2px;
+  border-radius: 9px;
+  background: var(--surface-secondary);
+}
+.smart-home-active .device-menu button.active {
+  background: var(--accent-light);
+  border-color: var(--accent);
+}
+.smart-home-active .device-menu button svg {
+  color: var(--accent-strong);
+  width: 23px;
+  height: 23px;
+}
+.smart-home-active .device-menu button span {
+  font-size: 10px;
+}
+.smart-home-active .device-menu button small {
+  font-size: 11px;
+  font-weight: 650;
+}
+.smart-home-active .command-zone {
+  padding: 14px 0 4px;
+}
+.smart-home-active .mode-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 10px;
+}
+.smart-home-active .mode-line .badge {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+.smart-home-active .command-buttons {
+  gap: 10px;
+}
+.smart-home-active .command-buttons > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 48px;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 19px;
+  background: #eaf0f5;
+}
+.smart-home-active .command-buttons .right-command {
+  background: #e9e3f1;
+  color: #79649f;
+}
+.smart-home-active .command-buttons span {
+  font-size: inherit;
+}
+.smart-home-active .monitor {
+  display: block;
+}
+.smart-home-active .monitor .eyebrow {
+  font-size: 10px;
+  letter-spacing: 0;
+}
+.smart-home-active .monitor .prediction {
+  margin: 18px 0;
+  gap: 10px;
+  color: var(--primary);
+}
+.smart-home-active .prediction strong {
+  font-size: 34px;
+}
+.smart-home-active .prediction span {
+  font-size: 11px;
+  margin: 0;
+}
+.smart-home-active .confidence {
+  font-size: 12px;
+}
+.smart-home-active .confidence small {
+  font-size: 11px;
+}
+.smart-home-active .progress {
+  height: 5px;
+  margin: 12px 0 20px;
+}
+.smart-home-active .waveform {
+  margin: 0;
+  padding: 6px;
+  border-radius: 7px;
+  background: #f7fafb;
+}
+.smart-home-active .wave-header {
+  font-size: 11px;
+}
+.smart-home-active .waveform > svg {
+  height: 136px;
+}
+.smart-home-active .monitor-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+  border: 0;
+}
+.smart-home-active .monitor-stats > div {
+  display: block;
+  min-width: 0;
+  margin: 0;
+}
+.smart-home-active .monitor-stats dt {
+  font-size: 10px;
+  margin-bottom: 8px;
+}
+.smart-home-active .monitor-stats dd {
+  font-size: 12px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.smart-home-active .log-heading {
+  font-size: 10px;
+  padding-top: 8px;
+  border: 0;
+}
+.smart-home-active .command-history {
+  min-height: 180px;
+  max-height: 260px;
+}
+.smart-home-active .command-history .empty {
+  padding: 30px 4px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.smart-home-active .how-it-works {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 18px;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: white;
+  font-size: 11px;
+}
+.smart-home-active .how-it-works > span {
+  width: 100%;
+}
+.smart-home-active .how-it-works > small,
+.smart-home-active .data-legend,
+.smart-home-active .lab-status,
+.smart-home-active .shared-config,
+.smart-home-active .tab-tag {
+  display: none;
+}
+.smart-home-active .app-picker button {
+  padding: 14px 12px;
+  border-radius: 16px;
+}
+.smart-home-active .app-picker .app-icon,
+.smart-home-active .app-picker button > svg {
+  display: none;
+}
+.smart-home-active .app-picker button > div {
+  min-width: 0;
+}
+.smart-home-active .app-picker strong {
+  font-size: 14px;
+}
+.smart-home-active .app-picker span {
+  font-size: 11px;
+}
+@media (min-width: 1280px) {
+  .smart-home-active .smart-layout {
+    grid-template-columns: minmax(260px, 1fr) minmax(360px, 1.6fr) minmax(
+        270px,
+        1fr
+      );
+  }
+}
+@media (min-width: 761px) and (max-width: 1199px) {
+  .smart-home-active .smart-layout {
+    display: grid;
+    grid-template-columns: minmax(230px, 0.85fr) minmax(0, 1.6fr);
+  }
+  .smart-home-active .monitor {
+    grid-column: 1/-1;
+  }
+  .smart-home-active .monitor .command-history {
+    min-height: 120px;
+  }
+  .smart-home-active .monitor .waveform > svg {
+    height: 140px;
+  }
+}
+@media (max-width: 760px) {
+  .smart-home-active .smart-layout {
+    display: flex;
+    gap: 16px;
+  }
+  .smart-home-active .settings,
+  .smart-home-active .monitor,
+  .smart-home-active .room-panel {
+    padding: 16px;
+  }
+  .smart-home-active .settings {
+    gap: 16px;
+  }
+  .smart-home-active .settings select {
+    font-size: 11px;
+  }
+  .smart-home-active .room-scene {
+    height: 310px;
+  }
+  .smart-home-active .monitor .prediction strong {
+    font-size: 38px;
+  }
+  .smart-home-active .command-history {
+    min-height: 225px;
+  }
+  .smart-home-active .app-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .smart-home-active .app-picker strong {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .smart-home-active .app-picker span {
+    font-size: 9px;
+    line-height: 1.5;
+  }
+  .smart-home-active .how-it-works {
+    gap: 6px;
+    font-size: 9px;
+  }
+  .smart-home-active .how-it-works > div {
+    white-space: normal;
+  }
+  .smart-home-active .page-heading h1 {
+    font-size: 26px;
+  }
+  .smart-home-active .page-heading p {
+    font-size: 11px;
+  }
+}

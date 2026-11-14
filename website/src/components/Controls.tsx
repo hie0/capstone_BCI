@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { Activity, Settings2, Play, Pause, Info } from "lucide-react";
 import { useBCI } from "../store";
 import type { ChannelMode } from "../data/research";
+import {
+  participantModels,
+  channelConfigurations,
+  type ParticipantId,
+} from "../data/channels";
 export function Settings({ compact = false }: { compact?: boolean }) {
   const s = useBCI();
   return (
@@ -34,8 +39,11 @@ export function Settings({ compact = false }: { compact?: boolean }) {
             value={s.participantId}
             onChange={(e) => s.setSettings({ participantId: e.target.value })}
           >
-            <option value="demo-01">Demo P01</option>
-            <option value="demo-02">Demo P02</option>
+            {Object.entries(participantModels).map(([id, p]) => (
+              <option value={id} key={id}>
+                {id} · {p.name}
+              </option>
+            ))}
           </select>
         </label>
         <label>
@@ -55,8 +63,17 @@ export function Settings({ compact = false }: { compact?: boolean }) {
           value={s.modelId}
           onChange={(e) => s.setSettings({ modelId: e.target.value })}
         >
-          <option value="low-channel-tta">Low-channel pipeline</option>
-          <option value="baseline">16ch baseline pipeline</option>
+          {s.modelId === "visualization-only" && (
+            <option value="visualization-only">배치 탐색 · 모델 미연결</option>
+          )}
+          <option
+            value={participantModels[s.participantId as ParticipantId].modelId}
+          >
+            {participantModels[s.participantId as ParticipantId].modelName}
+          </option>
+          <option value="baseline" disabled>
+            16ch OAS + TS + LR · 파일 미연결
+          </option>
         </select>
       </label>
       <label>
@@ -68,9 +85,22 @@ export function Settings({ compact = false }: { compact?: boolean }) {
             s.setSettings({ channelMode: e.target.value as ChannelMode })
           }
         >
-          <option value="16ch">Full 16 Channels</option>
-          <option value="5ch">Core 5 Channels</option>
-          <option value="7ch">Extended 7 · 콘셉트</option>
+          {Object.entries(channelConfigurations).map(([mode, c]) => (
+            <option
+              key={mode}
+              value={mode}
+              disabled={
+                mode !==
+                participantModels[s.participantId as ParticipantId].channelMode
+              }
+            >
+              {c.name}
+              {mode !==
+              participantModels[s.participantId as ParticipantId].channelMode
+                ? " · 배치 탐색 전용"
+                : ""}
+            </option>
+          ))}
         </select>
       </label>
       <div className="toggle-row">

@@ -3,12 +3,16 @@ import { Play, Pause, RotateCcw } from "lucide-react";
 import { Settings, Waveform } from "./Controls";
 import { useBCI } from "../store";
 import { createDemoReplay } from "../data/replay";
-import { electrodeNames } from "../data/research";
+import { configuredChannels } from "../data/channels";
 export default function Replay() {
   const s = useBCI();
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [channel, setChannel] = useState("C3");
+  const channels = configuredChannels(s.channelMode);
+  useEffect(() => {
+    if (!channels.includes(channel)) setChannel("C3");
+  }, [s.channelMode, channel]);
   const source = useMemo(
     () => createDemoReplay(s.modelId, s.channelMode),
     [s.modelId, s.channelMode],
@@ -55,7 +59,7 @@ export default function Replay() {
                 value={channel}
                 onChange={(e) => setChannel(e.target.value)}
               >
-                {electrodeNames.map((n) => (
+                {channels.map((n) => (
                   <option key={n}>{n}</option>
                 ))}
               </select>

@@ -13,6 +13,8 @@ import {
 import { useBCI, menus } from "../store";
 import { Settings, Waveform, PlayButton } from "./Controls";
 import { Room, RoomFallback, Scene } from "./Scenes";
+import "./SmartHome.css";
+import { configuredChannels } from "../data/channels";
 const icons = [Lightbulb, PanelsTopLeft, Thermometer, Tv];
 const actions = [
   ["조명 끄기", "조명 켜기"],
@@ -42,9 +44,7 @@ export default function SmartHome() {
       <div className="workspace-heading">
         <div>
           <span className="eyebrow">APPLICATION 01</span>
-          <h2>
-            Smart Home Control <span>생각을 일상의 움직임으로</span>
-          </h2>
+          <h2>Smart Home Control</h2>
         </div>
         <button className="button subtle" onClick={s.reset}>
           <RotateCcw size={14} /> Reset
@@ -112,26 +112,22 @@ export default function SmartHome() {
               <button
                 disabled={s.inputMode !== "manual"}
                 className="left-command"
+                aria-label={`LEFT ${s.control ? actions[s.menu][0] : "이전 메뉴"}`}
+                title={s.control ? actions[s.menu][0] : "이전 메뉴"}
                 onClick={() => s.command("LEFT")}
               >
                 <ArrowLeft />
-                <span>
-                  LEFT
-                  <small>{s.control ? actions[s.menu][0] : "이전 메뉴"}</small>
-                </span>
-                <kbd>L</kbd>
+                <span>LEFT</span>
               </button>
               <button
                 disabled={s.inputMode !== "manual"}
                 className="right-command"
+                aria-label={`RIGHT ${s.control ? actions[s.menu][1] : "다음 메뉴"}`}
+                title={s.control ? actions[s.menu][1] : "다음 메뉴"}
                 onClick={() => s.command("RIGHT")}
               >
-                <span>
-                  RIGHT
-                  <small>{s.control ? actions[s.menu][1] : "다음 메뉴"}</small>
-                </span>
+                <span>RIGHT</span>
                 <ArrowRight />
-                <kbd>R</kbd>
               </button>
             </div>
             {s.inputMode === "synthetic" ? (
@@ -139,12 +135,7 @@ export default function SmartHome() {
                 playing={s.isPlaying}
                 onClick={s.isPlaying ? s.stop : s.play}
               />
-            ) : (
-              <p className="small muted">
-                버튼을 눌러 운동 상상 명령을 전달하세요. 선택 확정·돌아가기는 UI
-                동작입니다.
-              </p>
-            )}
+            ) : null}
           </div>
         </div>
         <aside className="monitor panel">
@@ -172,14 +163,21 @@ export default function SmartHome() {
           </div>
           <div className="confidence">
             <span>
-              Confidence <small>합성값</small>
+              Confidence <small>확신도</small>
             </span>
             <b>{s.confidence === null ? "—" : `${s.confidence}%`}</b>
           </div>
           <div className="progress">
             <i style={{ width: `${s.confidence ?? 0}%` }} />
           </div>
-          <Waveform playing={s.isPlaying || s.inputMode === "manual"} />
+          <Waveform
+            channels={configuredChannels(s.channelMode)}
+            playing={s.isPlaying || s.inputMode === "manual"}
+          />
+          <p className="small muted">
+            {s.participantId} · {s.channelMode} ·{" "}
+            {configuredChannels(s.channelMode).join(" · ")}
+          </p>
           <dl className="monitor-stats">
             <div>
               <dt>Active menu</dt>

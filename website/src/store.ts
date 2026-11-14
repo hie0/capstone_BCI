@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { ChannelMode, Direction } from "./data/research";
+import { participantModels, type ParticipantId } from "./data/channels";
 export const menus = [
   "Lighting",
   "Curtains",
@@ -60,14 +61,30 @@ const initial = {
 export const useBCI = create<State>((set) => ({
   ...initial,
   channelMode: "5ch",
-  participantId: "demo-01",
+  participantId: "KGE",
   sessionId: "session-01",
   ttaEnabled: true,
-  modelId: "low-channel-tta",
+  modelId: participantModels.KGE.modelId,
   inputMode: "manual",
   speed: 1,
   setSettings: (s) =>
-    set((old) => ({ ...s, isPlaying: s.inputMode ? false : old.isPlaying })),
+    set((old) => {
+      const profile =
+        participantModels[
+          (s.participantId ?? old.participantId) as ParticipantId
+        ];
+      if (!profile) return {};
+      const mode = s.participantId
+        ? profile.channelMode
+        : (s.channelMode ?? old.channelMode);
+      return {
+        ...s,
+        channelMode: mode,
+        modelId:
+          mode === profile.channelMode ? profile.modelId : "visualization-only",
+        isPlaying: s.inputMode || s.participantId ? false : old.isPlaying,
+      };
+    }),
   command: (direction) =>
     set((s) => {
       const delta = direction === "RIGHT" ? 1 : -1;

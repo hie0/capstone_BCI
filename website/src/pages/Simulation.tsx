@@ -19,7 +19,9 @@ export default function Simulation() {
   );
   const s = useBCI();
   return (
-    <main className="container simulation">
+    <main
+      className={`container simulation ${tab === "applications" && app === "home" ? "smart-home-active" : ""}`}
+    >
       <div className="breadcrumb">
         RESEARCH LAB <span>/</span> INTERACTIVE SIMULATION
       </div>

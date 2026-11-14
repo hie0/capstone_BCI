@@ -29,12 +29,8 @@ import {
   type Direction,
 } from "../data/research";
 import { useBCI } from "../store";
-export const activeChannels = (mode: ChannelMode) =>
-  mode === "16ch"
-    ? electrodeNames
-    : mode === "5ch"
-      ? core
-      : [...core, "T7", "T8"];
+import { configuredChannels } from "../data/channels";
+export const activeChannels = (mode: ChannelMode) => configuredChannels(mode);
 class SceneBoundary extends Component<
   { children: ReactNode; fallback: ReactNode },
   { failed: boolean }
@@ -89,13 +85,7 @@ export function Scene({
             );
           }}
         >
-          <Suspense
-            fallback={
-              <Html center>
-                <span className="badge">3D 장면 로딩 중…</span>
-              </Html>
-            }
-          >
+          <Suspense fallback={null}>
             {room && <FitRoom />}
             {children}
           </Suspense>
@@ -217,7 +207,9 @@ export function Atlas2D({
                     ? "#527C98"
                     : "#8A79AF"
                   : enabled
-                    ? "#82B5AD"
+                    ? n === "P7" || n === "P8"
+                      ? "#527C98"
+                      : "#82B5AD"
                     : "#CBD5DF"
               }
               stroke={selected === n ? "#607D92" : "#9CAAB6"}

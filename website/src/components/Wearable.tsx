@@ -2,6 +2,12 @@ import { useState } from "react";
 import { ArrowRight, CircleDot, Layers3 } from "lucide-react";
 import { useBCI } from "../store";
 import { Brain, Scene, Atlas2D, activeChannels } from "./Scenes";
+import { BaselineSpecification } from "./BaselineSpecification";
+import {
+  participantModels,
+  channelConfigurations,
+  type ParticipantId,
+} from "../data/channels";
 import {
   channelInfo,
   type ChannelMode,
@@ -40,15 +46,13 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
                 <small>CH</small>
               </span>
               <span>
-                <strong>
-                  {["Full montage", "Core channels", "Extended concept"][i]}
-                </strong>
+                <strong>{channelConfigurations[mode].name}</strong>
                 <small>
                   {
                     [
                       "전체 전극 구성",
                       "감각운동 중심 핵심 구성",
-                      "Core + T7 / T8 · 미검증 예시",
+                      "Core 5 + P7 / P8",
                     ][i]
                   }
                 </small>
@@ -57,8 +61,9 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
             </button>
           ))}
           <p className="note">
-            7ch 피험자별 검증 프로파일은 제공되지 않았습니다. 현재 7ch는 배치
-            체험용 콘셉트이며 연구의 실제 선정 결과가 아닙니다.
+            연구 기반 웨어러블 콘셉트입니다. 큰 원형 하우징은 접촉 센서, 작은
+            회색 점은 비활성 채널 위치 마커입니다. KHY의 실제 추론 연결 전 최종
+            joblib 채널·모델 설정을 별도로 검증해야 합니다.
           </p>
           <label className="wearable-model">
             Model
@@ -66,8 +71,21 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
               value={s.modelId}
               onChange={(e) => s.setSettings({ modelId: e.target.value })}
             >
-              <option value="low-channel-tta">Low-channel pipeline</option>
-              <option value="baseline">16ch baseline pipeline</option>
+              {s.modelId === "visualization-only" && (
+                <option value="visualization-only">
+                  배치 탐색 · 모델 미연결
+                </option>
+              )}
+              <option
+                value={
+                  participantModels[s.participantId as ParticipantId].modelId
+                }
+              >
+                {participantModels[s.participantId as ParticipantId].modelName}
+              </option>
+              <option value="baseline" disabled>
+                16ch OAS + TS + LR · 파일 미연결
+              </option>
             </select>
           </label>
           <div className="toggle-row">
@@ -175,7 +193,7 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
                 {(((16 - count) / 16) * 100).toFixed(1)}
                 <small>%</small>
               </strong>
-              <span>전극 감축률</span>
+              <span>Channel Reduction</span>
             </div>
           </div>
           <button className="button primary" onClick={onHome}>
@@ -183,6 +201,7 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
           </button>
         </div>
       </div>
+      <BaselineSpecification />
       <div className="panel comparison-table">
         <div className="panel-title">
           Device comparison{" "}
