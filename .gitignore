@@ -47,3 +47,10 @@ __pycache__/
 .env
 venv/
 env/
+
+# Private EEG handover: raw recordings, research models and results
+/website/capstone_core_handover/
+/website/backend/.venv/
+/website/backend/runtime/
+/website/models_final/
+/website/models_reproduced/

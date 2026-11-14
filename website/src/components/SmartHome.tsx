@@ -15,6 +15,7 @@ import { Settings, Waveform, PlayButton } from "./Controls";
 import { Room, RoomFallback, Scene } from "./Scenes";
 import "./SmartHome.css";
 import { configuredChannels } from "../data/channels";
+import { selectedBackendModel } from "../data/backend";
 const icons = [Lightbulb, PanelsTopLeft, Thermometer, Tv];
 const actions = [
   ["조명 끄기", "조명 켜기"],
@@ -24,6 +25,11 @@ const actions = [
 ];
 export default function SmartHome() {
   const s = useBCI();
+  const recorded = s.inputMode === "recorded";
+  const channels = recorded
+    ? (selectedBackendModel(s)?.active_channels ??
+      configuredChannels(s.channelMode))
+    : configuredChannels(s.channelMode);
   useEffect(() => {
     if (!s.isPlaying || s.inputMode !== "synthetic") return;
     const id = setInterval(() => {
@@ -130,10 +136,11 @@ export default function SmartHome() {
                 <ArrowRight />
               </button>
             </div>
-            {s.inputMode === "synthetic" ? (
+            {s.inputMode !== "manual" ? (
               <PlayButton
                 playing={s.isPlaying}
                 onClick={s.isPlaying ? s.stop : s.play}
+                recorded={recorded}
               />
             ) : null}
           </div>
@@ -157,7 +164,9 @@ export default function SmartHome() {
             <strong>{s.currentCommand ?? "READY"}</strong>
             <span>
               {s.currentCommand
-                ? "Predicted direction · 데모 입력"
+                ? recorded
+                  ? `Recorded EEG · ${s.recordedPrediction?.quality.status ?? s.backendStatus}`
+                  : "Predicted direction · 데모 입력"
                 : "명령 입력을 기다리는 중"}
             </span>
           </div>
@@ -171,12 +180,19 @@ export default function SmartHome() {
             <i style={{ width: `${s.confidence ?? 0}%` }} />
           </div>
           <Waveform
-            channels={configuredChannels(s.channelMode)}
+            channels={channels}
             playing={s.isPlaying || s.inputMode === "manual"}
+            recorded={recorded}
+            samples={s.recordedPrediction?.waveform}
           />
           <p className="small muted">
-            {s.participantId} · {s.channelMode} ·{" "}
-            {configuredChannels(s.channelMode).join(" · ")}
+            {s.participantId} · {s.channelMode} · {channels.join(" · ")}
+            {recorded && (
+              <>
+                <br />
+                Calib20 · Reg-CSP + sLDA · {s.backendStatus}
+              </>
+            )}
           </p>
           <dl className="monitor-stats">
             <div>

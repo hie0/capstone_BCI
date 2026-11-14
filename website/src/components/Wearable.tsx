@@ -3,6 +3,8 @@ import { ArrowRight, CircleDot, Layers3 } from "lucide-react";
 import { useBCI } from "../store";
 import { Brain, Scene, Atlas2D, activeChannels } from "./Scenes";
 import { BaselineSpecification } from "./BaselineSpecification";
+import { selectedBackendModel } from "../data/backend";
+import { PlayButton } from "./Controls";
 import {
   participantModels,
   channelConfigurations,
@@ -18,7 +20,10 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
   const [selected, setSelected] = useState("C4");
   const [direction, setDirection] = useState<Direction>("LEFT");
   const [flat, setFlat] = useState(false);
-  const count = activeChannels(s.channelMode).length;
+  const actual =
+    s.inputMode === "recorded" ? selectedBackendModel(s) : undefined;
+  const channels = actual?.active_channels ?? activeChannels(s.channelMode);
+  const count = channels.length;
   return (
     <>
       <div className="workspace-heading">
@@ -60,6 +65,18 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
               <i />
             </button>
           ))}
+          {s.inputMode === "recorded" && (
+            <>
+              <p className="small muted">
+                {s.backendStatus} · Calib20 · {actual?.montage ?? "연결 대기"}
+              </p>
+              <PlayButton
+                recorded
+                playing={s.isPlaying}
+                onClick={s.isPlaying ? s.stop : s.play}
+              />
+            </>
+          )}
           <p className="note">
             연구 기반 웨어러블 콘셉트입니다. 큰 원형 하우징은 접촉 센서, 작은
             회색 점은 비활성 채널 위치 마커입니다. KHY의 실제 추론 연결 전 최종
@@ -71,21 +88,31 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
               value={s.modelId}
               onChange={(e) => s.setSettings({ modelId: e.target.value })}
             >
-              {s.modelId === "visualization-only" && (
-                <option value="visualization-only">
-                  배치 탐색 · 모델 미연결
-                </option>
+              {s.inputMode === "recorded" ? (
+                <option value="online-calib20">Calib20 · Reg-CSP + sLDA</option>
+              ) : (
+                <>
+                  {s.modelId === "visualization-only" && (
+                    <option value="visualization-only">
+                      배치 탐색 · 모델 미연결
+                    </option>
+                  )}
+                  <option
+                    value={
+                      participantModels[s.participantId as ParticipantId]
+                        .modelId
+                    }
+                  >
+                    {
+                      participantModels[s.participantId as ParticipantId]
+                        .modelName
+                    }
+                  </option>
+                  <option value="baseline" disabled>
+                    16ch OAS + TS + LR · 파일 미연결
+                  </option>
+                </>
               )}
-              <option
-                value={
-                  participantModels[s.participantId as ParticipantId].modelId
-                }
-              >
-                {participantModels[s.participantId as ParticipantId].modelName}
-              </option>
-              <option value="baseline" disabled>
-                16ch OAS + TS + LR · 파일 미연결
-              </option>
             </select>
           </label>
           <div className="toggle-row">
@@ -137,6 +164,7 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
                 selected={selected}
                 onSelect={setSelected}
                 direction={direction}
+                activeOverride={actual?.active_channels}
               />
             ) : (
               <Scene
@@ -146,6 +174,7 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
                     selected={selected}
                     onSelect={setSelected}
                     direction={direction}
+                    activeOverride={actual?.active_channels}
                   />
                 }
               >
@@ -154,6 +183,7 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
                   selected={selected}
                   onSelect={setSelected}
                   direction={direction}
+                  activeOverride={actual?.active_channels}
                 />
               </Scene>
             )}
@@ -171,9 +201,7 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
           </div>
           <strong className="electrode-name">{selected}</strong>
           <span className="badge">
-            {activeChannels(s.channelMode).includes(selected)
-              ? "활성 전극"
-              : "제외 전극"}
+            {channels.includes(selected) ? "활성 전극" : "제외 전극"}
           </span>
           <h3>해부학적 위치와 역할</h3>
           <p>{channelInfo(selected)}</p>

@@ -1,6 +1,6 @@
 # NEUROLINK · MI-BCI Interactive Research Website
 
-국립부경대학교 컴퓨터·인공지능공학부 캡스톤 연구 소개 및 장비 없이 실행하는 BCI 체험 프로토타입. 웹사이트 소스는 저장소의 `website/`에 있습니다. 백엔드·외부 API·외부 폰트·실제 EEG 기록 전송은 없습니다.
+국립부경대학교 컴퓨터·인공지능공학부 캡스톤 연구 소개 및 BCI 체험 프로토타입. 웹사이트 소스는 `website/`, 실제 EEG 추론 서버는 저장소 루트의 `backend/`입니다. 수동·합성 모드는 독립 실행되며 Recorded EEG 모드는 새 Backend의 REST API와 WebSocket에 연결됩니다.
 
 ## 실행
 
@@ -15,6 +15,8 @@ npm run dev
 ```
 
 http://127.0.0.1:5173 에 접속합니다. 빌드: `npm run build`, 정적 빌드 미리보기: `npm run preview`.
+
+Recorded EEG를 사용하려면 저장소 루트에서 `backend/.venv/bin/python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000`도 실행합니다. 데이터 경로·환경·배포 설정은 [Backend 실행 안내](../backend/LOCAL_SETUP.md)를 참고하세요. 구형 연구 Backend와 모델의 백업 목록은 [전환 기록](../BACKEND_MIGRATION.md)에 있습니다.
 
 ## 구조
 
@@ -49,7 +51,7 @@ website/
 - **Simulated EEG**: Input mode를 변경 후 시작/정지. 난수 방향과 합성 confidence를 전달하며 실제 모델 성능을 흉내 내지 않음. 탭/응용 전환 시 자동 입력 정지.
 - **Wearable**: 16/5/7ch 전환, 전극 클릭, 2D/3D 전환, LEFT/RIGHT MI 대측성 설명. 공유 채널·TTA·모델·피험자·세션·속도는 화면 이동 시 유지(새로고침하면 초기화). 디바이스는 미제작·미검증 콘셉트.
 - **Comparison**: 보고된 사후 재분석 BA 네 조건 표시. 현재 채널 그룹/TTA의 막대 강조. LOSO·현장 라이브·BA/AUC 선택 지원; 미제공 조건은 명시적으로 표시.
-- **Replay**: 합성 파형, 30개 합성 예측, 재생/일시정지/리셋/속도/채널/타임라인 탐색. 탭을 나가면 재생 종료.
+- **Replay**: Recorded EEG 또는 합성 입력의 파형·예측, 재생/일시정지/리셋/속도/채널/타임라인 탐색. 탭을 나가면 재생 종료.
 - 모든 3D 씬은 드래그 회전, WebGL 미지원/렌더 오류 시 2D 대체 화면 제공. 외부 모델 파일 다운로드 불필요.
 
 ## 데이터 신뢰성과 미연결 기능
@@ -57,9 +59,9 @@ website/
 1. **Research Data**: 사용자 제공 개발 요청서의 보고서 요약값을 그대로 수록. LOSO AUC 0.8191 / BA 76.64%, 온라인 50세션 사후 재분석 BA 69.28/70.11/72.09/74.66%, 현장 라이브 BA 54.48%. 이 구현에서 재계산·재현 검증한 값은 아님. 평가 조건과 출처를 카드 tooltip·차트 설명에 표시.
 2. **Synthetic Demo**: 합성 파형·데모 피험자/세션·예측·confidence. 수동 입력에는 confidence를 생성하지 않음. 참 라벨은 null. 모델·TTA 선택은 상태 공유/연구 비교용이며 합성 정확도에 영향을 주지 않음.
 3. **Application Simulation**: 가상 장치 상태 변화 및 교육용 두부/반구 표시. 실제 장치/실시간 뇌 활성화 아님.
-4. 16ch 매핑은 원본 로컬 연구 폴더의 `docs/00_requests.md` (이 저장소에는 미포함)와 일치. Core 5ch는 요청서의 F3/F4/C3/Cz/C4. 기존 로컬 모델 인벤토리의 일부 구성은 요청서와 다름. **실제 피험자별 Extended 7 프로파일을 확인하지 못해 Core+T7/T8은 명시적인 미검증 콘셉트로만 제공**. 실제 프로파일 확보 후 `activeChannels`와 데이터 구조 교체 필요.
+4. 16ch 매핑은 원본 로컬 연구 폴더의 `docs/00_requests.md` (이 저장소에는 미포함)와 일치. Core 5ch는 요청서의 F3/F4/C3/Cz/C4. 기존 로컬 모델 인벤토리의 일부 구성은 요청서와 다름. **연구용 Extended 7은 Core+P7/P8이다**. Recorded EEG는 신규 Backend가 반환한 실제 active_channels를 사용하며 해당 추론 montage와 역사적 연구용 구성을 구분한다.
 5. 5ch/7ch 개별·피험자별 수치, 온라인 AUC, 통계적 유의성, 착용시간·가격·배터리 수명은 임의로 생성하지 않음.
-6. 실제 EEG CSV/예측 JSON, 모델 추론, 실물 장비, 피험자별 7ch 프로파일, 재활 손 피드백은 미연결/미구현. Recorded 입력은 비활성화. `ReplaySource` 인터페이스를 통해 향후 로더를 연결할 수 있음. 연결 시 샘플링률/단위/시간 정렬/전극 순서를 검증해야 함.
+6. Recorded EEG는 새 Backend의 실제 joblib과 12개 로컬 EEG 세션에 연결됩니다. 세션별 Calib20 추론의 실제 montage·활성 채널·모델 출력을 표시하고, 연결 실패를 합성 데이터로 대체하지 않습니다. 품질 기준 미달 시 장치 명령을 보류합니다. 실제 장비 수집 및 재활 손 피드백은 이번 범위에 포함하지 않습니다.
 
 ## 브라우저 검증
 
@@ -70,6 +72,8 @@ website/
 ## GitHub Pages 배포
 
 HashRouter와 Vite `base: './'`를 사용하므로 저장소 서브경로에서도 새로고침/자산 경로가 유지됩니다.
+
+GitHub Pages는 정적 프론트엔드만 배포합니다. Recorded EEG에는 별도로 접근 가능한 Backend가 필요하며, 빌드 시 `VITE_BCI_API_BASE` 또는 `/api`·`/ws` reverse proxy를 설정해야 합니다. 원본 EEG와 Backend 가상환경은 Pages 배포물에 포함하지 않습니다.
 
 저장소 루트 `.github/workflows/pages.yml`이 `website/`에서 의존성 설치와 빌드를 수행하고 **website/dist만** 배포합니다.
 
@@ -84,8 +88,8 @@ HashRouter와 Vite `base: './'`를 사용하므로 저장소 서브경로에서�
 ## 최종 검증 결과
 
 - `npm run build`: TypeScript 검사 및 Vite 프로덕션 빌드 성공.
-- `npm test`: Chrome 브라우저 시나리오 6개 모두 통과.
+- `npm test`: Chrome 브라우저 시나리오 8개 모두 통과.
 - 1440px 데스크톱, 1024px 태블릿, 390px 모바일 화면 확인.
 - 장치 네 가지의 제어, 메뉴 대기 확정, 로그·리셋, 자동 입력 시작/정지 및 2배속, 5/7/16ch 전환, 3D 전극 선택, 모델·TTA·채널 설정 공유, 연구값 누락 처리, 리플레이 및 WebGL 불가 대체 UI 검증.
 - 화면 캡처: `tests/artifacts/smart-home-1440.png`, `wearable-3d-1440.png`, `wearable-1440.png`, `home-1440.png`, `tablet-1024.png`, `mobile-390.png`.
-- 검증용 개발 서버는 종료했습니다. 체험하려면 `npm run dev`를 다시 실행하세요.
+- Recorded EEG 실행에는 개발 서버와 Backend를 함께 실행하세요. 자세한 명령은 위 실행 안내를 참고하세요.

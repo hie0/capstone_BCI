@@ -1,0 +1,206 @@
+{
+  "verified_at": "2026-11-14T19:16:37+0900",
+  "python_version": "3.11.16",
+  "online_50_golden_sessions": {
+    "total_sessions": 50,
+    "total_calibrated_16ch_sessions": 77,
+    "total_calibrated_all_sessions": 81,
+    "per_subject": [
+      {
+        "Subject": "WMJ",
+        "N_Sessions": 13,
+        "Live_Game(%)": 55.58,
+        "16ch_only(%)": 72.26,
+        "16ch_TTA(%)": 72.68,
+        "LowCh_only(%)": 76.03,
+        "LowCh_TTA(%)": 76.77,
+        "Gain_vs_Live(%p)": 21.2,
+        "Gain_vs_16ch(%p)": 4.51,
+        "AUC_16ch": 0.741,
+        "AUC_LowCh_TTA": 0.762,
+        "t_stat": 2.406,
+        "p_val": 0.0332
+      },
+      {
+        "Subject": "OYJ",
+        "N_Sessions": 9,
+        "Live_Game(%)": 57.22,
+        "16ch_only(%)": 75.11,
+        "16ch_TTA(%)": 75.17,
+        "LowCh_only(%)": 78.5,
+        "LowCh_TTA(%)": 81.83,
+        "Gain_vs_Live(%p)": 24.61,
+        "Gain_vs_16ch(%p)": 6.72,
+        "AUC_16ch": 0.77,
+        "AUC_LowCh_TTA": 0.854,
+        "t_stat": 2.691,
+        "p_val": 0.0275
+      },
+      {
+        "Subject": "KGE",
+        "N_Sessions": 13,
+        "Live_Game(%)": 54.1,
+        "16ch_only(%)": 67.55,
+        "16ch_TTA(%)": 69.27,
+        "LowCh_only(%)": 69.84,
+        "LowCh_TTA(%)": 72.83,
+        "Gain_vs_Live(%p)": 18.73,
+        "Gain_vs_16ch(%p)": 5.28,
+        "AUC_16ch": 0.634,
+        "AUC_LowCh_TTA": 0.694,
+        "t_stat": 2.928,
+        "p_val": 0.0126
+      },
+      {
+        "Subject": "KHY",
+        "N_Sessions": 15,
+        "Live_Game(%)": 51.0,
+        "16ch_only(%)": 62.18,
+        "16ch_TTA(%)": 63.32,
+        "LowCh_only(%)": 63.98,
+        "LowCh_TTA(%)": 67.23,
+        "Gain_vs_Live(%p)": 16.23,
+        "Gain_vs_16ch(%p)": 5.05,
+        "AUC_16ch": 0.588,
+        "AUC_LowCh_TTA": 0.624,
+        "t_stat": 3.862,
+        "p_val": 0.0017
+      }
+    ],
+    "cohort_grand_mean": {
+      "live_game_bacc_pct": 54.48,
+      "16ch_only_bacc_pct": 69.28,
+      "16ch_tta_bacc_pct": 70.11,
+      "lowch_only_bacc_pct": 72.09,
+      "lowch_tta_bacc_pct": 74.66,
+      "gain_vs_live_pct_pt": 20.18,
+      "gain_vs_16ch_pct_pt": 5.38,
+      "paired_t_vs_16ch": 5.999,
+      "paired_p_vs_16ch": 2.3510719742034975e-07,
+      "paired_t_vs_live": 13.918,
+      "paired_p_vs_live": 1.1917970573859957e-18
+    }
+  },
+  "offline_4_subjects": [
+    {
+      "subject": "WMJ",
+      "n_trials": 240,
+      "low_montage": "7ch_PM_NoCAR",
+      "low_model": "Riemann_TS_sLDA",
+      "loso_16ch": {
+        "oof_auc": 0.6435,
+        "oof_bacc": 59.17,
+        "fold_mean_auc": 0.7201,
+        "fold_mean_bacc": 59.17
+      },
+      "loso_lowch": {
+        "oof_auc": 0.8838,
+        "oof_bacc": 83.33,
+        "fold_mean_auc": 0.8831,
+        "fold_mean_bacc": 83.33
+      },
+      "loro_lowch": {
+        "oof_auc": 0.8824,
+        "oof_bacc": 80.83,
+        "fold_mean_auc": 0.8872,
+        "fold_mean_bacc": 80.83
+      },
+      "cv10_lowch": {
+        "oof_auc": 0.9058,
+        "oof_bacc": 83.33,
+        "fold_mean_auc": 0.9035,
+        "fold_mean_bacc": 83.33
+      }
+    },
+    {
+      "subject": "KGE",
+      "n_trials": 180,
+      "low_montage": "5ch_PM_NoCAR",
+      "low_model": "Riemann_TS_sLDA",
+      "loso_16ch": {
+        "oof_auc": 0.8196,
+        "oof_bacc": 76.67,
+        "fold_mean_auc": 0.8467,
+        "fold_mean_bacc": 76.67
+      },
+      "loso_lowch": {
+        "oof_auc": 0.8683,
+        "oof_bacc": 83.33,
+        "fold_mean_auc": 0.8733,
+        "fold_mean_bacc": 83.33
+      },
+      "loro_lowch": {
+        "oof_auc": 0.8683,
+        "oof_bacc": 83.33,
+        "fold_mean_auc": 0.8733,
+        "fold_mean_bacc": 83.33
+      },
+      "cv10_lowch": {
+        "oof_auc": 0.8828,
+        "oof_bacc": 82.22,
+        "fold_mean_auc": 0.8889,
+        "fold_mean_bacc": 82.22
+      }
+    },
+    {
+      "subject": "OYJ",
+      "n_trials": 162,
+      "low_montage": "5ch_PM_NoCAR",
+      "low_model": "Riemann_TS_sLDA",
+      "loso_16ch": {
+        "oof_auc": 0.481,
+        "oof_bacc": 48.07,
+        "fold_mean_auc": 0.4755,
+        "fold_mean_bacc": 47.97
+      },
+      "loso_lowch": {
+        "oof_auc": 0.7888,
+        "oof_bacc": 73.26,
+        "fold_mean_auc": 0.7958,
+        "fold_mean_bacc": 73.75
+      },
+      "loro_lowch": {
+        "oof_auc": 0.7826,
+        "oof_bacc": 72.02,
+        "fold_mean_auc": 0.7873,
+        "fold_mean_bacc": 71.83
+      },
+      "cv10_lowch": {
+        "oof_auc": 0.8053,
+        "oof_bacc": 73.2,
+        "fold_mean_auc": 0.8205,
+        "fold_mean_bacc": 73.36
+      }
+    },
+    {
+      "subject": "KHY",
+      "n_trials": 216,
+      "low_montage": "6ch_PM_LocCAR",
+      "low_model": "SuperHybrid_TS_CSP_ERD",
+      "loso_16ch": {
+        "oof_auc": 0.5448,
+        "oof_bacc": 55.52,
+        "fold_mean_auc": 0.5303,
+        "fold_mean_bacc": 56.08
+      },
+      "loso_lowch": {
+        "oof_auc": 0.6974,
+        "oof_bacc": 68.97,
+        "fold_mean_auc": 0.7105,
+        "fold_mean_bacc": 69.49
+      },
+      "loro_lowch": {
+        "oof_auc": 0.7004,
+        "oof_bacc": 65.29,
+        "fold_mean_auc": 0.7064,
+        "fold_mean_bacc": 65.32
+      },
+      "cv10_lowch": {
+        "oof_auc": 0.6765,
+        "oof_bacc": 63.44,
+        "fold_mean_auc": 0.6683,
+        "fold_mean_bacc": 63.5
+      }
+    }
+  ]
+}

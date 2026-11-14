@@ -11,6 +11,7 @@ import SmartHome from "../components/SmartHome";
 import Wearable from "../components/Wearable";
 import Replay from "../components/Replay";
 import { useBCI } from "../store";
+import { useRecordedEEG } from "../useRecordedEEG";
 export default function Simulation() {
   const [params] = useSearchParams();
   const [tab, setTab] = useState("applications");
@@ -18,6 +19,7 @@ export default function Simulation() {
     params.get("app") === "wearable" ? "wearable" : "home",
   );
   const s = useBCI();
+  useRecordedEEG(tab === "applications");
   return (
     <main
       className={`container simulation ${tab === "applications" && app === "home" ? "smart-home-active" : ""}`}
@@ -126,7 +128,11 @@ export default function Simulation() {
             <div>
               <b>03</b> 가상 장치 제어
             </div>
-            <small>실제 EEG 추론을 수행하지 않는 인터랙티브 데모입니다.</small>
+            <small>
+              {s.inputMode === "recorded"
+                ? "실제 기록 EEG와 세션별 보정 모델을 이용한 가상 장치 제어입니다."
+                : "실제 EEG 추론을 수행하지 않는 인터랙티브 데모입니다."}
+            </small>
           </div>
         </>
       ) : (

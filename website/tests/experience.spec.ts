@@ -72,7 +72,7 @@ test("wearable configuration shares state with smart home", async ({
 }) => {
   await page.goto("/#/simulation");
   await page.getByRole("button", { name: /Wearable BCI Experience/ }).click();
-  await page.getByRole("button", { name: /Full montage/ }).click();
+  await page.getByRole("button", { name: /Full Montage/i }).click();
   await expect(page.getByText("16 ACTIVE ELECTRODES")).toBeVisible();
   await page.getByRole("button", { name: "2D 배치도" }).click();
   await page.getByRole("button", { name: "전극 Fp1", exact: true }).click();
@@ -207,16 +207,14 @@ test("wearable core and extended concepts, 3D selection and shared model", async
 }) => {
   await page.goto("/#/simulation?app=wearable");
   await expect(page.getByText("5 ACTIVE ELECTRODES")).toBeVisible();
-  await page.getByRole("button", { name: /Extended concept/ }).click();
+  await page.getByRole("button", { name: /7 Extended Channels/i }).click();
   await expect(page.getByText("7 ACTIVE ELECTRODES")).toBeVisible();
-  await page.getByRole("button", { name: /Core channels/ }).click();
+  await page.getByRole("button", { name: /5 Core Channels/i }).click();
   await expect(page.getByText("5 ACTIVE ELECTRODES")).toBeVisible();
   await page.getByRole("button", { name: "C3", exact: true }).click();
   await expect(page.locator(".electrode-name")).toHaveText("C3");
   await page.getByRole("button", { name: "RIGHT MI" }).click();
-  await page
-    .getByRole("combobox", { name: "Model", exact: true })
-    .selectOption("baseline");
+  await expect(page.getByRole("combobox", { name: "Model", exact: true }).locator('option[value="baseline"]')).toBeDisabled();
   await page.getByRole("switch", { name: "Wearable TTA" }).click();
   await page.screenshot({
     path: "tests/artifacts/wearable-3d-1440.png",
@@ -225,7 +223,7 @@ test("wearable core and extended concepts, 3D selection and shared model", async
   await page.getByRole("button", { name: /이 구성으로 스마트홈 체험/ }).click();
   await expect(
     page.getByRole("combobox", { name: "Model", exact: true }),
-  ).toHaveValue("baseline");
+  ).toHaveValue("kge-oas-ts");
   await expect(
     page.getByRole("switch", { name: "TTA", exact: true }),
   ).toHaveAttribute("aria-checked", "false");

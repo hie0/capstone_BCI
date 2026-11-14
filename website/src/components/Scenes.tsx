@@ -11,15 +11,24 @@ import {
 } from "three";
 import {
   Component,
+  createContext,
   Suspense,
+  useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode,
+  type ComponentProps,
+  type RefObject,
 } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Html, Line, OrbitControls, RoundedBox } from "@react-three/drei";
+import {
+  Html as DreiHtml,
+  Line,
+  OrbitControls,
+  RoundedBox,
+} from "@react-three/drei";
 import {
   core,
   electrodeNames,
@@ -31,6 +40,20 @@ import {
 import { useBCI } from "../store";
 import { configuredChannels } from "../data/channels";
 export const activeChannels = (mode: ChannelMode) => configuredChannels(mode);
+// Keep Html roots in one stable DOM container while Fiber connects its events.
+// The default target can change during mount, racing React19 root teardown.
+const SceneHtmlPortal = createContext<RefObject<HTMLElement | null> | null>(
+  null,
+);
+function Html(props: ComponentProps<typeof DreiHtml>) {
+  const portal = useContext(SceneHtmlPortal);
+  return (
+    <DreiHtml
+      {...props}
+      portal={(portal as RefObject<HTMLElement>) ?? props.portal}
+    />
+  );
+}
 class SceneBoundary extends Component<
   { children: ReactNode; fallback: ReactNode },
   { failed: boolean }
@@ -61,35 +84,48 @@ export function Scene({
   fallback: ReactNode;
 }) {
   const [webgl, setWebgl] = useState(supported);
+  const htmlPortal = useRef<HTMLDivElement>(null);
   return (
     <SceneBoundary fallback={fallback}>
       {webgl ? (
-        <Canvas
-          orthographic={room}
-          camera={
-            room
-              ? { position: [7, 5.8, 8], zoom: 63 }
-              : { position: [0, 3.8, 5], fov: 36 }
-          }
-          dpr={[1, 1.5]}
-          gl={{ antialias: true }}
-          onCreated={({ gl }) => {
-            gl.domElement.addEventListener(
-              "webglcontextlost",
-              () => setWebgl(false),
-              { once: true },
-            );
-            gl.domElement.setAttribute(
-              "aria-label",
-              room ? "인터랙티브 3D 거실" : "EEG 전극 3D 시각화",
-            );
+        <div
+          ref={htmlPortal}
+          style={{
+            width: "100%",
+            height: "100%",
+            position: "relative",
+            overflow: "hidden",
           }}
         >
-          <Suspense fallback={null}>
-            {room && <FitRoom />}
-            {children}
-          </Suspense>
-        </Canvas>
+          <Canvas
+            orthographic={room}
+            camera={
+              room
+                ? { position: [7, 5.8, 8], zoom: 63 }
+                : { position: [0, 3.8, 5], fov: 36 }
+            }
+            dpr={[1, 1.5]}
+            gl={{ antialias: true }}
+            onCreated={({ gl }) => {
+              gl.domElement.addEventListener(
+                "webglcontextlost",
+                () => setWebgl(false),
+                { once: true },
+              );
+              gl.domElement.setAttribute(
+                "aria-label",
+                room ? "인터랙티브 3D 거실" : "EEG 전극 3D 시각화",
+              );
+            }}
+          >
+            <SceneHtmlPortal.Provider value={htmlPortal}>
+              <Suspense fallback={null}>
+                {room && <FitRoom />}
+                {children}
+              </Suspense>
+            </SceneHtmlPortal.Provider>
+          </Canvas>
+        </div>
       ) : (
         fallback
       )}
@@ -102,14 +138,16 @@ export function Atlas2D({
   selected,
   excluded = false,
   direction,
+  activeOverride,
 }: {
   mode: ChannelMode;
   onSelect: (s: string) => void;
   selected: string;
   excluded?: boolean;
   direction?: Direction;
+  activeOverride?: string[];
 }) {
-  const active = activeChannels(mode);
+  const active = activeOverride ?? activeChannels(mode);
   return (
     <svg
       viewBox="0 0 400 400"
@@ -416,13 +454,15 @@ export function Brain({
   direction = "LEFT",
   selected = "C4",
   onSelect = () => {},
+  activeOverride,
 }: {
   mode?: ChannelMode;
   direction?: Direction;
   selected?: string;
   onSelect?: (n: string) => void;
+  activeOverride?: string[];
 }) {
-  const active = activeChannels(mode);
+  const active = activeOverride ?? activeChannels(mode);
   const paths = useMemo(
     () =>
       Array.from({ length: 24 }, (_, k) =>
