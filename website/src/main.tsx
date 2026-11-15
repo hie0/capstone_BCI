@@ -1,47 +1,50 @@
 import React, { Suspense, lazy, useEffect } from "react";
 import ReactDOM from "react-dom/client";
-import { HashRouter, Route, Routes, Link, useLocation } from "react-router-dom";
+import {
+  HashRouter,
+  Navigate,
+  Route,
+  Routes,
+  Link,
+  useLocation,
+} from "react-router-dom";
 import { BrainCircuit, ArrowUpRight } from "lucide-react";
 import "./styles.css";
-const Home = lazy(() => import("./pages/Home"));
-const Research = lazy(() => import("./pages/Research"));
+import Home from "./pages/Home";
 const Simulation = lazy(() => import("./pages/Simulation"));
 function App() {
   const location = useLocation();
   useEffect(() => {
     if (location.hash) {
-      window.requestAnimationFrame(() => {
+      const scrollTimer = window.setTimeout(() => {
         document
           .getElementById(location.hash.slice(1))
           ?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-      return;
+      }, 50);
+      return () => window.clearTimeout(scrollTimer);
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [location.pathname, location.hash]);
 
   const navItems = [
-    { label: "연구 개요", to: "/", active: location.pathname === "/" },
+    {
+      label: "연구 개요",
+      to: "/#research-overview",
+      active:
+        location.pathname === "/" &&
+        (!location.hash || location.hash === "#research-overview"),
+    },
     {
       label: "연구 내용",
-      to: "/research#research-content",
+      to: "/#research-content",
       active:
-        location.pathname === "/research" &&
-        (!location.hash || location.hash === "#research-content"),
+        location.pathname === "/" && location.hash === "#research-content",
     },
     {
-      label: "연구 과정",
-      to: "/research#research-process",
+      label: "연구 결과",
+      to: "/#research-results",
       active:
-        location.pathname === "/research" &&
-        location.hash === "#research-process",
-    },
-    {
-      label: "실험 결과",
-      to: "/research#research-results",
-      active:
-        location.pathname === "/research" &&
-        location.hash === "#research-results",
+        location.pathname === "/" && location.hash === "#research-results",
     },
     {
       label: "응용",
@@ -97,7 +100,10 @@ function App() {
         >
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/research" element={<Research />} />
+            <Route
+              path="/research"
+              element={<Navigate to="/#research-content" replace />}
+            />
             <Route path="/simulation" element={<Simulation />} />
             <Route
               path="*"

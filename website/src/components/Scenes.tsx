@@ -163,7 +163,7 @@ export function Atlas2D({
           height="340%"
         >
           <feGaussianBlur stdDeviation="5" result="blur" />
-          <feFlood floodColor="#6F879A" floodOpacity="0.48" />
+          <feFlood floodColor="#6F968E" floodOpacity="0.44" />
           <feComposite in2="blur" operator="in" />
           <feMerge>
             <feMergeNode />
@@ -245,12 +245,12 @@ export function Atlas2D({
                     ? "#527C98"
                     : "#8A79AF"
                   : enabled
-                    ? n === "P7" || n === "P8"
-                      ? "#527C98"
-                      : "#82B5AD"
+                    ? mode === "7ch" && (n === "P7" || n === "P8")
+                      ? "#253F55"
+                      : "#789F97"
                     : "#CBD5DF"
               }
-              stroke={selected === n ? "#607D92" : "#9CAAB6"}
+              stroke={selected === n ? "#39776F" : "#9CAAB6"}
               strokeWidth={selected === n ? 3 : 1.5}
               filter={
                 selected === n ? "url(#electrode-neutral-glow)" : undefined

@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { channelInfo } from "../data/research";
+import {
+  channelInfo,
+  sourceNote,
+  type ChannelMode,
+} from "../data/research";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -13,37 +17,37 @@ import {
 } from "lucide-react";
 import { Scene, Atlas2D } from "../components/Scenes";
 import { HeroBust } from "../components/HeroBust";
-import { ResultChart } from "../components/Comparison";
+import { ResultChart, SubjectResultChart } from "../components/Comparison";
 export function Pipeline() {
   const steps = [
     {
       icon: Waves,
-      title: "EEG 입력",
-      desc: "감각운동 상상 신호 수집",
-    },
-    {
-      icon: Scan,
-      title: "핵심 채널 선택",
-      desc: "16ch에서 5~7ch로 축소",
+      title: "EEG 직접 측정",
+      desc: "4인 피험자 · 오프라인 3,009회 · 온라인 50세션 데이터 구축",
     },
     {
       icon: ShieldCheck,
-      title: "잡음 제거",
-      desc: "ArtGate90으로 이상 신호 차단",
+      title: "전처리",
+      desc: "ArtGate90으로 이상 신호와 비운동 잡음 제거",
     },
     {
       icon: Layers,
-      title: "공분산·영점 보정",
-      desc: "세션 변화에 맞춰 분포 정렬",
+      title: "저채널화·안정화",
+      desc: "핵심 5~7채널 선택 · OAS 공분산 안정화",
     },
     {
       icon: BrainCircuit,
-      title: "좌우 분류",
-      desc: "운동 상상 명령으로 변환",
+      title: "모델링",
+      desc: "CSP·리만 접공간 특징과 개인별 분류 모델 구성",
+    },
+    {
+      icon: Scan,
+      title: "성능 검증",
+      desc: "피험자·날짜 LOSO와 실전 온라인 검증",
     },
   ];
   return (
-    <div className="pipeline" aria-label="EEG 신호 처리 파이프라인">
+    <div className="pipeline research-workflow" aria-label="연구 수행 파이프라인">
       {steps.map((step, i) => (
         <div className="pipeline-step" key={step.title}>
           <span className="mono">0{i + 1}</span>
@@ -55,11 +59,60 @@ export function Pipeline() {
     </div>
   );
 }
+
+function StabilityVisual() {
+  return (
+    <div
+      className="stability-visual"
+      role="img"
+      aria-label="흩어진 공분산을 OAS로 수축하고 리만 접공간 특징으로 변환한 뒤 CausalEA와 CausalLogitCenter로 온라인 중심을 정렬하는 과정"
+    >
+      <div className="stability-visual-step raw-covariance">
+        <div className="covariance-shapes" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </div>
+        <span>날짜마다 흩어진 공분산</span>
+      </div>
+      <b aria-hidden="true">→</b>
+      <div className="stability-visual-step oas-shrink">
+        <div className="shrink-target" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </div>
+        <span>OAS로 안정적 추정</span>
+      </div>
+      <b aria-hidden="true">→</b>
+      <div className="stability-visual-step tangent-map">
+        <div className="tangent-plane" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+          <i />
+        </div>
+        <span>리만 접공간 특징</span>
+      </div>
+      <b aria-hidden="true">→</b>
+      <div className="stability-visual-step online-center">
+        <div className="centered-distribution" aria-hidden="true">
+          <i />
+          <i />
+          <em />
+        </div>
+        <span>CausalEA · LogitCenter</span>
+      </div>
+    </div>
+  );
+}
 export default function Home() {
   const [selected, setSelected] = useState("C4");
+  const [mode, setMode] = useState<ChannelMode>("5ch");
+  const [excluded, setExcluded] = useState(false);
   return (
     <main>
-      <section className="container hero">
+      <section id="research-overview" className="container hero scroll-section">
         <div className="hero-copy">
           <div className="eyebrow">
             <i className="status-dot" /> PUKYONG NATIONAL UNIVERSITY · MI-BCI
@@ -81,7 +134,7 @@ export default function Home() {
             <Link className="button primary" to="/simulation">
               시뮬레이션 체험하기 <ArrowUpRight size={18} />
             </Link>
-            <Link className="button" to="/research">
+            <Link className="button" to="/#research-content">
               연구 자세히 보기 <ArrowRight size={17} />
             </Link>
           </div>
@@ -126,119 +179,294 @@ export default function Home() {
           </div>
         ))}
       </section>
-      <section className="container section">
+      <section
+        id="research-content"
+        className="container research-process-overview scroll-section"
+      >
+        <div className="workflow-heading">
+          <div>
+            <span>연구 수행 과정</span>
+            <strong>직접 측정한 EEG가 연구 결과가 되기까지</strong>
+          </div>
+          <b>직접 측정 데이터</b>
+        </div>
+        <Pipeline />
+      </section>
+      <section
+        className="container section scroll-section"
+      >
         <div className="section-title">
           <div>
-            <span className="eyebrow">01 / THE RESEARCH QUESTION</span>
+            <span className="eyebrow">01 / 연구 내용</span>
             <h2>
-              일상 속 BCI를 위해,
+              다채널 장비는 복잡하고,
               <br />
-              무엇을 줄이고 무엇을 지킬까요?
+              뇌파는 날짜마다 달라집니다.
             </h2>
           </div>
           <p>
-            채널 수를 늘리는 것만으로 안정성이 보장되지는 않습니다.
+            오늘 잘 맞던 분류 모델도 다른 날짜에는 성능이 달라질 수 있습니다.
             <br />
-            복잡한 입력과 세션 변화라는 두 가지 문제에 집중했습니다.
+            많은 전극과 날짜별 신호 변화가 일상적인 BCI 사용을 어렵게 합니다.
           </p>
         </div>
         <div className="problem-grid">
           <article>
             <span className="outline-number">01</span>
-            <h3>공간적 제약</h3>
+            <span className="problem-label">공간적 제약</span>
+            <h3>16채널 구성은 착용과 준비가 복잡합니다.</h3>
+            <div className="problem-visual channel-burden" aria-hidden="true">
+              <div className="dense-electrodes">
+                {Array.from({ length: 16 }, (_, index) => (
+                  <i key={index} />
+                ))}
+              </div>
+              <div className="problem-visual-copy">
+                <strong>16채널 구성</strong>
+                <span>착용 구조 복잡 · 잡음 경로 증가</span>
+              </div>
+            </div>
             <p>
-              16채널의 복잡한 배치와 잡음. 운동 상상에 필요한 감각운동 영역을
-              중심으로 입력 차원을 줄입니다.
+              채널이 많을수록 착용 구조와 준비 과정이 복잡해지고,
+              움직임·근전도·접촉 상태의 영향을 받을 경로도 늘어납니다.
             </p>
-            <Link to="/research">
-              채널 최적화 살펴보기 <ArrowUpRight size={16} />
+            <Link to="/#channel-method">
+              제안 방법 살펴보기 <ArrowUpRight size={16} />
             </Link>
           </article>
           <article>
             <span className="outline-number">02</span>
-            <h3>시간적 변동</h3>
+            <span className="problem-label">시간적 변동</span>
+            <h3>같은 모델도 다음 날에는 달라집니다.</h3>
+            <div className="problem-visual session-drift" aria-hidden="true">
+              <div>
+                <span>오늘의 뇌파</span>
+                <svg viewBox="0 0 120 52">
+                  <path className="decision-line" d="M2 26 H118" />
+                  <path d="M2 35 C14 16 22 15 34 32 S54 47 66 25 S88 12 98 30 S110 42 118 24" />
+                </svg>
+              </div>
+              <b><small>같은 모델</small>→</b>
+              <div>
+                <span>다음 날의 뇌파</span>
+                <svg viewBox="0 0 120 52">
+                  <path className="decision-line" d="M2 26 H118" />
+                  <path d="M2 18 C14 1 22 4 34 19 S54 35 66 11 S88 1 98 16 S110 28 118 9" />
+                </svg>
+              </div>
+              <em>신호 분포 이동 → 분류 기준 불일치</em>
+            </div>
             <p>
-              같은 사람의 신호도 세션마다 달라집니다. 공분산과 영점 안정화를
-              통해 세션 간 변동에 대응합니다.
+              같은 사람·같은 동작이어도 날짜가 바뀌면 EEG의 중심과 분포가
+              이동해, 어제 학습한 기준이 오늘 신호와 어긋날 수 있습니다.
             </p>
-            <Link to="/research">
-              세션 적응 살펴보기 <ArrowUpRight size={16} />
+            <Link to="/#processing-method">
+              안정화 과정 살펴보기 <ArrowUpRight size={16} />
             </Link>
           </article>
         </div>
       </section>
-      <section className="container section channel-preview">
-        <div>
-          <span className="eyebrow">02 / LESS, BUT FOCUSED</span>
-          <h2>
-            핵심은, 필요한 신호에
-            <br />
-            집중하는 것.
-          </h2>
-          <p>
-            F3, F4, C3, Cz, C4.
-            <br />
-            감각운동 중심의 5개 전극으로 살펴보는
-            <br />더 간결한 인터페이스의 가능성.
-          </p>
-          <Link to="/simulation?app=wearable" className="button">
-            웨어러블 구성 체험 <ArrowRight size={16} />
-          </Link>
-        </div>
-        <Atlas2D mode="5ch" selected={selected} onSelect={setSelected} />
-        <div className="channel-stat">
-          <div className="channel-achievement">
-            <span>가장 간결한 핵심 구성</span>
-            <strong>16ch → 5ch</strong>
-            <b>68.75% 감소</b>
-          </div>
-          <div className="selected-channel-card" aria-live="polite">
-            <span>선택 전극</span>
-            <strong>{selected}</strong>
-            <p>{channelInfo(selected)}</p>
-          </div>
-          <hr />
-          <p className="reduction-note">
-            7채널 구성은 <b>56.25% 감소</b> · 공분산 독립 원소 136 → 15
-          </p>
-        </div>
-      </section>
-      <section className="container section">
+      <section id="channel-method" className="container section scroll-section">
         <div className="section-title">
           <div>
-            <span className="eyebrow">03 / FROM SIGNAL TO ACTION</span>
-            <h2>신호를 이해하고, 명령으로 연결합니다.</h2>
+            <span className="eyebrow">02 / 제안 방법 · 핵심 채널</span>
+            <h2>필요한 신호에 집중합니다.</h2>
+          </div>
+          <p>
+            감각운동 영역을 중심으로 5~7채널을 선택해 착용 부담과 입력
+            복잡도를 함께 낮췄습니다.
+          </p>
+        </div>
+        <div className="atlas-panel panel">
+          <div>
+            <div className="segmented wrap">
+              {(["16ch", "5ch", "7ch"] as ChannelMode[]).map((m) => (
+                <button
+                  className={!excluded && mode === m ? "active" : ""}
+                  key={m}
+                  onClick={() => {
+                    setMode(m);
+                    setExcluded(false);
+                    setSelected(m === "5ch" ? "Cz" : m === "7ch" ? "P7" : "C4");
+                  }}
+                >
+                  {m === "16ch"
+                    ? "전체 16채널"
+                    : m === "5ch"
+                      ? "핵심 5채널"
+                      : "확장 7채널"}
+                </button>
+              ))}
+              <button
+                className={excluded ? "active" : ""}
+                onClick={() => {
+                  setExcluded(true);
+                  setSelected("Fp1");
+                }}
+              >
+                제외 채널
+              </button>
+            </div>
+            <Atlas2D
+              mode={mode}
+              selected={selected}
+              onSelect={setSelected}
+              excluded={excluded}
+            />
+          </div>
+          <div className="atlas-insight">
+            <div className="reduction-hero">
+              <span>가장 큰 구조적 변화</span>
+              <strong>16ch → 5ch</strong>
+              <b>68.75% 감소</b>
+              <small>7채널 구성은 56.25% 감소</small>
+            </div>
+            <div className="electrode-role-card" aria-live="polite">
+              <span className="eyebrow">선택 전극의 역할</span>
+              <strong className="electrode-name">{selected}</strong>
+              <h3>{channelInfo(selected)}</h3>
+            </div>
+            <p>
+              전극을 클릭하거나 Tab 키로 이동한 뒤 Enter를 눌러 역할을
+              확인하세요. 배치도는 교육용 개념도입니다.
+            </p>
           </div>
         </div>
-        <Pipeline />
       </section>
-      <section className="container section findings">
-        <div>
-          <span className="eyebrow">04 / RESEARCH FINDINGS</span>
-          <h2>
-            현장 온라인 정확도에서,
-            <br />
-            영점조절 적용 후까지.
-          </h2>
-          <p>
-            실전 온라인 50세션 3,910회에서 적응형 영점조절 적용 후 평균 BA는
-            74.71%입니다.
-          </p>
-          <div className="live-metric">
-            영점조절 전 평균 BA <strong>54.50%</strong>
-            <small>적용 후 +20.21%p · p &lt; 10⁻¹⁷</small>
+      <section
+        id="processing-method"
+        className="container section scroll-section"
+      >
+        <div className="section-title">
+          <div>
+            <span className="eyebrow">03 / 제안 방법 · 안정화</span>
+            <h2>
+              직접 측정한 EEG를,
+              <br />날짜가 달라도 안정적인 특징으로 바꿉니다.
+            </h2>
           </div>
-          <Link to="/research" className="text-button">
-            실험 결과와 평가 조건 <ArrowRight size={16} />
-          </Link>
+          <p>
+            측정·수집부터 전처리, 모델링, 검증까지 직접 수행하고
+            <br />공분산과 분류 출력의 중심을 단계적으로 안정화했습니다.
+          </p>
+        </div>
+        <div className="stability-method">
+          <div className="stability-heading">
+            <div>
+              <span className="eyebrow">STABILITY CORE</span>
+              <h3>안정화는 이렇게 진행했습니다.</h3>
+            </div>
+            <p>
+              저채널 공분산을 안정적으로 추정한 뒤, 기하학적 특징을 만들고
+              온라인 신호와 분류 출력의 기준점을 순차적으로 정렬합니다.
+            </p>
+          </div>
+          <StabilityVisual />
+          <div className="stability-flow">
+            <article>
+              <span>01 · 공분산 안정화</span>
+              <strong>OAS 수축</strong>
+              <p>수축 정규화로 저채널 공분산의 수치적 불안정을 완화합니다.</p>
+              <code>Σ̂ → ΣOAS</code>
+            </article>
+            <i aria-hidden="true">→</i>
+            <article>
+              <span>02 · 판별 특징 추출</span>
+              <strong>CSP · 리만 접공간</strong>
+              <p>CSP의 분산 차이와 SPD 공분산의 접공간 벡터로 좌·우 특징을 만듭니다.</p>
+              <code>Sᵢ = log(R⁻¹ᐟ² Cᵢ R⁻¹ᐟ²)</code>
+            </article>
+            <i aria-hidden="true">→</i>
+            <article>
+              <span>03 · 입력 중심 정렬</span>
+              <strong>CausalEA</strong>
+              <p>현재까지의 EEG 공분산 중심을 온라인으로 갱신해 신호를 정렬합니다.</p>
+              <code>X̃ₜ = R̄ₜ⁻¹ᐟ² Xₜ</code>
+            </article>
+            <i aria-hidden="true">→</i>
+            <article>
+              <span>04 · 출력 영점 보정</span>
+              <strong>CausalLogitCenter</strong>
+              <p>분류기 출력의 중심 편향을 보정해 세션별 영점 이동에 대응합니다.</p>
+              <code>ŷₜ = σ(zₜ − μₜ)</code>
+            </article>
+          </div>
+          <div className="stability-summary">
+            <span>저채널 공분산 안정화</span>
+            <b>+</b>
+            <span>온라인 입력 정렬</span>
+            <b>+</b>
+            <span>분류 출력 영점 보정</span>
+            <strong>→ 좌·우 운동상상 분류</strong>
+          </div>
+          <p className="source-note">
+            연구 포스터의 공분산 안정화·온라인 안정화 방법을 기준으로 정리했습니다.
+          </p>
+        </div>
+      </section>
+      <section
+        id="research-results"
+        className="container section findings scroll-section"
+      >
+        <div>
+          <span className="eyebrow">04 / 연구 결과</span>
+          <h2>
+            실전 온라인 50세션,
+            <br />영점조절로 BA를 높였습니다.
+          </h2>
+          <div className="result-highlight">
+            <span>평균 BA</span>
+            <div>
+              <strong>54.50%</strong>
+              <i>→</i>
+              <strong>74.71%</strong>
+            </div>
+            <b>+20.21%p</b>
+          </div>
+          <p className="result-explanation">
+            50세션 3,910회의 실전 온라인 검증에서 적응형 영점조절 적용 전후를
+            비교했습니다. <b>p &lt; 10⁻¹⁷</b>
+          </p>
+          <small className="result-source">{sourceNote}</small>
         </div>
         <div className="panel">
           <div className="panel-title">
-            현장 정확도 → 영점조절 적용 후{" "}
+            실전 온라인 정확도 → 영점조절 적용 후{" "}
             <span className="badge research">Research Data</span>
           </div>
           <ResultChart />
         </div>
+      </section>
+      <section className="container section research-results-detail">
+        <div className="panel subject-comparison-panel">
+          <div className="panel-title">
+            피험자별 LOSO 성능{" "}
+            <span className="badge research">16ch vs 5~7ch</span>
+          </div>
+          <SubjectResultChart />
+        </div>
+        <div className="insight-row">
+          <div>
+            <span>LOSO AUC</span>
+            <strong>0.8100</strong>
+            <p>4인 LOSO 제안 모델 평균</p>
+          </div>
+          <div>
+            <span>LOSO BA</span>
+            <strong>76.06%</strong>
+            <p>18개 런 · 1,440회</p>
+          </div>
+          <div>
+            <span>ONLINE 50 SESSIONS</span>
+            <strong>74.71%</strong>
+            <p>영점조절 적용 · 3,910회</p>
+          </div>
+        </div>
+        <p className="muted">
+          LOSO는 저채널 모델의 피험자·날짜 일반화 검증이며, 온라인 50세션은
+          영점조절 적용 전후의 실전 온라인 검증입니다. 서로 다른 평가 조건의 수치를
+          직접 비교하지 않습니다.
+        </p>
       </section>
       <section className="container section">
         <div className="section-title">

@@ -17,7 +17,7 @@ import {
 } from "../data/research";
 
 export function SubjectResultChart() {
-  const [subject, setSubject] = useState("KGE");
+  const [subject, setSubject] = useState("ALL");
   const [metric, setMetric] = useState<"BA" | "AUC">("BA");
   const selected = subjectResults.find((item) => item.id === subject);
   const rows = (selected ? [selected] : subjectResults).map((item) => ({
@@ -38,6 +38,14 @@ export function SubjectResultChart() {
     <div className="subject-results-dashboard">
       <div className="subject-toolbar">
         <div className="subject-tabs" aria-label="피험자 선택">
+          <button
+            className={subject === "ALL" ? "active" : ""}
+            aria-pressed={subject === "ALL"}
+            onClick={() => setSubject("ALL")}
+          >
+            <strong>ALL</strong>
+            <span>4인 비교</span>
+          </button>
           {subjectResults.map((item) => (
             <button
               key={item.id}
@@ -49,26 +57,21 @@ export function SubjectResultChart() {
               <span>{item.name}</span>
             </button>
           ))}
-          <button
-            className={subject === "ALL" ? "active" : ""}
-            aria-pressed={subject === "ALL"}
-            onClick={() => setSubject("ALL")}
-          >
-            <strong>ALL</strong>
-            <span>4인 비교</span>
-          </button>
         </div>
-        <div className="metric-tabs" aria-label="평가 지표 선택">
-          {(["BA", "AUC"] as const).map((item) => (
-            <button
-              key={item}
-              className={metric === item ? "active" : ""}
-              aria-pressed={metric === item}
-              onClick={() => setMetric(item)}
-            >
-              {item}
-            </button>
-          ))}
+        <div className="metric-control">
+          <span>평가 지표</span>
+          <div className="metric-tabs" aria-label="평가 지표 선택">
+            {(["BA", "AUC"] as const).map((item) => (
+              <button
+                key={item}
+                className={metric === item ? "active" : ""}
+                aria-pressed={metric === item}
+                onClick={() => setMetric(item)}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       <div className="subject-dashboard-body">
@@ -126,7 +129,7 @@ export function SubjectResultChart() {
               <Bar
                 dataKey="proposed"
                 name="5~7채널 개선 모델"
-                fill="#42BFAE"
+                fill="#5F877F"
                 radius={[7, 7, 0, 0]}
               />
             </BarChart>
@@ -179,7 +182,7 @@ export function ResultChart() {
       <div className="chart-legend online-legend">
         <span>
           <i className="baseline" />
-          현장 온라인 정확도
+          실전 온라인 정확도
         </span>
         <span>
           <i className="proposed" />
@@ -216,7 +219,7 @@ export function ResultChart() {
             formatter={(value, _name, item) => [
               `${Number(value).toFixed(2)}% BA`,
               item.dataKey === "baselineBA"
-                ? "현장 온라인 정확도"
+                ? "실전 온라인 정확도"
                 : "영점조절 적용 후",
             ]}
             labelFormatter={(label) => {
@@ -229,7 +232,7 @@ export function ResultChart() {
           <Bar
             isAnimationActive={false}
             dataKey="baselineBA"
-            name="현장 온라인 정확도"
+            name="실전 온라인 정확도"
             fill="#A6B4C0"
             radius={[5, 5, 0, 0]}
             maxBarSize={64}
@@ -243,7 +246,7 @@ export function ResultChart() {
             isAnimationActive={false}
             dataKey="adjustedBA"
             name="영점조절 적용 후"
-            fill="#39776F"
+            fill="#5F877F"
             radius={[5, 5, 0, 0]}
             maxBarSize={64}
             label={{
@@ -293,7 +296,7 @@ export default function Comparison() {
             >
               <option value="online">온라인 50세션 사후 재분석</option>
               <option value="loso">LOSO</option>
-              <option value="live">현장 라이브</option>
+              <option value="live">실시간 라이브</option>
             </select>
           </label>
           <label>
@@ -336,7 +339,7 @@ export default function Comparison() {
               {dataset === "loso"
                 ? "LOSO 평균"
                 : dataset === "live"
-                  ? "현장 라이브 평균"
+                  ? "실시간 라이브 평균"
                   : "온라인 사후 재분석"}
             </span>
             <strong>

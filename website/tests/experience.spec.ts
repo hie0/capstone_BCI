@@ -98,15 +98,15 @@ test("home research replay and mobile layout", async ({ page }) => {
     path: "tests/artifacts/home-1440.png",
     fullPage: true,
   });
-  await page.getByRole("link", { name: "연구 과정", exact: true }).click();
-  await expect(page).toHaveURL(/#\/research#research-process$/);
+  await page.getByRole("link", { name: "연구 내용", exact: true }).click();
+  await expect(page).toHaveURL(/#\/#research-content$/);
   await expect(
-    page.getByRole("heading", { name: "신호 처리 파이프라인" }),
+    page.getByRole("heading", { name: "문제를 줄이고, 필요한 신호는 지킵니다." }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "실험 결과", exact: true }).click();
-  await expect(page).toHaveURL(/#\/research#research-results$/);
+  await page.getByRole("link", { name: "연구 결과", exact: true }).click();
+  await expect(page).toHaveURL(/#\/#research-results$/);
   await expect(
-    page.getByRole("heading", { name: "영점조절 적용 전후 온라인 성능" }),
+    page.getByRole("heading", { name: /현장 온라인 정확도에서/ }),
   ).toBeVisible();
   await expect(
     page.getByText("54.50% → 74.71%", { exact: true }),
@@ -139,7 +139,7 @@ test("home research replay and mobile layout", async ({ page }) => {
     fullPage: true,
   });
   await page.setViewportSize({ width: 1440, height: 1100 });
-  await page.getByRole("link", { name: /인터랙티브 시뮬레이션/ }).click();
+  await page.locator("a.header-link").click();
   await page.getByRole("tab", { name: "EEG Replay" }).click();
   await page.getByRole("button", { name: "Play", exact: true }).click();
   await expect(page.getByText(/합성 trial 2 \/ 30/)).toBeVisible();
