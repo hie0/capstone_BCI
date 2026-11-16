@@ -3898,8 +3898,8 @@ td:first-child {
 }
 
 .electrode-role-card {
-  min-height: 185px;
-  padding: 24px;
+  min-height: 240px;
+  padding: 30px;
   border: 1px solid var(--border);
   border-left: 5px solid var(--accent);
   border-radius: 18px;
@@ -3909,17 +3909,26 @@ td:first-child {
 
 .electrode-role-card .electrode-name {
   display: block;
-  margin: 6px 0 10px;
+  margin: 8px 0 12px;
   color: var(--accent-strong);
-  font-size: 48px;
+  font-size: 58px;
   line-height: 1;
+}
+
+.electrode-role-caption {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .electrode-role-card h3 {
   margin: 0;
   color: var(--primary);
-  font-size: 18px;
-  line-height: 1.75;
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1.8;
 }
 
 .channel-achievement {
@@ -4243,7 +4252,8 @@ td:first-child {
 .channel-reduction-animation > div:first-child span,
 .channel-reduction-animation > div:first-child strong,
 .reduction-animation-result span,
-.reduction-animation-result strong {
+.reduction-animation-result strong,
+.reduction-animation-result b {
   display: block;
 }
 
@@ -4331,11 +4341,20 @@ td:first-child {
 }
 
 .reduction-animation-result strong {
-  margin-top: 7px;
+  margin-top: 8px;
+  color: #182a39;
+  font-size: clamp(36px, 4vw, 56px);
+  font-weight: 750;
+  line-height: 1.05;
+  letter-spacing: -0.055em;
+}
+
+.reduction-animation-result b {
+  margin-top: 12px;
   color: var(--accent-strong);
-  font-size: clamp(18px, 2vw, 24px);
+  font-size: clamp(20px, 2.2vw, 30px);
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.2;
 }
 
 .model-roster {

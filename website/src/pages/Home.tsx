@@ -138,7 +138,8 @@ function ChannelReductionAnimation() {
       </svg>
       <div className="reduction-animation-result">
         <span>핵심 채널 축소</span>
-        <strong>16ch → 5ch / 68.75% 감소</strong>
+        <strong>16 → 5</strong>
+        <b>68.75% 감소</b>
       </div>
     </div>
   );
@@ -356,6 +357,9 @@ export default function Home() {
             <div className="electrode-role-card" aria-live="polite">
               <span className="eyebrow">선택 전극의 역할</span>
               <strong className="electrode-name">{selected}</strong>
+              <span className="electrode-role-caption">
+                선택한 위치의 신호와 연구 활용
+              </span>
               <h3>{channelInfo(selected)}</h3>
             </div>
             <p>
