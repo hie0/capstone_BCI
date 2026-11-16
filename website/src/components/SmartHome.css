@@ -1,9 +1,9 @@
 /* PDF reference: Smart Home only. Shared settings and wearable keep their own styles. */
 .smart-home-active .smart-layout {
-  grid-template-columns: minmax(230px, 0.9fr) minmax(320px, 1.8fr) minmax(
-      260px,
-      1fr
-    );
+  grid-template-columns: minmax(300px, 0.82fr) minmax(500px, 1.55fr);
+  grid-template-areas:
+    "wearable room"
+    "settings monitor";
   gap: 20px;
 }
 .smart-home-active .smart-layout > * {
@@ -18,6 +18,72 @@
 .smart-home-active .settings,
 .smart-home-active .monitor {
   padding: 20px 16px;
+}
+.smart-home-active .wearable-live-panel {
+  grid-area: wearable;
+  padding: 16px;
+  overflow: hidden;
+}
+.smart-home-active .room-panel {
+  grid-area: room;
+}
+.smart-home-active .settings {
+  grid-area: settings;
+}
+.smart-home-active .monitor {
+  grid-area: monitor;
+}
+.smart-home-active .wearable-live-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.smart-home-active .wearable-live-heading strong,
+.smart-home-active .wearable-live-heading span {
+  display: block;
+}
+.smart-home-active .wearable-live-heading strong {
+  color: var(--primary);
+  font-size: 18px;
+}
+.smart-home-active .wearable-live-heading span {
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.smart-home-active .wearable-live-heading .text-button {
+  flex: 0 0 auto;
+  font-size: 10px;
+}
+.smart-home-active .wearable-live-scene {
+  height: 360px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: linear-gradient(145deg, #f4f8f7, #e8f0ee);
+}
+.smart-home-active .wearable-live-status {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 9px;
+  background: var(--surface-secondary);
+}
+.smart-home-active .wearable-live-status span {
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 800;
+}
+.smart-home-active .wearable-live-status strong {
+  color: var(--primary);
+  font-size: 11px;
+  line-height: 1.5;
 }
 .smart-home-active .panel-title {
   font-size: 15px;
@@ -193,7 +259,28 @@
   font-size: inherit;
 }
 .smart-home-active .monitor {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(320px, 1.3fr);
+  align-content: start;
+  gap: 0 20px;
+}
+.smart-home-active .monitor > .panel-title,
+.smart-home-active .monitor > .eyebrow,
+.smart-home-active .monitor > .monitor-stats,
+.smart-home-active .monitor > .recorded-metrics,
+.smart-home-active .monitor > .log-heading,
+.smart-home-active .monitor > .command-history {
+  grid-column: 1 / -1;
+}
+.smart-home-active .monitor > .prediction,
+.smart-home-active .monitor > .confidence,
+.smart-home-active .monitor > .progress,
+.smart-home-active .monitor > .small {
+  grid-column: 1;
+}
+.smart-home-active .monitor > .waveform {
+  grid-column: 2;
+  grid-row: 3 / 8;
 }
 .smart-home-active .monitor .eyebrow {
   font-size: 10px;
@@ -308,19 +395,13 @@
 }
 @media (min-width: 1280px) {
   .smart-home-active .smart-layout {
-    grid-template-columns: minmax(260px, 1fr) minmax(360px, 1.6fr) minmax(
-        270px,
-        1fr
-      );
+    grid-template-columns: minmax(350px, 0.85fr) minmax(620px, 1.55fr);
   }
 }
 @media (min-width: 761px) and (max-width: 1199px) {
   .smart-home-active .smart-layout {
     display: grid;
-    grid-template-columns: minmax(230px, 0.85fr) minmax(0, 1.6fr);
-  }
-  .smart-home-active .monitor {
-    grid-column: 1/-1;
+    grid-template-columns: minmax(270px, 0.85fr) minmax(0, 1.35fr);
   }
   .smart-home-active .monitor .command-history {
     min-height: 120px;
@@ -347,6 +428,12 @@
   }
   .smart-home-active .room-scene {
     height: 310px;
+  }
+  .smart-home-active .wearable-live-scene {
+    height: 330px;
+  }
+  .smart-home-active .monitor {
+    display: block;
   }
   .smart-home-active .monitor .prediction strong {
     font-size: 38px;

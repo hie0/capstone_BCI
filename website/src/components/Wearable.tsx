@@ -1,22 +1,17 @@
 import { useState } from "react";
-import { ArrowRight, CircleDot, Layers3 } from "lucide-react";
+import { Layers3 } from "lucide-react";
 import { useBCI } from "../store";
 import { Brain, Scene, Atlas2D, activeChannels } from "./Scenes";
 import { BaselineSpecification } from "./BaselineSpecification";
 import { selectedBackendModel } from "../data/backend";
-import { PlayButton, Settings, Waveform } from "./Controls";
-import { RecordedMetrics } from "./RecordedMetrics";
+import { PlayButton, Settings } from "./Controls";
 import {
   participantModels,
   channelConfigurations,
   type ParticipantId,
 } from "../data/channels";
-import {
-  channelInfo,
-  type ChannelMode,
-  type Direction,
-} from "../data/research";
-export default function Wearable({ onHome }: { onHome: () => void }) {
+import { type ChannelMode, type Direction } from "../data/research";
+export default function Wearable(_: { onHome: () => void }) {
   const s = useBCI();
   const [selected, setSelected] = useState("C4");
   const [direction, setDirection] = useState<Direction>("LEFT");
@@ -230,52 +225,6 @@ export default function Wearable({ onHome }: { onHome: () => void }) {
             </span>
             <span>전극 클릭 · 드래그 회전</span>
           </div>
-        </div>
-        <div className="panel channel-details">
-          <div className="panel-title">
-            <CircleDot size={16} /> Channel details
-          </div>
-          <strong className="electrode-name">{selected}</strong>
-          <span className="badge">
-            {channels.includes(selected) ? "활성 전극" : "제외 전극"}
-          </span>
-          <h3>해부학적 위치와 역할</h3>
-          <p>{channelInfo(selected)}</p>
-          <h3>선정과 잡음</h3>
-          <p>
-            핵심 구성은 감각운동 정보를 유지하면서 입력 차원을 줄이는 데 초점을
-            둡니다. 모든 전극은 접촉 상태와 움직임에 따른 잡음의 영향을 받을 수
-            있습니다.
-          </p>
-          <div className="mini-metrics">
-            <div>
-              <strong>{count}</strong>
-              <span>활성 채널</span>
-            </div>
-            <div>
-              <strong>
-                {(((16 - count) / 16) * 100).toFixed(1)}
-                <small>%</small>
-              </strong>
-              <span>Channel Reduction</span>
-            </div>
-          </div>
-          {s.inputMode === "recorded" && (
-            <>
-              <Waveform
-                channels={channels}
-                recorded
-                samples={s.recordedPrediction?.waveform}
-              />
-              <RecordedMetrics />
-              <button className="button subtle" onClick={s.reset}>
-                Reset
-              </button>
-            </>
-          )}
-          <button className="button primary" onClick={onHome}>
-            이 구성으로 스마트홈 체험 <ArrowRight size={16} />
-          </button>
         </div>
       </div>
       <BaselineSpecification />

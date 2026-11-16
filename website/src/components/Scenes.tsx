@@ -8,6 +8,7 @@ import {
   type AmbientLight,
   type DirectionalLight,
   type PointLight,
+  type MeshPhysicalMaterial,
 } from "three";
 import {
   Component,
@@ -170,6 +171,14 @@ export function Atlas2D({
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
+        <clipPath id="atlas-scalp-clip">
+          <ellipse cx="200" cy="205" rx="150" ry="160" />
+        </clipPath>
+        <radialGradient id="motor-cortex-wash">
+          <stop offset="0%" stopColor="#4E7D73" stopOpacity="0.66" />
+          <stop offset="58%" stopColor="#6F9C92" stopOpacity="0.34" />
+          <stop offset="100%" stopColor="#BFD2CE" stopOpacity="0" />
+        </radialGradient>
       </defs>
       <ellipse
         cx="200"
@@ -179,6 +188,17 @@ export function Atlas2D({
         fill="#F2F5F7"
         stroke="#9CAAB6"
       />
+      {direction && (
+        <ellipse
+          className={`motor-hemisphere-wash ${direction === "LEFT" ? "right" : "left"}`}
+          cx={direction === "LEFT" ? 276 : 124}
+          cy="205"
+          rx="115"
+          ry="154"
+          fill="url(#motor-cortex-wash)"
+          clipPath="url(#atlas-scalp-clip)"
+        />
+      )}
       <path
         d="M180 45 L200 24 L220 45 M45 175 Q12 205 45 235 M355 175 Q388 205 355 235"
         fill="none"
@@ -201,7 +221,7 @@ export function Atlas2D({
         return (
           <g
             key={n}
-            className={`electrode-node ${selected === n ? "selected" : ""}`}
+            className={`electrode-node ${selected === n ? "selected" : ""} ${motor ? "motor" : ""}`}
             role="button"
             tabIndex={0}
             aria-label={`전극 ${n}`}
@@ -218,7 +238,7 @@ export function Atlas2D({
             <title>
               {n}: {channelInfo(n)}
             </title>
-            {selected === n && (
+            {(selected === n || motor) && (
               <>
                 <circle
                   className="electrode-diffusion-ring ring-one"
@@ -238,22 +258,22 @@ export function Atlas2D({
               className="electrode-dot"
               cx={200 + x * 144}
               cy={205 + y * 150}
-              r={selected === n ? 14 : 11}
+              r={selected === n || motor ? 14 : 11}
               fill={
                 motor && enabled
-                  ? direction === "LEFT"
-                    ? "#527C98"
-                    : "#8A79AF"
+                  ? "#3F776D"
                   : enabled
                     ? mode === "7ch" && (n === "P7" || n === "P8")
                       ? "#253F55"
                       : "#789F97"
                     : "#CBD5DF"
               }
-              stroke={selected === n ? "#39776F" : "#9CAAB6"}
-              strokeWidth={selected === n ? 3 : 1.5}
+              stroke={motor ? "#285E55" : selected === n ? "#39776F" : "#9CAAB6"}
+              strokeWidth={selected === n || motor ? 3 : 1.5}
               filter={
-                selected === n ? "url(#electrode-neutral-glow)" : undefined
+                selected === n || motor
+                  ? "url(#electrode-neutral-glow)"
+                  : undefined
               }
             />
             <text
@@ -451,7 +471,7 @@ function WearableConceptBrain({
 
 export function Brain({
   mode = "5ch",
-  direction = "LEFT",
+  direction,
   selected = "C4",
   onSelect = () => {},
   activeOverride,
@@ -488,21 +508,22 @@ export function Brain({
         <mesh scale={[0.96, 1.25, 1.08]}>
           <sphereGeometry args={[1, 48, 40]} />
           <meshPhysicalMaterial
-            color="#91AEB4"
+            color="#A0B8BC"
             roughness={0.52}
             transparent
-            opacity={0.72}
+            opacity={0.78}
             metalness={0.12}
           />
         </mesh>
+        {direction && <HemisphereActivation direction={direction} />}
         {paths.map((p, i) => (
           <Line
             key={i}
             points={p}
-            color="#527C98"
+            color="#4D7476"
             transparent
-            opacity={0.42}
-            lineWidth={0.7}
+            opacity={0.5}
+            lineWidth={0.8}
           />
         ))}
         <Line
@@ -513,12 +534,12 @@ export function Brain({
             [0, 0, 1.1],
             [0, -0.8, 0.8],
           ]}
-          color="#253F55"
-          lineWidth={3}
+          color="#294F53"
+          lineWidth={3.4}
         />
         <mesh position={[0, -0.1, 1.08]} scale={[0.12, 0.25, 0.16]}>
           <sphereGeometry />
-          <meshStandardMaterial color="#78959F" />
+          <meshStandardMaterial color="#66888A" />
         </mesh>
         {[-1, 1].map((s) => (
           <mesh
@@ -527,7 +548,7 @@ export function Brain({
             scale={[0.12, 0.3, 0.18]}
           >
             <sphereGeometry />
-            <meshStandardMaterial color="#78959F" />
+            <meshStandardMaterial color="#66888A" />
           </mesh>
         ))}
         {electrodeNames.map((n) => {
@@ -547,19 +568,9 @@ export function Brain({
               >
                 <sphereGeometry args={[enabled ? 0.068 : 0.035, 16, 16]} />
                 <meshStandardMaterial
-                  color={
-                    motor
-                      ? direction === "LEFT"
-                        ? "#527C98"
-                        : "#8A79AF"
-                      : enabled
-                        ? "#82B5AD"
-                        : "#CBD5DF"
-                  }
-                  emissive={
-                    motor && direction === "RIGHT" ? "#8A79AF" : "#82B5AD"
-                  }
-                  emissiveIntensity={enabled ? 0.18 : 0}
+                  color={motor ? "#356F65" : enabled ? "#82B5AD" : "#CBD5DF"}
+                  emissive={motor ? "#4B9B89" : "#82B5AD"}
+                  emissiveIntensity={motor ? 1.05 : enabled ? 0.18 : 0}
                   roughness={0.38}
                   metalness={0.12}
                 />
@@ -587,6 +598,58 @@ export function Brain({
         autoRotate={false}
       />
     </>
+  );
+}
+
+function HemisphereActivation({ direction }: { direction: Direction }) {
+  const material = useRef<MeshPhysicalMaterial>(null);
+  useFrame((_, delta) => {
+    if (!material.current) return;
+    material.current.opacity = MathUtils.damp(
+      material.current.opacity,
+      0.5,
+      1.25,
+      delta,
+    );
+    material.current.emissiveIntensity = MathUtils.damp(
+      material.current.emissiveIntensity,
+      0.95,
+      1.1,
+      delta,
+    );
+  });
+  const rightHemisphere = direction === "LEFT";
+  const side = rightHemisphere ? 1 : -1;
+  return (
+    <group>
+      <pointLight
+        position={[side * 1.45, 0.75, 1.35]}
+        color="#5FAF98"
+        intensity={4.2}
+        distance={4}
+      />
+      <mesh scale={[0.978, 1.27, 1.1]} renderOrder={2}>
+        <sphereGeometry
+          args={[
+            1,
+            48,
+            40,
+            rightHemisphere ? Math.PI / 2 : -Math.PI / 2,
+            Math.PI,
+          ]}
+        />
+        <meshPhysicalMaterial
+          ref={material}
+          color="#2F7467"
+          emissive="#4C9A87"
+          emissiveIntensity={0}
+          transparent
+          opacity={0}
+          roughness={0.42}
+          depthWrite={false}
+        />
+      </mesh>
+    </group>
   );
 }
 

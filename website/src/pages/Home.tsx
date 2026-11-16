@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   channelInfo,
   core,
@@ -6,6 +6,7 @@ import {
   positions,
   sourceNote,
   type ChannelMode,
+  type Direction,
 } from "../data/research";
 import { Link } from "react-router-dom";
 import {
@@ -18,7 +19,7 @@ import {
   ShieldCheck,
   House,
 } from "lucide-react";
-import { Scene, Atlas2D } from "../components/Scenes";
+import { Scene, Atlas2D, activeChannels } from "../components/Scenes";
 import { HeroBust } from "../components/HeroBust";
 import { ResultChart, SubjectResultChart } from "../components/Comparison";
 export function Pipeline() {
@@ -110,14 +111,14 @@ function StabilityVisual() {
   );
 }
 
-function ChannelReductionAnimation() {
+function ChannelReductionGraphic() {
   return (
-    <div className="channel-reduction-animation" aria-label="16채널에서 핵심 5채널로 줄어드는 과정">
-      <div>
-        <span>16채널 입력</span>
-        <strong>운동상상 핵심 영역만 남깁니다.</strong>
-      </div>
-      <svg viewBox="0 0 400 260" role="img" aria-hidden="true">
+      <svg
+        className="channel-reduction-graphic"
+        viewBox="0 0 400 260"
+        role="img"
+        aria-label="16채널에서 핵심 5채널만 남는 애니메이션"
+      >
         <ellipse cx="200" cy="133" rx="118" ry="112" />
         <path d="M184 22 L200 6 L216 22 M83 112 Q58 133 83 154 M317 112 Q342 133 317 154" />
         {electrodeNames.map((name) => {
@@ -136,18 +137,19 @@ function ChannelReductionAnimation() {
           );
         })}
       </svg>
-      <div className="reduction-animation-result">
-        <span>핵심 채널 축소</span>
-        <strong>16 → 5</strong>
-        <b>68.75% 감소</b>
-      </div>
-    </div>
   );
 }
 export default function Home() {
   const [selected, setSelected] = useState("C4");
   const [mode, setMode] = useState<ChannelMode>("5ch");
   const [excluded, setExcluded] = useState(false);
+  const [direction, setDirection] = useState<Direction | undefined>();
+
+  useEffect(() => {
+    if (!direction) return;
+    const timer = window.setTimeout(() => setDirection(undefined), 5000);
+    return () => window.clearTimeout(timer);
+  }, [direction]);
   return (
     <main>
       <section id="research-overview" className="container hero scroll-section">
@@ -201,7 +203,7 @@ export default function Home() {
       </section>
       <section className="container metrics">
         {[
-          ["16 → 5–7", "CHANNEL OPTIMIZATION", "핵심 채널 중심 최적화"],
+          ["16 → 5~7", "CHANNEL OPTIMIZATION", "핵심 채널 중심 최적화"],
           ["0.8100", "LOSO · MEAN AUC", "4인 제안 모델 평균"],
           ["76.06%", "LOSO · MEAN BA", "18개 런 · 1,440회"],
           ["74.71%", "ONLINE · 50 SESSIONS", "3,910회 · 영점조절 적용"],
@@ -253,15 +255,11 @@ export default function Home() {
             <span className="outline-number">01</span>
             <span className="problem-label">공간적 제약</span>
             <h3>16채널 구성은 착용과 준비가 복잡합니다.</h3>
-            <div className="problem-visual channel-burden" aria-hidden="true">
-              <div className="dense-electrodes">
-                {Array.from({ length: 16 }, (_, index) => (
-                  <i key={index} />
-                ))}
-              </div>
+            <div className="problem-visual channel-burden">
+              <ChannelReductionGraphic />
               <div className="problem-visual-copy">
                 <strong>16채널 구성</strong>
-                <span>착용 구조 복잡 · 잡음 경로 증가</span>
+                <span>필요한 영역을 찾기 전, 모든 전극이 활성화됩니다.</span>
               </div>
             </div>
             <p>
@@ -281,15 +279,28 @@ export default function Home() {
                 <span>오늘의 뇌파</span>
                 <svg viewBox="0 0 120 52">
                   <path className="decision-line" d="M2 26 H118" />
-                  <path d="M2 35 C14 16 22 15 34 32 S54 47 66 25 S88 12 98 30 S110 42 118 24" />
+                  <path className="today-wave" d="M2 35 C14 16 22 15 34 32 S54 47 66 25 S88 12 98 30 S110 42 118 24" />
                 </svg>
               </div>
               <b><small>같은 모델</small>→</b>
               <div>
                 <span>다음 날의 뇌파</span>
-                <svg viewBox="0 0 120 52">
+                <svg className="tomorrow-wave" viewBox="0 0 120 52">
                   <path className="decision-line" d="M2 26 H118" />
-                  <path d="M2 18 C14 1 22 4 34 19 S54 35 66 11 S88 1 98 16 S110 28 118 9" />
+                  <g className="tomorrow-after">
+                    <path
+                      className="rapid-wave rapid-wave-one"
+                      d="M2 27 Q6 7 10 27 T18 27 T26 27 T34 27 T42 27 T50 27 T58 27 T66 27 T74 27 T82 27 T90 27 T98 27 T106 27 T114 27 T118 20"
+                    />
+                    <path
+                      className="rapid-wave rapid-wave-two"
+                      d="M2 20 Q6 45 10 20 T18 20 T26 20 T34 20 T42 20 T50 20 T58 20 T66 20 T74 20 T82 20 T90 20 T98 20 T106 20 T114 20 T118 31"
+                    />
+                    <path
+                      className="rapid-wave rapid-wave-three"
+                      d="M2 30 Q5 4 9 30 T16 30 T23 30 T30 30 T37 30 T44 30 T51 30 T58 30 T65 30 T72 30 T79 30 T86 30 T93 30 T100 30 T107 30 T114 30 T118 13"
+                    />
+                  </g>
                 </svg>
               </div>
               <em>신호 분포 이동 → 분류 기준 불일치</em>
@@ -315,9 +326,14 @@ export default function Home() {
             복잡도를 함께 낮췄습니다.
           </p>
         </div>
-        <ChannelReductionAnimation />
         <div className="atlas-panel panel">
-          <div>
+          <div className="reduction-hero">
+            <span>핵심 채널 축소</span>
+            <strong>16 → 5~7채널</strong>
+            <b>5채널 기준 68.75% 감소</b>
+            <small>7채널 구성은 56.25% 감소</small>
+          </div>
+          <div className="atlas-explorer">
             <div className="segmented wrap">
               {(["16ch", "5ch", "7ch"] as ChannelMode[]).map((m) => (
                 <button
@@ -351,16 +367,57 @@ export default function Home() {
               selected={selected}
               onSelect={setSelected}
               excluded={excluded}
+              direction={direction}
             />
           </div>
           <div className="atlas-insight">
-            <div className="electrode-role-card" aria-live="polite">
-              <span className="eyebrow">선택 전극의 역할</span>
+            <div className="electrode-role-card channel-details-card" aria-live="polite">
+              <span className="channel-card-title">◉ &nbsp;전극 상세</span>
               <strong className="electrode-name">{selected}</strong>
-              <span className="electrode-role-caption">
-                선택한 위치의 신호와 연구 활용
+              <span className="channel-status-badge">
+                {excluded || !activeChannels(mode).includes(selected)
+                  ? "제외 전극"
+                  : "활성 전극"}
               </span>
-              <h3>{channelInfo(selected)}</h3>
+              <h3>해부학적 위치와 역할</h3>
+              <p className="channel-role-copy">{channelInfo(selected)}</p>
+              <h3>선정과 잡음</h3>
+              <p className="channel-role-copy">
+                핵심 구성은 감각운동 정보를 유지하면서 입력 차원을 줄이는 데
+                초점을 둡니다. 모든 전극은 접촉 상태와 움직임에 따른 잡음의
+                영향을 받을 수 있습니다.
+              </p>
+              <div className="motor-imagery-control">
+                <strong>운동 상상</strong>
+                <div className="segmented">
+                  <button
+                    className={direction === "LEFT" ? "active" : ""}
+                    onClick={() => {
+                      setDirection("LEFT");
+                      setSelected("C4");
+                    }}
+                  >
+                    왼손 상상
+                  </button>
+                  <button
+                    className={direction === "RIGHT" ? "active" : ""}
+                    onClick={() => {
+                      setDirection("RIGHT");
+                      setSelected("C3");
+                    }}
+                  >
+                    오른손 상상
+                  </button>
+                </div>
+                <p>
+                  {direction === "LEFT"
+                    ? "왼손 상상 → 오른쪽 감각운동 영역(C4) 강조"
+                    : direction === "RIGHT"
+                      ? "오른손 상상 → 왼쪽 감각운동 영역(C3) 강조"
+                      : "버튼을 누르면 대응하는 감각운동 영역을 5초간 강조합니다."}
+                  <br />대측성 관계를 보여주는 교육용 표현입니다.
+                </p>
+              </div>
             </div>
             <p>
               전극을 클릭하거나 Tab 키로 이동한 뒤 Enter를 눌러 역할을

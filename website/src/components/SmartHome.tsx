@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,11 +12,12 @@ import {
 } from "lucide-react";
 import { useBCI, menus } from "../store";
 import { Settings, Waveform, PlayButton } from "./Controls";
-import { Room, RoomFallback, Scene } from "./Scenes";
+import { Atlas2D, Brain, Room, RoomFallback, Scene } from "./Scenes";
 import "./SmartHome.css";
 import { configuredChannels } from "../data/channels";
 import { RecordedMetrics } from "./RecordedMetrics";
 import { selectedBackendModel } from "../data/backend";
+import type { Direction } from "../data/research";
 const icons = [Lightbulb, PanelsTopLeft, Thermometer, Tv];
 const actions = [
   ["조명 끄기", "조명 켜기"],
@@ -26,6 +27,9 @@ const actions = [
 ];
 export default function SmartHome() {
   const s = useBCI();
+  const [, setSelectedElectrode] = useState("C4");
+  const [flatElectrodes, setFlatElectrodes] = useState(false);
+  const [visualDirection, setVisualDirection] = useState<Direction>();
   const recorded = s.inputMode === "recorded";
   const channels = recorded
     ? (selectedBackendModel(s)?.active_channels ??
@@ -40,6 +44,14 @@ export default function SmartHome() {
     return () => clearInterval(id);
   }, [s.isPlaying, s.inputMode, s.speed]);
   useEffect(() => () => useBCI.getState().stop(), []);
+  useEffect(() => {
+    if (s.currentCommand === "LEFT") setSelectedElectrode("C4");
+    if (s.currentCommand === "RIGHT") setSelectedElectrode("C3");
+    if (!s.currentCommand) return;
+    setVisualDirection(s.currentCommand);
+    const timer = window.setTimeout(() => setVisualDirection(undefined), 5000);
+    return () => window.clearTimeout(timer);
+  }, [s.currentCommand, s.count]);
   const statuses = [
     s.light ? "ON" : "OFF",
     s.curtains ? "OPEN" : "CLOSED",
@@ -58,7 +70,67 @@ export default function SmartHome() {
         </button>
       </div>
       <div className="smart-layout">
-        <Settings />
+        <section className="wearable-live-panel panel">
+          <div className="room-top">
+            <span>
+              <i className="status-dot" /> WEARABLE BCI
+            </span>
+            <span className="badge">{channels.length}ch</span>
+          </div>
+          <div className="wearable-live-heading">
+            <div>
+              <strong>뇌 자극 부위</strong>
+              <span>운동 상상 명령에 따라 강조 위치가 바뀝니다.</span>
+            </div>
+            <button
+              className="text-button"
+              onClick={() => setFlatElectrodes((value) => !value)}
+            >
+              {flatElectrodes ? "3D 보기" : "2D 배치도"}
+            </button>
+          </div>
+          <div className="wearable-live-scene">
+            {flatElectrodes ? (
+              <Atlas2D
+                mode={s.channelMode}
+                selected=""
+                onSelect={setSelectedElectrode}
+                direction={visualDirection}
+                activeOverride={channels}
+              />
+            ) : (
+              <Scene
+                fallback={
+                  <Atlas2D
+                    mode={s.channelMode}
+                    selected=""
+                    onSelect={setSelectedElectrode}
+                    direction={visualDirection}
+                    activeOverride={channels}
+                  />
+                }
+              >
+                <Brain
+                  mode={s.channelMode}
+                  selected=""
+                  onSelect={setSelectedElectrode}
+                  direction={visualDirection}
+                  activeOverride={channels}
+                />
+              </Scene>
+            )}
+          </div>
+          <div className="wearable-live-status" aria-live="polite">
+            <span>{s.currentCommand ?? "READY"}</span>
+            <strong>
+              {s.currentCommand === "LEFT"
+                ? "왼손 상상 → 오른쪽 감각운동 영역 활성화"
+                : s.currentCommand === "RIGHT"
+                  ? "오른손 상상 → 왼쪽 감각운동 영역 활성화"
+                  : "LEFT 또는 RIGHT 명령을 입력하세요"}
+            </strong>
+          </div>
+        </section>
         <div className="room-panel panel">
           <div className="room-top">
             <span>
@@ -146,6 +218,7 @@ export default function SmartHome() {
             ) : null}
           </div>
         </div>
+        <Settings />
         <aside className="monitor panel">
           <div className="panel-title">
             <Radio size={16} /> EEG control monitor <i className="status-dot" />

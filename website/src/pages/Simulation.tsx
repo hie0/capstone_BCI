@@ -2,13 +2,13 @@ import { useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import {
   House,
+  Gamepad2,
   Scan,
   Activity,
   ArrowUpRight,
   FlaskConical,
 } from "lucide-react";
 import SmartHome from "../components/SmartHome";
-import Wearable from "../components/Wearable";
 import Replay from "../components/Replay";
 import { useBCI } from "../store";
 import { useRecordedEEG } from "../useRecordedEEG";
@@ -16,7 +16,7 @@ export default function Simulation() {
   const [params] = useSearchParams();
   const [tab, setTab] = useState("applications");
   const [app, setApp] = useState(
-    params.get("app") === "wearable" ? "wearable" : "home",
+    params.get("app") === "game" ? "game" : "home",
   );
   const s = useBCI();
   useRecordedEEG(tab === "applications");
@@ -91,32 +91,34 @@ export default function Simulation() {
                 <House size={21} />
               </div>
               <div>
-                <strong>Smart Home Control</strong>
-                <span>두 가지 명령으로 연결하는 일상</span>
+                <strong>통합 BCI 홈 제어</strong>
+                <span>자극 부위·신호·장치 반응을 한 화면에서</span>
               </div>
               <ArrowUpRight size={18} />
             </button>
             <button
-              className={app === "wearable" ? "active" : ""}
+              className={app === "game" ? "active" : ""}
               onClick={() => {
                 s.stop();
-                setApp("wearable");
+                setApp("game");
               }}
             >
               <div className="app-icon">
-                <Scan size={21} />
+                <Gamepad2 size={21} />
               </div>
               <div>
-                <strong>Wearable BCI Experience</strong>
-                <span>더 적은 전극, 더 가벼운 가능성</span>
+                <strong>미니 게임 (임시)</strong>
+                <span>운동 상상 명령으로 캐릭터 제어하기</span>
               </div>
               <ArrowUpRight size={18} />
             </button>
           </div>
-          {app === "home" ? (
-            <SmartHome />
-          ) : (
-            <Wearable onHome={() => setApp("home")} />
+          {app === "home" ? <SmartHome /> : (
+            <section className="panel mini-game-placeholder">
+              <Gamepad2 size={36} />
+              <strong>미니 게임 준비 중</strong>
+              <span>LEFT / RIGHT 운동 상상으로 움직이는 게임을 추가할 예정입니다.</span>
+            </section>
           )}
           <div className="how-it-works">
             <span>HOW IT WORKS</span>
