@@ -34,6 +34,12 @@ export function SubjectResultChart() {
       : 0.0711;
   const formatValue = (value: number) =>
     metric === "BA" ? `${value.toFixed(2)}%` : value.toFixed(4);
+  const modelDescriptions: Record<string, string> = {
+    KGE: "OAS로 공분산을 안정화하고 리만 접공간 특징을 SVC로 분류",
+    KHY: "SPD 공분산을 보정한 접공간 특징을 sLDA로 분류",
+    OYJ: "리만 접공간과 CSP 특징을 결합해 RBF-SVC로 분류",
+    WMJ: "정규화 CSP로 좌·우 판별 특징을 추출해 LDA로 분류",
+  };
   return (
     <div className="subject-results-dashboard">
       <div className="subject-toolbar">
@@ -171,19 +177,31 @@ export function SubjectResultChart() {
       </div>
       <div className="model-roster">
         <div className="model-roster-heading">
-          <span>적용 모델</span>
-          <strong>피험자별 최적 모델과 외부검증 공통 모델</strong>
+          <span>개인별 최적 모델</span>
+          <strong>각 피험자의 신호 특성에 맞는 최적 조합을 적용했습니다.</strong>
         </div>
         <div className="model-roster-grid">
           {subjectResults.map((item) => (
             <div key={item.id}>
-              <span>{item.id} · {item.channels}</span>
+              <span>{item.id} · {item.name} · {item.channels}</span>
               <strong>{item.model}</strong>
+              <p>{modelDescriptions[item.id]}</p>
             </div>
           ))}
-          <div className="external-model">
-            <span>PhysioNet · 100명</span>
-            <strong>저채널 + TTA 공통 파이프라인</strong>
+        </div>
+        <div className="external-model">
+          <div>
+            <span>추가 외부 검증 · PhysioNet 100명</span>
+            <strong>100명에게 동일한 공통 파이프라인을 적용했습니다.</strong>
+            <p>
+              핵심 5~7채널 선택 → OAS 공분산 안정화 → 리만 접공간 특징 →
+              CausalEA 입력 정렬 → CausalLogitCenter 출력 영점 보정
+            </p>
+          </div>
+          <div className="external-model-result">
+            <span>평균 BA</span>
+            <strong>59.98% → 65.87%</strong>
+            <b>100명 중 74명 성능 향상</b>
           </div>
         </div>
       </div>
