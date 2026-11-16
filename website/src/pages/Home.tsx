@@ -1,6 +1,9 @@
 import { useState } from "react";
 import {
   channelInfo,
+  core,
+  electrodeNames,
+  positions,
   sourceNote,
   type ChannelMode,
 } from "../data/research";
@@ -106,6 +109,40 @@ function StabilityVisual() {
     </div>
   );
 }
+
+function ChannelReductionAnimation() {
+  return (
+    <div className="channel-reduction-animation" aria-label="16채널에서 핵심 5채널로 줄어드는 과정">
+      <div>
+        <span>16채널 입력</span>
+        <strong>운동상상 핵심 영역만 남깁니다.</strong>
+      </div>
+      <svg viewBox="0 0 400 260" role="img" aria-hidden="true">
+        <ellipse cx="200" cy="133" rx="118" ry="112" />
+        <path d="M184 22 L200 6 L216 22 M83 112 Q58 133 83 154 M317 112 Q342 133 317 154" />
+        {electrodeNames.map((name) => {
+          const [x, y] = positions[name];
+          const retained = core.includes(name);
+          return (
+            <g
+              key={name}
+              className={retained ? "retained-channel" : "removed-channel"}
+            >
+              <circle cx={200 + x * 112} cy={133 + y * 108} r="9" />
+              <text x={200 + x * 112} y={133 + y * 108 + 23}>
+                {name}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      <div className="reduction-animation-result">
+        <span>핵심 5채널</span>
+        <strong>68.75% 감소</strong>
+      </div>
+    </div>
+  );
+}
 export default function Home() {
   const [selected, setSelected] = useState("C4");
   const [mode, setMode] = useState<ChannelMode>("5ch");
@@ -180,7 +217,6 @@ export default function Home() {
         ))}
       </section>
       <section
-        id="research-content"
         className="container research-process-overview scroll-section"
       >
         <div className="workflow-heading">
@@ -193,6 +229,7 @@ export default function Home() {
         <Pipeline />
       </section>
       <section
+        id="research-content"
         className="container section scroll-section"
       >
         <div className="section-title">
@@ -277,6 +314,7 @@ export default function Home() {
             복잡도를 함께 낮췄습니다.
           </p>
         </div>
+        <ChannelReductionAnimation />
         <div className="atlas-panel panel">
           <div>
             <div className="segmented wrap">
@@ -411,8 +449,7 @@ export default function Home() {
         <div>
           <span className="eyebrow">04 / 연구 결과</span>
           <h2>
-            실전 온라인 50세션,
-            <br />영점조절로 BA를 높였습니다.
+            실전 온라인 세션.
           </h2>
           <div className="result-highlight">
             <span>평균 BA</span>
@@ -461,11 +498,17 @@ export default function Home() {
             <strong>74.71%</strong>
             <p>영점조절 적용 · 3,910회</p>
           </div>
+          <div>
+            <span>외부 검증 · 100명</span>
+            <strong>65.87%</strong>
+            <p>59.98% → 65.87% · 74명 향상</p>
+          </div>
         </div>
         <p className="muted">
           LOSO는 저채널 모델의 피험자·날짜 일반화 검증이며, 온라인 50세션은
-          영점조절 적용 전후의 실전 온라인 검증입니다. 서로 다른 평가 조건의 수치를
-          직접 비교하지 않습니다.
+          영점조절 적용 전후의 실전 온라인 검증입니다. 외부검증은 PhysioNet
+          EEGBCI 100명에게 동일한 저채널+TTA 파이프라인을 적용한 결과입니다.
+          서로 다른 평가 조건의 수치를 직접 비교하지 않습니다.
         </p>
       </section>
       <section className="container section">

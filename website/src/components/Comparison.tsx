@@ -169,6 +169,24 @@ export function SubjectResultChart() {
           </dl>
         </aside>
       </div>
+      <div className="model-roster">
+        <div className="model-roster-heading">
+          <span>적용 모델</span>
+          <strong>피험자별 최적 모델과 외부검증 공통 모델</strong>
+        </div>
+        <div className="model-roster-grid">
+          {subjectResults.map((item) => (
+            <div key={item.id}>
+              <span>{item.id} · {item.channels}</span>
+              <strong>{item.model}</strong>
+            </div>
+          ))}
+          <div className="external-model">
+            <span>PhysioNet · 100명</span>
+            <strong>저채널 + TTA 공통 파이프라인</strong>
+          </div>
+        </div>
+      </div>
       <p className="subject-source-note">
         출처: 최종 연구발표자료 p.12 · 피험자 독립 LOSO · 4인 · 18개 런 ·
         1,440회. 16채널 기준 대비 4명 모두 향상했습니다.

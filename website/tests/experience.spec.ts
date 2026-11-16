@@ -101,16 +101,15 @@ test("home research replay and mobile layout", async ({ page }) => {
   await page.getByRole("link", { name: "연구 내용", exact: true }).click();
   await expect(page).toHaveURL(/#\/#research-content$/);
   await expect(
-    page.getByRole("heading", { name: "문제를 줄이고, 필요한 신호는 지킵니다." }),
+    page.getByRole("heading", { name: /다채널 장비는 복잡하고/ }),
   ).toBeVisible();
   await page.getByRole("link", { name: "연구 결과", exact: true }).click();
   await expect(page).toHaveURL(/#\/#research-results$/);
   await expect(
-    page.getByRole("heading", { name: /현장 온라인 정확도에서/ }),
+    page.getByRole("heading", { name: "실전 온라인 세션." }),
   ).toBeVisible();
-  await expect(
-    page.getByText("54.50% → 74.71%", { exact: true }),
-  ).toBeVisible();
+  await expect(page.locator(".result-highlight")).toContainText("54.50%");
+  await expect(page.locator(".result-highlight")).toContainText("74.71%");
   await page.getByRole("link", { name: "연구 내용", exact: true }).click();
   await page.screenshot({
     path: "tests/artifacts/research-1440.png",
