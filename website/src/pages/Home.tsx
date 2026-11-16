@@ -137,8 +137,8 @@ function ChannelReductionAnimation() {
         })}
       </svg>
       <div className="reduction-animation-result">
-        <span>핵심 5채널</span>
-        <strong>68.75% 감소</strong>
+        <span>핵심 채널 축소</span>
+        <strong>16ch → 5ch / 68.75% 감소</strong>
       </div>
     </div>
   );
@@ -314,15 +314,7 @@ export default function Home() {
             복잡도를 함께 낮췄습니다.
           </p>
         </div>
-        <div className="channel-reduction-showcase">
-          <ChannelReductionAnimation />
-          <div className="reduction-hero">
-            <span>가장 큰 구조적 변화</span>
-            <strong>16ch → 5ch</strong>
-            <b>68.75% 감소</b>
-            <small>7채널 구성은 56.25% 감소</small>
-          </div>
-        </div>
+        <ChannelReductionAnimation />
         <div className="atlas-panel panel">
           <div>
             <div className="segmented wrap">
