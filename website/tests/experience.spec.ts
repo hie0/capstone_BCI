@@ -4,7 +4,7 @@ test("all smart home commands, immediate selection, logs, reset and synthetic pl
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/#/simulation");
+  await page.goto("/#/simulation?app=home");
   await page.getByRole("button", { name: "Lighting 메뉴" }).click();
   await expect(page.getByText("DEVICE CONTROL", { exact: true })).toBeVisible({
     timeout: 500,
@@ -67,29 +67,28 @@ test("all smart home commands, immediate selection, logs, reset and synthetic pl
   await expect(page.getByTestId("command-count")).toHaveText(count!);
   expect(errors).toEqual([]);
 });
-test("wearable configuration shares state with smart home", async ({
+test("wearable channel exploration leaves inference settings unchanged", async ({
   page,
 }) => {
   await page.goto("/#/simulation");
-  await page.getByRole("button", { name: /Wearable BCI Experience/ }).click();
-  await page.getByRole("button", { name: /Full Montage/i }).click();
-  await expect(page.getByText("16 ACTIVE ELECTRODES")).toBeVisible();
-  await page.getByRole("button", { name: "2D 배치도" }).click();
+  await page
+    .getByRole("group", { name: "웨어러블 시각화 채널 구성" })
+    .getByRole("button", { name: /^16ch/ })
+    .click();
+  await expect(
+    page.getByText("16 ACTIVE ELECTRODES", { exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "전극 Fp1", exact: true }).click();
-  await expect(page.locator(".electrode-name")).toHaveText("Fp1");
-  await page.getByRole("button", { name: "RIGHT MI" }).click();
-  await expect(page.getByText(/오른손 → 좌측/)).toBeVisible();
-  await page.screenshot({
-    path: "tests/artifacts/wearable-1440.png",
-    fullPage: true,
-  });
-  await page.getByRole("button", { name: /이 구성으로 스마트홈 체험/ }).click();
-  await expect(page.getByLabel("Channel configuration")).toHaveValue("16ch");
+  await expect(page.locator(".wearable-selected-channel b")).toHaveText("Fp1");
+  await page
+    .getByRole("button", { name: "Smart Home 체험하기", exact: true })
+    .click();
+  await expect(page.getByLabel("Channel configuration")).toHaveValue("low");
   await expect(page.getByRole("tab", { name: "Model Comparison" })).toHaveCount(
     0,
   );
 });
-test("home research replay and mobile layout", async ({ page }) => {
+test("home research wearable and mobile layout", async ({ page }) => {
   await page.goto("/");
   await expect(
     page.getByRole("heading", { name: /더 적은 전극으로/ }),
@@ -139,12 +138,12 @@ test("home research replay and mobile layout", async ({ page }) => {
   });
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.locator("a.header-link").click();
-  await page.getByRole("tab", { name: "EEG Replay" }).click();
-  await page.getByRole("button", { name: "Play", exact: true }).click();
-  await expect(page.getByText(/합성 trial 2 \/ 30/)).toBeVisible();
-  await page.getByRole("button", { name: "Pause", exact: true }).click();
-  await page.getByRole("button", { name: "Reset replay" }).click();
-  await expect(page.getByText(/합성 trial 1 \/ 30/)).toBeVisible();
+  await expect(
+    page.getByRole("tab", { name: "Wearable BCI", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(
+    page.getByRole("tab", { name: "EEG Replay", exact: true }),
+  ).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("tab", { name: /BCI Applications/ }).click();
   await expect(
@@ -171,7 +170,7 @@ test("WebGL unavailable provides usable fallback", async ({ page }) => {
       return get.apply(this, [type, ...args] as never);
     } as typeof get;
   });
-  await page.goto("/#/simulation");
+  await page.goto("/#/simulation?app=home");
   await expect(page.getByText("2D 대체 뷰 · WebGL 사용 불가")).toBeVisible();
   await page.getByRole("button", { name: "Lighting 메뉴" }).click();
   await page.getByRole("button", { name: /LEFT.*조명 끄기/ }).click();
@@ -182,7 +181,7 @@ test("fast synthetic mode confirms selection and tablet remains usable", async (
   page,
 }) => {
   await page.setViewportSize({ width: 1024, height: 900 });
-  await page.goto("/#/simulation");
+  await page.goto("/#/simulation?app=home");
   await page.getByLabel("Input mode").selectOption("synthetic");
   await page.getByRole("slider", { name: "Playback speed" }).fill("2");
   await page.getByRole("button", { name: "자동 데모 시작" }).click();
@@ -201,29 +200,29 @@ test("fast synthetic mode confirms selection and tablet remains usable", async (
   });
 });
 
-test("wearable core and extended concepts, 3D selection and shared model", async ({
+test("wearable core and extended concepts keep 3D channel selection", async ({
   page,
 }) => {
   await page.goto("/#/simulation?app=wearable");
-  await expect(page.getByText("5 ACTIVE ELECTRODES")).toBeVisible();
-  await page.getByRole("button", { name: /7 Extended Channels/i }).click();
-  await expect(page.getByText("7 ACTIVE ELECTRODES")).toBeVisible();
-  await page.getByRole("button", { name: /5 Core Channels/i }).click();
-  await expect(page.getByText("5 ACTIVE ELECTRODES")).toBeVisible();
-  await page.getByRole("button", { name: "C3", exact: true }).click();
-  await expect(page.locator(".electrode-name")).toHaveText("C3");
-  await page.getByRole("button", { name: "RIGHT MI" }).click();
-  await expect(page.getByRole("combobox", { name: "Model", exact: true }).locator('option[value="baseline"]')).toBeDisabled();
-  await page.getByRole("switch", { name: "Wearable TTA" }).click();
-  await page.screenshot({
-    path: "tests/artifacts/wearable-3d-1440.png",
-    fullPage: true,
-  });
-  await page.getByRole("button", { name: /이 구성으로 스마트홈 체험/ }).click();
+  await expect(
+    page.getByText("5 ACTIVE ELECTRODES", { exact: true }),
+  ).toBeVisible();
+  const modes = page.getByRole("group", { name: "웨어러블 시각화 채널 구성" });
+  await modes.getByRole("button", { name: /^7ch/ }).click();
+  await expect(
+    page.getByText("7 ACTIVE ELECTRODES", { exact: true }),
+  ).toBeVisible();
+  await modes.getByRole("button", { name: /^5ch/ }).click();
+  await expect(
+    page.getByText("5 ACTIVE ELECTRODES", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "전극 C3", exact: true }).click();
+  await expect(page.locator(".wearable-selected-channel b")).toHaveText("C3");
+  await expect(page.locator(".wearable-overview-scene canvas")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Smart Home 체험하기", exact: true })
+    .click();
   await expect(
     page.getByRole("combobox", { name: "Model", exact: true }),
   ).toHaveValue("kge-oas-ts");
-  await expect(
-    page.getByRole("switch", { name: "TTA", exact: true }),
-  ).toHaveAttribute("aria-checked", "false");
 });

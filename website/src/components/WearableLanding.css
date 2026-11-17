@@ -1,0 +1,547 @@
+.wearable-story {
+  color: var(--text-primary);
+  padding-bottom: 36px;
+}
+.wearable-story-hero {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  align-items: center;
+  gap: 60px;
+  padding: 48px 0 64px;
+  border-bottom: 1px solid var(--border);
+}
+.wearable-story-hero h1 {
+  margin: 16px 0 22px;
+  font-size: clamp(34px, 4.1vw, 58px);
+  line-height: 1.25;
+  letter-spacing: -0.055em;
+  color: var(--primary);
+}
+.wearable-story-hero p {
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.9;
+}
+.wearable-story-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 24px;
+  color: var(--accent-strong);
+  font-size: 13px;
+  font-weight: 650;
+}
+.wearable-hero-mark {
+  padding: 36px;
+  border: 1px solid #d8e5e1;
+  border-radius: 20px;
+  background: linear-gradient(140deg, #e8f2ef, #f6fafb);
+}
+.wearable-hero-mark > span:first-child {
+  color: var(--accent-strong);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.wearable-hero-mark > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 16px 0;
+}
+.wearable-hero-mark b,
+.wearable-hero-mark strong {
+  font-weight: 600;
+}
+.wearable-hero-mark > div > b {
+  font-size: 92px;
+  color: #91a5b2;
+  letter-spacing: -0.06em;
+}
+.wearable-hero-mark > div > strong {
+  font-size: 112px;
+  color: var(--accent-strong);
+  letter-spacing: -0.06em;
+}
+.wearable-hero-mark > div > strong small {
+  margin-left: 8px;
+  font-size: 23px;
+  letter-spacing: -0.03em;
+}
+.wearable-hero-mark > div > svg {
+  width: 40px;
+  height: 40px;
+  color: #668b88;
+}
+.wearable-hero-mark > p {
+  margin-bottom: 24px;
+  font-size: 13px;
+}
+.wearable-hero-mark > p strong {
+  color: var(--accent-strong);
+  font-size: 23px;
+  margin-right: 8px;
+}
+.wearable-concept-label {
+  display: block;
+  padding-top: 18px;
+  border-top: 1px solid #cdded9;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary);
+}
+.wearable-story-section {
+  margin-top: 64px;
+  scroll-margin-top: 100px;
+}
+.wearable-section-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  align-items: flex-end;
+  margin-bottom: 26px;
+}
+.wearable-section-heading h2 {
+  margin-top: 12px;
+  font-size: 30px;
+  line-height: 1.3;
+  letter-spacing: -0.04em;
+  color: var(--primary);
+}
+.wearable-section-heading > p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+.wearable-comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.wearable-comparison-change {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 0 0 22px;
+  padding: 16px 20px;
+  border: 1px solid #d4e3de;
+  border-radius: 12px;
+  background: #eaf3ef;
+  color: var(--accent-strong);
+}
+.wearable-comparison-change > span,
+.wearable-comparison-change > strong {
+  font-size: 23px;
+  font-weight: 700;
+}
+.wearable-comparison-change > span {
+  color: var(--text-secondary);
+}
+.wearable-comparison-change > b {
+  font-size: 13px;
+}
+.wearable-comparison-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  background: #253f55;
+  color: #fff;
+}
+.proposed .wearable-comparison-title {
+  background: #39776f;
+}
+.wearable-comparison-title > span > b {
+  display: block;
+  color: #fff;
+  font-size: 25px;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+}
+.wearable-comparison-title > span > small {
+  display: block;
+  margin-top: 7px;
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.wearable-comparison-title > strong {
+  color: #fff;
+  font-size: 34px;
+  line-height: 1;
+}
+.wearable-comparison-title > strong > small {
+  margin-left: 4px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.wearable-comparison-card {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: white;
+  box-shadow: var(--card-shadow);
+}
+.wearable-comparison-card.proposed {
+  border-color: #bcd7ce;
+}
+.wearable-photo {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: #f0f3f4;
+}
+.wearable-photo > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+}
+.wearable-before-photo > img {
+  object-fit: contain;
+  object-position: center bottom;
+}
+.wearable-photo-badge {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  padding: 8px 11px;
+  border: 1px solid #dce5eb;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--primary);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.wearable-comparison-card figcaption {
+  padding: 26px;
+}
+.wearable-comparison-card h3 {
+  margin: 12px 0;
+  font-size: 21px;
+  line-height: 1.4;
+  letter-spacing: -0.035em;
+}
+.wearable-comparison-card figcaption > p {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.8;
+  margin-bottom: 18px;
+}
+.wearable-comparison-card figcaption > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  line-height: 1.6;
+}
+.wearable-image-note {
+  display: block;
+  color: var(--text-muted-aa);
+  font-size: 10px;
+  line-height: 1.8;
+}
+.wearable-explorer {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  overflow: hidden;
+  padding: 0;
+}
+.wearable-explorer-controls {
+  padding: 34px;
+  min-width: 0;
+}
+.wearable-channel-switch {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 22px 0 28px;
+}
+.wearable-channel-switch button {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 14px 6px;
+  background: white;
+  color: var(--text-secondary);
+}
+.wearable-channel-switch button[aria-pressed="true"] {
+  border-color: #83b1a6;
+  background: #e5f0ec;
+  color: var(--accent-strong);
+}
+.wearable-channel-switch b,
+.wearable-channel-switch span {
+  display: block;
+}
+.wearable-channel-switch b {
+  font-size: 18px;
+}
+.wearable-channel-switch span {
+  margin-top: 5px;
+  font-size: 9px;
+}
+.wearable-explorer-numbers {
+  display: flex;
+  gap: 40px;
+  padding-bottom: 26px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.wearable-explorer-numbers b {
+  display: block;
+  color: var(--accent-strong);
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: -0.05em;
+  line-height: 1.3;
+}
+.wearable-explorer-numbers b small {
+  font-size: 18px;
+  margin-left: 3px;
+}
+.wearable-explorer-numbers span {
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+.wearable-electrode-list {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 7px;
+}
+.wearable-electrode-list button {
+  min-width: 0;
+  padding: 8px 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: #f4f7f9;
+  font-size: 10px;
+}
+.wearable-electrode-list button.enabled {
+  border-color: #b5d0c8;
+  background: #e5f0ec;
+  color: var(--accent-strong);
+}
+.wearable-electrode-list button.selected {
+  border-color: var(--primary);
+  outline: 1px solid var(--primary);
+}
+.wearable-selected-channel {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 22px 0 10px;
+  font-size: 12px;
+  color: var(--primary);
+}
+.wearable-explorer-controls > .small {
+  line-height: 1.8;
+}
+.wearable-explorer-note {
+  margin-top: 22px;
+  color: var(--text-muted-aa);
+  font-size: 10px;
+  line-height: 1.8;
+}
+.wearable-explorer-model {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-left: 1px solid var(--border);
+  background: linear-gradient(145deg, #f4f8f8, #e8f0ee);
+}
+.wearable-model-top,
+.wearable-model-bottom {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 22px 24px;
+  color: var(--text-secondary);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+.wearable-overview-scene {
+  flex: 1;
+  min-height: 420px;
+  height: 420px;
+}
+.wearable-model-bottom {
+  padding-top: 18px;
+  border-top: 1px solid #d2e0db;
+}
+.wearable-everyday {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: white;
+  box-shadow: var(--card-shadow);
+}
+.wearable-everyday-image {
+  position: relative;
+  min-width: 0;
+  min-height: 460px;
+}
+.wearable-everyday-image > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 31% center;
+}
+.wearable-everyday-copy {
+  padding: 40px;
+  align-self: center;
+}
+.wearable-everyday-copy h2 {
+  color: var(--primary);
+  margin: 14px 0 22px;
+  font-size: 32px;
+  line-height: 1.4;
+  letter-spacing: -0.045em;
+}
+.wearable-everyday-copy > p:not(.wearable-image-note) {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.9;
+}
+.wearable-everyday-copy ul {
+  padding: 0;
+  margin: 22px 0;
+  list-style: none;
+}
+.wearable-everyday-copy li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  font-size: 12px;
+  color: var(--accent-strong);
+}
+.wearable-everyday-copy .wearable-image-note {
+  margin-top: 20px;
+}
+.wearable-story button:focus-visible,
+.wearable-story a:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 4px;
+}
+@media (max-width: 1000px) {
+  .wearable-story-hero {
+    gap: 30px;
+  }
+  .wearable-hero-mark {
+    padding: 28px;
+  }
+  .wearable-hero-mark > div > b {
+    font-size: 72px;
+  }
+  .wearable-hero-mark > div > strong {
+    font-size: 90px;
+  }
+  .wearable-explorer-controls {
+    padding: 24px;
+  }
+  .wearable-electrode-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .wearable-explorer-numbers {
+    gap: 26px;
+  }
+  .wearable-explorer-numbers b {
+    font-size: 30px;
+  }
+  .wearable-everyday {
+    grid-template-columns: 1fr 1fr;
+  }
+  .wearable-everyday-copy {
+    padding: 28px;
+  }
+}
+@media (max-width: 760px) {
+  .wearable-story-hero {
+    grid-template-columns: 1fr;
+    padding: 28px 0 36px;
+    gap: 28px;
+  }
+  .wearable-story-hero h1 {
+    font-size: 37px;
+  }
+  .wearable-story-hero p {
+    font-size: 13px;
+  }
+  .wearable-hero-mark {
+    padding: 24px;
+  }
+  .wearable-hero-mark > div {
+    justify-content: center;
+    gap: 40px;
+  }
+  .wearable-story-section {
+    margin-top: 40px;
+  }
+  .wearable-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .wearable-section-heading h2 {
+    font-size: 26px;
+  }
+  .wearable-comparison-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .wearable-comparison-card figcaption {
+    padding: 22px;
+  }
+  .wearable-explorer {
+    grid-template-columns: 1fr;
+  }
+  .wearable-explorer-controls {
+    padding: 24px 20px;
+  }
+  .wearable-electrode-list {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .wearable-explorer-model {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .wearable-overview-scene {
+    min-height: 360px;
+    height: 360px;
+  }
+  .wearable-model-top,
+  .wearable-model-bottom {
+    margin: 20px;
+    font-size: 8px;
+  }
+  .wearable-everyday {
+    grid-template-columns: 1fr;
+  }
+  .wearable-everyday-image {
+    min-height: 0;
+    aspect-ratio: 4/3;
+  }
+  .wearable-everyday-copy {
+    padding: 28px 24px;
+  }
+  .wearable-everyday-copy h2 {
+    font-size: 29px;
+  }
+}

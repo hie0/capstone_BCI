@@ -4,7 +4,7 @@ for (const mode of ["synthetic", "recorded"] as const) {
   test(`EEG monitor sections stay separate during ${mode} playback`, async ({
     page,
   }) => {
-    await page.goto("/#/simulation");
+    await page.goto("/#/simulation?app=home");
     await page
       .getByRole("combobox", { name: "Input mode", exact: true })
       .selectOption(mode);

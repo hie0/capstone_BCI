@@ -1,25 +1,34 @@
 import { useSearchParams } from "react-router-dom";
-import { useState } from "react";
 import {
   House,
   Gamepad2,
   Scan,
-  Activity,
+  Headphones,
   ArrowUpRight,
   FlaskConical,
 } from "lucide-react";
 import SmartHome from "../components/SmartHome";
-import Replay from "../components/Replay";
+import WearableLanding from "../components/WearableLanding";
 import { useBCI } from "../store";
 import { useRecordedEEG } from "../useRecordedEEG";
 export default function Simulation() {
-  const [params] = useSearchParams();
-  const [tab, setTab] = useState("applications");
-  const [app, setApp] = useState(
-    params.get("app") === "game" ? "game" : "home",
-  );
+  const [params, setParams] = useSearchParams();
+  const app = params.get("app") === "game" ? "game" : "home";
+  const tab =
+    params.get("tab") === "applications" ||
+    ["home", "game"].includes(params.get("app") ?? "")
+      ? "applications"
+      : "wearable";
   const s = useBCI();
-  useRecordedEEG(tab === "applications");
+  const navigate = (nextTab: "wearable" | "applications", nextApp = app) => {
+    s.stop();
+    setParams(
+      nextTab === "wearable"
+        ? { tab: "wearable" }
+        : { tab: "applications", app: nextApp },
+    );
+  };
+  useRecordedEEG(tab === "applications" && app === "home");
   return (
     <main
       className={`container simulation ${tab === "applications" && app === "home" ? "smart-home-active" : ""}`}
@@ -27,30 +36,32 @@ export default function Simulation() {
       <div className="breadcrumb">
         RESEARCH LAB <span>/</span> INTERACTIVE SIMULATION
       </div>
-      <div className="page-heading">
-        <div>
-          <div className="eyebrow">
-            <i className="status-dot" /> EXPLORE THE POSSIBILITIES
+      {tab === "applications" && (
+        <div className="page-heading">
+          <div>
+            <div className="eyebrow">
+              <i className="status-dot" /> EXPLORE THE POSSIBILITIES
+            </div>
+            <h1>
+              뇌의 신호, 일상의 제어<span className="cyan">.</span>
+            </h1>
+            <p>운동 상상에서 시작되는 새로운 인터페이스를 직접 경험해보세요.</p>
           </div>
-          <h1>
-            뇌의 신호, 일상의 제어<span className="cyan">.</span>
-          </h1>
-          <p>운동 상상에서 시작되는 새로운 인터페이스를 직접 경험해보세요.</p>
+          <div className="lab-status">
+            <FlaskConical size={17} />
+            <span>
+              INTERACTIVE LAB<small>장비 없이 체험하는 BCI 프로토타입</small>
+            </span>
+          </div>
         </div>
-        <div className="lab-status">
-          <FlaskConical size={17} />
-          <span>
-            INTERACTIVE LAB<small>장비 없이 체험하는 BCI 프로토타입</small>
-          </span>
-        </div>
-      </div>
+      )}
       <div
         className="main-tabs"
         role="tablist"
         aria-label="Simulation sections"
       >
         {[
-          { id: "replay", title: "EEG Replay", icon: Activity },
+          { id: "wearable", title: "Wearable BCI", icon: Headphones },
           { id: "applications", title: "BCI Applications", icon: Scan },
         ].map((t) => (
           <button
@@ -59,8 +70,7 @@ export default function Simulation() {
             key={t.id}
             className={tab === t.id ? "active" : ""}
             onClick={() => {
-              s.stop();
-              setTab(t.id);
+              navigate(t.id as "wearable" | "applications");
             }}
           >
             <t.icon size={17} />
@@ -70,12 +80,14 @@ export default function Simulation() {
             )}
           </button>
         ))}
-        <span className="shared-config">
-          {s.inputMode === "recorded" && s.recordedLowChannel
-            ? "LOW CHANNEL"
-            : s.channelMode.toUpperCase()}{" "}
-          <i /> TTA {s.ttaEnabled ? "ON" : "OFF"}
-        </span>
+        {tab === "applications" && (
+          <span className="shared-config">
+            {s.inputMode === "recorded" && s.recordedLowChannel
+              ? "LOW CHANNEL"
+              : s.channelMode.toUpperCase()}{" "}
+            <i /> TTA {s.ttaEnabled ? "ON" : "OFF"}
+          </span>
+        )}
       </div>
       {tab === "applications" ? (
         <>
@@ -83,8 +95,7 @@ export default function Simulation() {
             <button
               className={app === "home" ? "active" : ""}
               onClick={() => {
-                s.stop();
-                setApp("home");
+                navigate("applications", "home");
               }}
             >
               <div className="app-icon">
@@ -99,8 +110,7 @@ export default function Simulation() {
             <button
               className={app === "game" ? "active" : ""}
               onClick={() => {
-                s.stop();
-                setApp("game");
+                navigate("applications", "game");
               }}
             >
               <div className="app-icon">
@@ -113,11 +123,15 @@ export default function Simulation() {
               <ArrowUpRight size={18} />
             </button>
           </div>
-          {app === "home" ? <SmartHome /> : (
+          {app === "home" ? (
+            <SmartHome />
+          ) : (
             <section className="panel mini-game-placeholder">
               <Gamepad2 size={36} />
               <strong>미니 게임 준비 중</strong>
-              <span>LEFT / RIGHT 운동 상상으로 움직이는 게임을 추가할 예정입니다.</span>
+              <span>
+                LEFT / RIGHT 운동 상상으로 움직이는 게임을 추가할 예정입니다.
+              </span>
             </section>
           )}
           <div className="how-it-works">
@@ -141,7 +155,7 @@ export default function Simulation() {
           </div>
         </>
       ) : (
-        <Replay />
+        <WearableLanding onHome={() => navigate("applications", "home")} />
       )}
       <div className="data-legend">
         <span>

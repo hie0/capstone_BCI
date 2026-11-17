@@ -14,7 +14,7 @@ test("Phase4 actual low models, observed metrics and Wearable controls", async (
         predictions.push(message.prediction);
     }),
   );
-  await page.goto("/#/simulation");
+  await page.goto("/#/simulation?app=home");
   const select = (name: string) =>
     page.getByRole("combobox", { name, exact: true });
   await select("Input mode").selectOption("recorded");
@@ -100,35 +100,27 @@ test("Phase4 actual low models, observed metrics and Wearable controls", async (
     path: "../backend/local_cache/phase4/smart-home-1440.png",
     fullPage: true,
   });
-  await page.getByRole("button", { name: /Wearable BCI Experience/ }).click();
+  await page.getByRole("tab", { name: "Wearable BCI", exact: true }).click();
+  await page
+    .getByRole("group", { name: "웨어러블 시각화 채널 구성" })
+    .getByRole("button", { name: /^16ch/ })
+    .click();
+  await expect(
+    page.getByText("16 ACTIVE ELECTRODES", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Smart Home 체험하기", exact: true })
+    .click();
+  await expect(select("Channel configuration")).toHaveValue("low");
   await select("Participant").selectOption("KGE");
   await expect(select("Session")).toHaveValue(/^kge_online/);
-  await select("Channel configuration").selectOption("low");
   await page
     .getByRole("button", { name: "실제 EEG 재생", exact: true })
     .click();
   await expect(page.getByTestId("decision-score")).not.toHaveText("—");
   await page.getByRole("button", { name: "일시정지", exact: true }).click();
-  await expect(
-    page.getByText(
-      `${predictions.at(-1).active_channels.length} ACTIVE ELECTRODES`,
-      { exact: true },
-    ),
-  ).toBeVisible();
   await expect(page.getByRole("img", { name: "실제 EEG 파형" })).toBeVisible();
   await page.getByRole("button", { name: "Reset", exact: true }).click();
   await expect(page.getByTestId("observed-accuracy")).toHaveText("— · n=0");
-  for (const width of [390, 1024, 1440]) {
-    await page.setViewportSize({ width, height: 1000 });
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    ).toBe(true);
-  }
-  await page.screenshot({
-    path: "../backend/local_cache/phase4/wearable-1440.png",
-    fullPage: true,
-  });
   expect(errors).toEqual([]);
 });

@@ -32,7 +32,7 @@ website/
 │   ├── components/
 │   │   ├── Scenes.tsx            # 3D 거실, 두부/전극, 2D 오류 대체 화면
 │   │   ├── SmartHome.tsx         # 메뉴 대기 확정, 네 장치, 명령 모니터
-│   │   ├── Wearable.tsx          # 전극 구성, MI 설명, 디바이스 비교
+│   │   ├── WearableLanding.tsx   # 착용 비교, 16/7/5ch GLB 탐색, 일상 활용 컨셉
 │   │   ├── Controls.tsx          # 공유 설정, 합성 파형
 │   │   ├── Comparison.tsx        # Recharts 연구 결과 비교
 │   │   └── Replay.tsx            # 합성 리플레이/타임라인
@@ -46,12 +46,12 @@ website/
 
 - `/#/`: 연구 소개, 3D 개념 두부와 전극, 핵심 결과, 채널 최적화, 파이프라인, 응용 진입.
 - `/#/research`: 배경, 16ch 한계, 클릭/키보드 전극 Atlas, 선정 근거, TTA, 결과 및 Ablation, 한계/향후 연구.
-- `/#/simulation`: 기본 BCI Applications, Model Comparison, EEG Replay.
+- `/#/simulation`: Wearable BCI가 기본 탭입니다. BCI Applications의 기존 Smart Home Control과 Mini Game은 유지합니다. `?app=home` / `?app=game`으로 해당 응용에 직접 진입할 수 있습니다.
 - **Smart Home**: LEFT/L, RIGHT/R로 4개 메뉴 순환. 마지막 탐색 입력 후 2초 대기하면 제어 모드 진입. 메뉴 카드를 클릭해도 동일하게 대기 선택. LEFT/RIGHT로 조명, 커튼, 온도(16~30°C), TV(1~5 순환)를 조작. UI 돌아가기로 탐색 복귀. Reset은 장치/명령/자동재생을 초기화하고 실험 설정은 유지.
 - **Simulated EEG**: Input mode를 변경 후 시작/정지. 난수 방향과 합성 confidence를 전달하며 실제 모델 성능을 흉내 내지 않음. 탭/응용 전환 시 자동 입력 정지.
-- **Wearable**: 16/5/7ch 전환, 전극 클릭, 2D/3D 전환, LEFT/RIGHT MI 대측성 설명. 공유 채널·TTA·모델·피험자·세션·속도는 화면 이동 시 유지(새로고침하면 초기화). 디바이스는 미제작·미검증 콘셉트.
+- **Wearable BCI**: 실제 16ch 착용 예시와 생성형 5ch 디자인 컨셉 비교, 기존 GLB의 16/7/5ch 시각화, Everyday Application 및 Smart Home 이동. 시각화는 추론 설정과 분리됩니다. 실제 저채널 하드웨어 제작·검증을 의미하지 않습니다. 사진 출처는 `public/images/wearable/ATTRIBUTION.md`에 기록했습니다.
 - **Comparison**: 보고된 사후 재분석 BA 네 조건 표시. 현재 채널 그룹/TTA의 막대 강조. LOSO·현장 라이브·BA/AUC 선택 지원; 미제공 조건은 명시적으로 표시.
-- **Replay**: Recorded EEG 또는 합성 입력의 파형·예측, 재생/일시정지/리셋/속도/채널/타임라인 탐색. 탭을 나가면 재생 종료.
+- **Recorded EEG 재생**: 독립 EEG Replay UI 탭은 제거했습니다. 원본 EEG·Backend·재생 hook·Replay 컴포넌트 소스는 유지합니다. Smart Home의 Input mode에서 실제 파형·예측 및 재생/일시정지/Reset/속도를 사용할 수 있습니다.
 - 모든 3D 씬은 드래그 회전, WebGL 미지원/렌더 오류 시 2D 대체 화면 제공. 외부 모델 파일 다운로드 불필요.
 
 ## 데이터 신뢰성과 미연결 기능

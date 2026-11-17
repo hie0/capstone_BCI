@@ -9,7 +9,7 @@ test("actual Recorded EEG controls devices, pauses, resets and preserves layouts
     errors.push(e.message);
     console.log(e.stack);
   });
-  await page.goto("/#/simulation");
+  await page.goto("/#/simulation?app=home");
   await page.getByRole("button", { name: "Lighting 메뉴" }).click();
   await page
     .getByRole("combobox", { name: "Input mode", exact: true })
@@ -75,25 +75,35 @@ test("actual Recorded EEG controls devices, pauses, resets and preserves layouts
     });
     await page.getByRole("button", { name: "일시정지", exact: true }).click();
   }
-  await page.getByRole("button", { name: /Wearable BCI Experience/ }).click();
+  await page.getByRole("tab", { name: "Wearable BCI", exact: true }).click();
+  await expect(
+    page.getByText("5 ACTIVE ELECTRODES", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("group", { name: "웨어러블 시각화 채널 구성" })
+    .getByRole("button", { name: /^16ch/ })
+    .click();
   await expect(
     page.getByText("16 ACTIVE ELECTRODES", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "2D 배치도", exact: true }).click();
   await page.getByRole("button", { name: "전극 Fp1", exact: true }).click();
-  await expect(page.locator(".electrode-name")).toHaveText("Fp1");
-  await page.getByRole("tab", { name: "EEG Replay", exact: true }).click();
-  await page.getByRole("button", { name: "Reset replay", exact: true }).click();
-  await page.getByRole("button", { name: "Play", exact: true }).click();
-  await expect(page.getByText(/Recorded trial 1 \/ 60/)).toBeVisible({
-    timeout: 8000,
-  });
-  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await expect(page.locator(".wearable-selected-channel b")).toHaveText("Fp1");
+  await expect(
+    page.getByRole("tab", { name: "EEG Replay", exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Smart Home 체험하기", exact: true })
+    .click();
+  await expect(
+    page.getByRole("combobox", { name: "Channel configuration", exact: true }),
+  ).toHaveValue("16ch");
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await page
+    .getByRole("button", { name: "실제 EEG 재생", exact: true })
+    .click();
+  await expect(page.getByTestId("decision-score")).not.toHaveText("—");
+  await page.getByRole("button", { name: "일시정지", exact: true }).click();
   await expect(page.getByRole("img", { name: "실제 EEG 파형" })).toBeVisible();
-  await page.screenshot({
-    path: "../backend/local_cache/migration/recorded-replay-1440.png",
-    fullPage: true,
-  });
   expect(errors).toEqual([]);
 });
 
@@ -101,7 +111,7 @@ test("backend failure stays explicit and never substitutes synthetic EEG", async
   page,
 }) => {
   await page.route("**/api/sessions**", (route) => route.abort());
-  await page.goto("/#/simulation");
+  await page.goto("/#/simulation?app=home");
   await page
     .getByRole("combobox", { name: "Input mode", exact: true })
     .selectOption("recorded");
