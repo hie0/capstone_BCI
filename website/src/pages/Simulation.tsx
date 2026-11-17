@@ -8,7 +8,7 @@ import {
   FlaskConical,
 } from "lucide-react";
 import SmartHome from "../components/SmartHome";
-import WearableLanding from "../components/WearableLanding";
+import WearableLanding, { WearableHero } from "../components/WearableLanding";
 import { useBCI } from "../store";
 import { useRecordedEEG } from "../useRecordedEEG";
 export default function Simulation() {
@@ -31,12 +31,12 @@ export default function Simulation() {
   useRecordedEEG(tab === "applications" && app === "home");
   return (
     <main
-      className={`container simulation ${tab === "applications" && app === "home" ? "smart-home-active" : ""}`}
+      className={`container simulation ${tab === "applications" ? "applications-active" : ""} ${tab === "applications" && app === "home" ? "smart-home-active" : ""}`}
     >
       <div className="breadcrumb">
         RESEARCH LAB <span>/</span> INTERACTIVE SIMULATION
       </div>
-      {tab === "applications" && (
+      {tab === "applications" ? (
         <div className="page-heading">
           <div>
             <div className="eyebrow">
@@ -54,6 +54,8 @@ export default function Simulation() {
             </span>
           </div>
         </div>
+      ) : (
+        <WearableHero />
       )}
       <div
         className="main-tabs"
@@ -75,9 +77,6 @@ export default function Simulation() {
           >
             <t.icon size={17} />
             {t.title}
-            {t.id === "applications" && (
-              <span className="tab-tag">EXPLORE</span>
-            )}
           </button>
         ))}
         {tab === "applications" && (

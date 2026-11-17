@@ -398,26 +398,24 @@
 }
 .smart-home-active .how-it-works > small,
 .smart-home-active .data-legend,
-.smart-home-active .lab-status,
-.smart-home-active .shared-config,
-.smart-home-active .tab-tag {
+.applications-active .lab-status,
+.applications-active .shared-config {
   display: none;
 }
-.smart-home-active .app-picker button {
+.applications-active .app-picker button {
   padding: 14px 12px;
   border-radius: 16px;
 }
-.smart-home-active .app-picker .app-icon,
-.smart-home-active .app-picker button > svg {
+.applications-active .app-picker button > svg {
   display: none;
 }
-.smart-home-active .app-picker button > div {
+.applications-active .app-picker button > div {
   min-width: 0;
 }
-.smart-home-active .app-picker strong {
+.applications-active .app-picker strong {
   font-size: 14px;
 }
-.smart-home-active .app-picker span {
+.applications-active .app-picker span {
   font-size: 11px;
 }
 @media (min-width: 1280px) {
@@ -468,15 +466,15 @@
   .smart-home-active .command-history {
     min-height: 225px;
   }
-  .smart-home-active .app-picker {
+  .simulation .app-picker {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
-  .smart-home-active .app-picker strong {
+  .simulation .app-picker strong {
     font-size: 12px;
     line-height: 1.4;
   }
-  .smart-home-active .app-picker span {
+  .simulation .app-picker span {
     font-size: 9px;
     line-height: 1.5;
   }
@@ -487,10 +485,10 @@
   .smart-home-active .how-it-works > div {
     white-space: normal;
   }
-  .smart-home-active .page-heading h1 {
+  .simulation .page-heading h1 {
     font-size: 26px;
   }
-  .smart-home-active .page-heading p {
+  .simulation .page-heading p {
     font-size: 11px;
   }
 }

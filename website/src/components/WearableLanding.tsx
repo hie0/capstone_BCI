@@ -1,17 +1,37 @@
 import { useState } from "react";
 import {
-  ArrowDown,
   ArrowRight,
   ArrowUpRight,
   Check,
   CircleDot,
-  MoveUpRight,
 } from "lucide-react";
 import { Scene, Atlas2D } from "./Scenes";
 import { HeroBust } from "./HeroBust";
 import { channelConfigurations, fullMontage } from "../data/channels";
 import { channelInfo, type ChannelMode } from "../data/research";
 import "./WearableLanding.css";
+
+export function WearableHero() {
+  return (
+    <section className="page-heading wearable-page-heading" aria-labelledby="wearable-hero-title">
+      <div>
+        <div className="eyebrow">
+          <i className="status-dot" /> FROM LAB TO EVERYDAY LIFE
+        </div>
+        <h1 id="wearable-hero-title">더 적은 전극으로, 더 자유롭게.</h1>
+        <p>더 간결한 연결로 일상에 이어지는 BCI를 상상합니다.</p>
+      </div>
+      <a href="#wearable-comparison" className="lab-status wearable-heading-reduction" title="착용의 변화 살펴보기" aria-label="16채널에서 5채널로">
+        <span className="wearable-heading-caption">FEWER CHANNELS. MORE POSSIBILITIES.</span>
+        <span className="wearable-heading-numbers">
+          <b>16</b>
+          <ArrowRight aria-hidden="true" />
+          <strong>5<small>ch</small></strong>
+        </span>
+      </a>
+    </section>
+  );
+}
 
 export default function WearableLanding({ onHome }: { onHome: () => void }) {
   // Product exploration only: never changes the model/participant/playback store.
@@ -21,46 +41,6 @@ export default function WearableLanding({ onHome }: { onHome: () => void }) {
   const reduction = ((16 - channels.length) / 16) * 100;
   return (
     <div className="wearable-story">
-      <section
-        className="wearable-story-hero"
-        aria-labelledby="wearable-hero-title"
-      >
-        <div>
-          <span className="eyebrow">FROM LAB TO EVERYDAY LIFE</span>
-          <h1 id="wearable-hero-title">
-            더 적은 전극으로,
-            <br />더 자유롭게.
-          </h1>
-          <p>
-            연구실의 복잡한 연결을 줄이고,
-            <br />
-            일상에 자연스럽게 이어지는 BCI를 상상합니다.
-          </p>
-          <a href="#wearable-comparison" className="wearable-story-link">
-            착용의 변화 살펴보기 <ArrowDown size={15} />
-          </a>
-        </div>
-        <div
-          className="wearable-hero-mark"
-          aria-label="16채널에서 5채널로, 전극 수 68.75% 감소"
-        >
-          <span>FEWER CHANNELS. MORE POSSIBILITIES.</span>
-          <div>
-            <b>16</b>
-            <MoveUpRight aria-hidden="true" />
-            <strong>
-              5<small>ch</small>
-            </strong>
-          </div>
-          <p>
-            <strong>68.75%</strong> fewer electrodes
-          </p>
-          <span className="wearable-concept-label">
-            RESEARCH-BASED DESIGN CONCEPT
-          </span>
-        </div>
-      </section>
-
       <section
         id="wearable-comparison"
         className="wearable-story-section"
