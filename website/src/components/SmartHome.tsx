@@ -59,10 +59,11 @@ export default function SmartHome() {
   ];
   return (
     <>
-      <div className="workspace-heading">
+      <div className="workspace-heading application-heading">
         <div>
           <span className="eyebrow">APPLICATION 01</span>
           <h2>Smart Home Control</h2>
+          <p>운동 상상 명령으로 생활 공간의 기기를 제어하는 BCI 응용입니다.</p>
         </div>
         <button className="button subtle" onClick={s.reset}>
           <RotateCcw size={14} /> Reset

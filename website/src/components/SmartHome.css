@@ -1,6 +1,6 @@
 /* PDF reference: Smart Home only. Shared settings and wearable keep their own styles. */
 .smart-home-active .smart-layout {
-  grid-template-columns: minmax(300px, 0.82fr) minmax(500px, 1.55fr);
+  grid-template-columns: minmax(215px, 0.52fr) minmax(560px, 1.98fr);
   grid-template-areas:
     "wearable room"
     "settings monitor";
@@ -15,12 +15,17 @@
   background: white;
   box-shadow: none;
 }
+.smart-home-active .workspace-heading.application-heading > div:first-child { display: grid; grid-template-columns: auto auto minmax(240px,1fr); align-items: center; gap: 8px 20px; }
+.smart-home-active .workspace-heading.application-heading .eyebrow { grid-column: 1; grid-row: 1; padding: 0; background: transparent; color: #39776f; font-size: 11px; font-weight: 850; letter-spacing: .16em; }
+.smart-home-active .workspace-heading.application-heading h2 { grid-column: 1; grid-row: 2; margin: 0; font-size: clamp(25px,2.4vw,32px); font-weight: 850; letter-spacing: -.035em; }
+.smart-home-active .workspace-heading.application-heading p { grid-column: 2/4; grid-row: 2; margin: 0; color: var(--text-secondary); font-size: 12px; font-weight: 650; line-height: 1.6; }
 .smart-home-active .settings,
 .smart-home-active .monitor {
   padding: 20px 16px;
 }
 .smart-home-active .wearable-live-panel {
   grid-area: wearable;
+  align-self: start;
   padding: 16px;
   overflow: hidden;
 }
@@ -59,11 +64,17 @@
   font-size: 10px;
 }
 .smart-home-active .wearable-live-scene {
-  height: 360px;
+  height: 225px;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: linear-gradient(145deg, #f4f8f7, #e8f0ee);
+}
+.smart-home-active .wearable-live-scene .atlas-svg {
+  width: 100%;
+  height: 100%;
+  transform: scale(.82);
+  transform-origin: center;
 }
 .smart-home-active .wearable-live-status {
   display: grid;
@@ -180,8 +191,8 @@
   font-size: 10px;
 }
 .smart-home-active .room-scene {
-  border-radius: 5px;
-  height: 340px;
+  border-radius: 10px;
+  height: 420px;
 }
 .smart-home-active .scene-caption {
   display: none;
@@ -430,7 +441,7 @@
 }
 @media (min-width: 1280px) {
   .smart-home-active .smart-layout {
-    grid-template-columns: minmax(350px, 0.85fr) minmax(620px, 1.55fr);
+    grid-template-columns: minmax(280px, 0.62fr) minmax(680px, 1.9fr);
   }
 }
 @media (min-width: 761px) and (max-width: 1199px) {

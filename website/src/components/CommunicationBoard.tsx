@@ -1,167 +1,783 @@
 import { useEffect, useRef, useState } from "react";
-import { Accessibility, Droplets, HandHelping, RotateCcw, Soup, Stethoscope, Volume2 } from "lucide-react";
+import {
+  Activity,
+  ArrowLeft,
+  Brain,
+  Check,
+  RotateCcw,
+  Sparkles,
+  Volume2,
+} from "lucide-react";
 import { Atlas2D } from "./Scenes";
-import { Waveform } from "./Controls";
+import { Settings, Waveform } from "./Controls";
 import type { Direction } from "../data/research";
 import "./CommunicationBoard.css";
 
-type Branch = "BASIC" | "CARE" | null;
+type TreeViewMode = "curved" | "butterfly";
+
+type OptionData = {
+  label: string;
+  english: string;
+  desc: string;
+  symbol: string;
+  subId?: string;
+  speech?: string;
+};
+
+type DecisionNode = {
+  id: string;
+  depth: number;
+  badge: string;
+  left: OptionData;
+  right: OptionData;
+};
+
 const THRESHOLD = 80;
 const STEP = 10;
 
-const choices = {
-  BASIC: {
-    LEFT: { label: "목말라요. 물을 주세요.", english: "WATER", icon: Droplets },
-    RIGHT: { label: "배고파요.", english: "HUNGRY", icon: Soup },
+// 5 Channels to display in the EEG Control Monitor
+const MONITOR_CHANNELS = ["F3", "F4", "C3", "Cz", "C4"];
+
+// 3-Depth Hierarchical Decision Tree (8 Specific Messages)
+const TREE_NODES: Record<string, DecisionNode> = {
+  ROOT: {
+    id: "ROOT",
+    depth: 1,
+    badge: "1단계: 대분류 선택",
+    left: {
+      label: "신체적·생리적 욕구",
+      english: "PHYSICAL NEEDS",
+      desc: "음료, 식사, 체위 변경, 실내 환경",
+      symbol: "💧",
+      subId: "PHYSICAL",
+    },
+    right: {
+      label: "통증·의료 및 감정 전달",
+      english: "MEDICAL & CARE",
+      desc: "통증 부위 호소, 긴급 호출, 감사",
+      symbol: "🩺",
+      subId: "MEDICAL",
+    },
+  },
+  PHYSICAL: {
+    id: "PHYSICAL",
+    depth: 2,
+    badge: "2단계: 신체 욕구 세부 분류",
+    left: {
+      label: "음료 및 식사 (식음)",
+      english: "BEVERAGE & MEAL",
+      desc: "물 마시기, 식사하기",
+      symbol: "🍚",
+      subId: "FOOD",
+    },
+    right: {
+      label: "자세 및 실내 환경",
+      english: "POSTURE & CLIMATE",
+      desc: "체위 변경, 실내 온도 조절",
+      symbol: "🛏",
+      subId: "ENV",
+    },
+  },
+  MEDICAL: {
+    id: "MEDICAL",
+    depth: 2,
+    badge: "2단계: 의료/감정 세부 분류",
+    left: {
+      label: "통증 부위 호소",
+      english: "PAIN LOCATION",
+      desc: "머리 통증, 복부 통증",
+      symbol: "🤕",
+      subId: "PAIN",
+    },
+    right: {
+      label: "의료 호출 및 감정",
+      english: "CALL & GRATITUDE",
+      desc: "긴급 의료진 호출, 감사 표현",
+      symbol: "🚨",
+      subId: "CARE",
+    },
+  },
+  FOOD: {
+    id: "FOOD",
+    depth: 3,
+    badge: "3단계: 최종 문장 선택",
+    left: {
+      label: "목말라요. 물을 주세요.",
+      english: "WATER",
+      desc: "시원한 물 1컵 요청",
+      symbol: "💧",
+      speech: "목이 마릅니다. 시원한 물 한 잔만 주세요.",
+    },
+    right: {
+      label: "배고파요. 밥 먹을래요.",
+      english: "MEAL",
+      desc: "식사 및 간식 요청",
+      symbol: "🍚",
+      speech: "배가 고픕니다. 식사를 준비해 주세요.",
+    },
+  },
+  ENV: {
+    id: "ENV",
+    depth: 3,
+    badge: "3단계: 최종 문장 선택",
+    left: {
+      label: "자세가 불편해요. 바꿔주세요.",
+      english: "POSTURE",
+      desc: "침대 각도 및 체위 변경",
+      symbol: "🛏",
+      speech: "자세가 불편합니다. 몸을 조금만 돌려주세요.",
+    },
+    right: {
+      label: "실내 온도가 안 맞아요.",
+      english: "CLIMATE",
+      desc: "추위/더위 조절 요청",
+      symbol: "🌡",
+      speech: "실내 공기가 너무 춥거나 덥습니다. 온도 조절 부탁드립니다.",
+    },
+  },
+  PAIN: {
+    id: "PAIN",
+    depth: 3,
+    badge: "3단계: 최종 문장 선택",
+    left: {
+      label: "머리가 지끈거리고 아파요.",
+      english: "HEADACHE",
+      desc: "두통 완화 조치 요청",
+      symbol: "🤕",
+      speech: "머리가 욱신거리고 아픕니다. 진통제나 확인 부탁드립니다.",
+    },
+    right: {
+      label: "배가 콕콕 쑤시고 아파요.",
+      english: "STOMACH",
+      desc: "복통 호소 및 상태 점검",
+      symbol: "😣",
+      speech: "배가 더부룩하고 통증이 있습니다. 확인해 주세요.",
+    },
   },
   CARE: {
-    LEFT: { label: "아파요. 도와주세요.", english: "PAIN", icon: Stethoscope },
-    RIGHT: { label: "소리를 키워주세요.", english: "VOLUME UP", icon: Accessibility },
+    id: "CARE",
+    depth: 3,
+    badge: "3단계: 최종 문장 선택",
+    left: {
+      label: "간호사님을 급히 불러주세요.",
+      english: "NURSE CALL",
+      desc: "긴급 의료진 호출",
+      symbol: "🚨",
+      speech: "응급 상황입니다. 간호사 선생님을 지금 불러주세요.",
+    },
+    right: {
+      label: "도와주셔서 감사합니다.",
+      english: "GRATITUDE",
+      desc: "보호자·간병인 감사 인사",
+      symbol: "❤️",
+      speech: "항상 따뜻하게 보살펴 주셔서 진심으로 감사합니다.",
+    },
   },
-} as const;
+};
 
-export default function CommunicationBoard() {
-  const [branch, setBranch] = useState<Branch>(null);
+export function CommunicationBoard() {
+  const [currentNodeId, setCurrentNodeId] = useState<string>("ROOT");
+  const [history, setHistory] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<TreeViewMode>("curved");
+
+  // Balance Gauge State: 50% Center, Threshold 80%
   const [left, setLeft] = useState(50);
-  const [activeDirection, setActiveDirection] = useState<Direction>();
-  const [result, setResult] = useState("표현할 항목을 선택하세요.");
+  const [activeDirection, setActiveDirection] = useState<Direction | undefined>(undefined);
+  const [result, setResult] = useState<string>("원하는 항목 카드를 선택하거나 상상하세요.");
+  const [finalSpeech, setFinalSpeech] = useState<string | null>(null);
   const [isCommitting, setIsCommitting] = useState(false);
+
   const commitTimer = useRef<number | undefined>(undefined);
+
   const right = 100 - left;
   const confidence = Math.max(left, right);
   const uncertain = confidence < THRESHOLD;
+  const currentNode = TREE_NODES[currentNodeId];
 
   const resetEvidence = () => setLeft(50);
-  const reset = () => {
+
+  const resetAll = () => {
     window.clearTimeout(commitTimer.current);
-    setBranch(null);
+    setCurrentNodeId("ROOT");
+    setHistory([]);
     resetEvidence();
     setActiveDirection(undefined);
     setResult("표현할 항목을 선택하세요.");
+    setFinalSpeech(null);
     setIsCommitting(false);
   };
+
+  const goBack = () => {
+    if (history.length === 0) return;
+    window.clearTimeout(commitTimer.current);
+    const prevHistory = [...history];
+    const prevNodeId = prevHistory.pop() || "ROOT";
+    setHistory(prevHistory);
+    setCurrentNodeId(prevNodeId);
+    resetEvidence();
+    setActiveDirection(undefined);
+    setResult("이전 단계로 돌아왔습니다.");
+    setIsCommitting(false);
+  };
+
   useEffect(() => () => window.clearTimeout(commitTimer.current), []);
-  const speak = (text: string) => {
+
+  /**
+   * TTS Speech: Plays stable, calm low-pitch Korean Female Voice
+   */
+  const speakFemale = (text: string) => {
     if (!("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "ko-KR";
+
+    const assignVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const koVoices = voices.filter((v) => v.lang.replace("_", "-").startsWith("ko"));
+      // Prioritize natural stable Korean female voices (Yuna, Heami, Google, etc.)
+      const female =
+        koVoices.find((v) => /Yuna|Sora|Google|Heami|SunHi|Female|여성|Natural|Neural/i.test(v.name)) ||
+        koVoices[0];
+
+      if (female) utterance.voice = female;
+    };
+
+    assignVoice();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = assignVoice;
+    }
+
+    // Stable, calm low-pitch female voice (no trembling)
+    utterance.pitch = 0.86;
+    utterance.rate = 0.92;
     window.speechSynthesis.speak(utterance);
   };
+
   const select = (direction: Direction) => {
     if (isCommitting) return;
     setActiveDirection(direction);
-    const nextLeft = Math.max(0, Math.min(100, left + (direction === "LEFT" ? STEP : -STEP)));
-    setLeft(nextLeft);
-    const nextConfidence = direction === "LEFT" ? nextLeft : 100 - nextLeft;
-    if (nextConfidence < THRESHOLD) {
-      setResult(`${direction} 운동 상상을 유지해 주세요. ${nextConfidence}%`);
-      return;
-    }
-    setIsCommitting(true);
-    setResult(`${THRESHOLD}% 선택 기준에 도달했습니다.`);
-    commitTimer.current = window.setTimeout(() => {
-      if (!branch) {
-        const nextBranch = direction === "LEFT" ? "BASIC" : "CARE";
-        setBranch(nextBranch);
-        resetEvidence();
-        setActiveDirection(undefined);
-        setResult(nextBranch === "BASIC" ? "기본 욕구를 선택했습니다. 세부 메시지를 선택하세요." : "상태·도움을 선택했습니다. 세부 메시지를 선택하세요.");
+
+    setLeft((prev) => {
+      const next =
+        direction === "LEFT"
+          ? Math.min(100, prev + STEP)
+          : Math.max(0, prev - STEP);
+
+      const targetSelected = direction === "LEFT" ? currentNode.left : currentNode.right;
+
+      if (next >= THRESHOLD || 100 - next >= THRESHOLD) {
+        setIsCommitting(true);
+        setResult(`✓ [${targetSelected.label}] 확정 완료!`);
+
+        window.clearTimeout(commitTimer.current);
+        commitTimer.current = window.setTimeout(() => {
+          if (targetSelected.subId) {
+            // Next Depth in Decision Tree
+            setHistory((prevH) => [...prevH, currentNodeId]);
+            setCurrentNodeId(targetSelected.subId);
+            resetEvidence();
+            setActiveDirection(undefined);
+            setIsCommitting(false);
+          } else if (targetSelected.speech) {
+            // Terminal Leaf Reached: Speak with Female Voice!
+            setFinalSpeech(targetSelected.speech);
+            speakFemale(targetSelected.speech);
+            resetEvidence();
+            setActiveDirection(undefined);
+            setIsCommitting(false);
+          }
+        }, 600);
       } else {
-        const choice = choices[branch][direction];
-        setResult(choice.label);
-        speak(choice.label);
-        resetEvidence();
+        setResult(
+          `${direction === "LEFT" ? "왼쪽" : "오른쪽"} 상상 누적 중: ${
+            direction === "LEFT" ? next : 100 - next
+          }% / ${THRESHOLD}%`
+        );
       }
-      setIsCommitting(false);
-    }, 450);
+
+      return next;
+    });
   };
-  const options = branch
-    ? [choices[branch].LEFT, choices[branch].RIGHT]
-    : [
-        { label: "기본 욕구", english: "BASIC NEEDS", icon: Droplets },
-        { label: "상태·도움", english: "CARE & SUPPORT", icon: HandHelping },
-      ];
+
+  const isLeftSelectedInBranch = (targetSubId: string) => {
+    return currentNodeId === targetSubId || history.includes(targetSubId);
+  };
 
   return (
-    <section className="communication-board panel" aria-labelledby="communication-title">
-      <header>
-        <div>
-          <span className="eyebrow">BCI COMMUNICATION</span>
-          <h2 id="communication-title" aria-label="BCI Communication Board">무엇이 필요하세요?</h2>
+    <section className="card communication-board" aria-label="AAC 소통 의사결정 트리">
+      {/* Top Header */}
+      <div className="comm-header application-heading">
+        <div className="application-heading-copy">
+          <span className="eyebrow">APPLICATION 03</span>
+          <h2 aria-label="BCI Communication Board">MOTOR IMAGERY VOICE ASSIST</h2>
         </div>
-        <div className="communication-progress" aria-label="선택 단계">
-          <span className="active"><b>1</b> {branch ? (branch === "BASIC" ? "기본 욕구" : "상태·도움") : "범주 선택"}</span><i>—</i>
-          <span className={branch ? "active" : ""}><b>2</b> 세부 메시지</span><i>—</i><span><b>3</b> 음성 출력</span>
-        </div>
-        <button className="button subtle" onClick={reset}><RotateCcw size={15} /> 처음으로</button>
-      </header>
 
-      <p className="communication-intro">
-        말을 하거나 몸을 움직이기 어려운 환자와 사용자를 위한 의사소통 보조 체험입니다.
-        <span>전체 선택 구조를 먼저 확인한 뒤, 같은 방향을 80%까지 반복해 원하는 문장을 선택합니다.</span>
+        {/* Tree Breadcrumb Progress */}
+        <div className="comm-steps-pills">
+          <span className={`pill ${currentNode.depth === 1 ? "active" : ""}`}>
+            <b>1</b> 대분류
+          </span>
+          <i>→</i>
+          <span className={`pill ${currentNode.depth === 2 ? "active" : ""}`}>
+            <b>2</b> 중분류
+          </span>
+          <i>→</i>
+          <span className={`pill ${currentNode.depth === 3 ? "active" : ""}`}>
+            <b>3</b> 최종 문장
+          </span>
+        </div>
+
+        {/* Action Controls */}
+        <div className="header-actions">
+          {history.length > 0 && (
+            <button className="button outline" onClick={goBack}>
+              <ArrowLeft size={14} /> 이전 단계
+            </button>
+          )}
+          <button className="button outline" onClick={resetAll}>
+            <RotateCcw size={14} /> 처음으로
+          </button>
+        </div>
+      </div>
+
+      <p className="comm-intro">
+        LEFT / RIGHT Motor Imagery를 단계형 Message Selection과 Voice Output으로 연결해, 움직임이나 말하기가 어려운 사용자의 의사표현을 돕습니다.
       </p>
 
-      <div className="communication-neuro-feedback top-neuro">
-        <div className="feedback-title"><span>뇌 자극 · EEG 신호</span><strong>{activeDirection ?? "READY"}</strong></div>
-        <div className="neuro-compact">
-          <div className="communication-brain"><Atlas2D mode="5ch" selected={activeDirection === "LEFT" ? "C4" : activeDirection === "RIGHT" ? "C3" : ""} onSelect={() => {}} direction={activeDirection} /></div>
-          <Waveform channels={["C3", "Cz", "C4"]} playing={Boolean(activeDirection)} phase={activeDirection === "RIGHT" ? 2.8 : .2} />
-          <small>{activeDirection === "LEFT" ? "왼손 상상 · 오른쪽 감각운동 영역 강조" : activeDirection === "RIGHT" ? "오른손 상상 · 왼쪽 감각운동 영역 강조" : "LEFT 또는 RIGHT를 반복해 상상하세요."}</small>
+      {/* Voice Output Speech Window */}
+      {finalSpeech ? (
+        <div className="comm-speech-window">
+          <div className="speech-icon-wrapper">
+            <Volume2 size={24} />
+          </div>
+          <div className="speech-content">
+            <span className="speech-tag">음성 변환(TTS) 출력 완료</span>
+            <strong>"{finalSpeech}"</strong>
+          </div>
+          <button className="speech-replay-btn" onClick={() => speakFemale(finalSpeech)}>
+            <Volume2 size={14} /> 다시 듣기
+          </button>
+        </div>
+      ) : null}
+
+      {/* View Switcher: Concept 1 vs Concept 2 */}
+      <div className="tree-view-switcher">
+        <span className="switcher-label">트리 구조도 시안 비교:</span>
+        <div className="switcher-tabs">
+          <button
+            className={viewMode === "curved" ? "active" : ""}
+            onClick={() => setViewMode("curved")}
+          >
+            🌿 시안 1: 모던 실크 곡선 트리
+          </button>
+          <button
+            className={viewMode === "butterfly" ? "active" : ""}
+            onClick={() => setViewMode("butterfly")}
+          >
+            🦋 시안 2: 좌우 듀얼 윙 트리
+          </button>
         </div>
       </div>
 
-      <div className="communication-dashboard">
-        <div className="communication-choice-area">
-          <div className={`communication-options ${branch ? `second-step branch-${branch.toLowerCase()}` : "first-step"}`}>
-            {options.map((option, index) => {
-              const Icon = option.icon;
-              const direction: Direction = index === 0 ? "LEFT" : "RIGHT";
-              return (
-                <button disabled={isCommitting} key={option.english} className={`${direction.toLowerCase()} ${activeDirection === direction ? "imagining" : ""}`} onClick={() => select(direction)}>
-                  <span>{direction === "LEFT" ? "← LEFT" : "RIGHT →"}</span><Icon size={27} />
-                  <strong>{option.label}</strong><small>{option.english}</small>
-                </button>
-              );
-            })}
-          </div>
+      {/* Tree Visualization Container (Refined Sage Green vs Slate Blue Harmony) */}
+      <div className="tree-diagram-shell">
+        {viewMode === "curved" ? (
+          <div className="curved-tree-container">
+            <svg viewBox="0 0 760 300" className="curved-tree-svg" fill="none">
+              {/* Connector Bezier Curves: Left is Sage Green, Right is Slate Blue */}
+              <path
+                d="M 380 35 C 380 65, 200 60, 200 90"
+                stroke={isLeftSelectedInBranch("PHYSICAL") ? "#2F6B5C" : "#CBD5E1"}
+                strokeWidth={isLeftSelectedInBranch("PHYSICAL") ? 3 : 1.8}
+                strokeDasharray={isLeftSelectedInBranch("PHYSICAL") ? undefined : "4"}
+              />
+              <path
+                d="M 380 35 C 380 65, 560 60, 560 90"
+                stroke={isLeftSelectedInBranch("MEDICAL") ? "#345C7D" : "#CBD5E1"}
+                strokeWidth={isLeftSelectedInBranch("MEDICAL") ? 3 : 1.8}
+                strokeDasharray={isLeftSelectedInBranch("MEDICAL") ? undefined : "4"}
+              />
 
-          <div className="evidence-bars balance-gauge" aria-live="polite">
-            <div className="gauge-labels"><strong>왼쪽 {left}%</strong><span>가운데에서 시작해 {THRESHOLD}%까지 채우면 선택돼요</span><strong>오른쪽 {right}%</strong></div>
-            <div className="balance-track">
-              <i className="left-threshold" /><i className="right-threshold" /><em />
-              <span className="left-half"><b style={{ width: `${Math.max(0, (left - 50) * 2)}%` }} /></span>
-              <span className="right-half"><b style={{ width: `${Math.max(0, (right - 50) * 2)}%` }} /></span>
+              <path
+                d="M 200 125 C 200 148, 110 145, 110 170"
+                stroke={isLeftSelectedInBranch("FOOD") ? "#2F6B5C" : "#CBD5E1"}
+                strokeWidth={isLeftSelectedInBranch("FOOD") ? 2.5 : 1.5}
+                strokeDasharray={isLeftSelectedInBranch("FOOD") ? undefined : "3"}
+              />
+              <path
+                d="M 200 125 C 200 148, 290 145, 290 170"
+                stroke={isLeftSelectedInBranch("ENV") ? "#2F6B5C" : "#CBD5E1"}
+                strokeWidth={isLeftSelectedInBranch("ENV") ? 2.5 : 1.5}
+                strokeDasharray={isLeftSelectedInBranch("ENV") ? undefined : "3"}
+              />
+
+              <path
+                d="M 560 125 C 560 148, 470 145, 470 170"
+                stroke={isLeftSelectedInBranch("PAIN") ? "#345C7D" : "#CBD5E1"}
+                strokeWidth={isLeftSelectedInBranch("PAIN") ? 2.5 : 1.5}
+                strokeDasharray={isLeftSelectedInBranch("PAIN") ? undefined : "3"}
+              />
+              <path
+                d="M 560 125 C 560 148, 650 145, 650 170"
+                stroke={isLeftSelectedInBranch("CARE") ? "#345C7D" : "#CBD5E1"}
+                strokeWidth={isLeftSelectedInBranch("CARE") ? 2.5 : 1.5}
+                strokeDasharray={isLeftSelectedInBranch("CARE") ? undefined : "3"}
+              />
+
+              {/* Terminal Connection Lines */}
+              <path d="M 110 205 C 110 220, 65 220, 65 240" stroke="#CBD5E1" strokeWidth={1.5} />
+              <path d="M 110 205 C 110 220, 155 220, 155 240" stroke="#CBD5E1" strokeWidth={1.5} />
+              <path d="M 290 205 C 290 220, 245 220, 245 240" stroke="#CBD5E1" strokeWidth={1.5} />
+              <path d="M 290 205 C 290 220, 335 220, 335 240" stroke="#CBD5E1" strokeWidth={1.5} />
+              <path d="M 470 205 C 470 220, 425 220, 425 240" stroke="#CBD5E1" strokeWidth={1.5} />
+              <path d="M 470 205 C 470 220, 515 220, 515 240" stroke="#CBD5E1" strokeWidth={1.5} />
+              <path d="M 650 205 C 650 220, 605 220, 605 240" stroke="#CBD5E1" strokeWidth={1.5} />
+              <path d="M 650 205 C 650 220, 695 220, 695 240" stroke="#CBD5E1" strokeWidth={1.5} />
+
+              {/* ROOT NODE */}
+              <g transform="translate(315, 14)">
+                <rect width="130" height="34" rx="17" fill="#1E293B" />
+                <text x="65" y="22" fill="#FFFFFF" fontSize="11" fontWeight="800" textAnchor="middle">
+                  🧠 의사표현 시작
+                </text>
+              </g>
+
+              {/* LEVEL 1 NODES: Left (Sage Green) vs Right (Slate Blue) */}
+              <g transform="translate(115, 88)">
+                <rect
+                  width="170"
+                  height="36"
+                  rx="18"
+                  fill={isLeftSelectedInBranch("PHYSICAL") ? "#F0F6F4" : "#FFFFFF"}
+                  stroke={isLeftSelectedInBranch("PHYSICAL") ? "#2F6B5C" : "#CBD5E1"}
+                  strokeWidth={isLeftSelectedInBranch("PHYSICAL") ? 2.5 : 1.5}
+                />
+                <text
+                  x="85"
+                  y="23"
+                  fill={isLeftSelectedInBranch("PHYSICAL") ? "#2F6B5C" : "#64748B"}
+                  fontSize="12"
+                  fontWeight="800"
+                  textAnchor="middle"
+                >
+                  ← 신체 욕구 (L)
+                </text>
+              </g>
+
+              <g transform="translate(475, 88)">
+                <rect
+                  width="170"
+                  height="36"
+                  rx="18"
+                  fill={isLeftSelectedInBranch("MEDICAL") ? "#F0F4F8" : "#FFFFFF"}
+                  stroke={isLeftSelectedInBranch("MEDICAL") ? "#345C7D" : "#CBD5E1"}
+                  strokeWidth={isLeftSelectedInBranch("MEDICAL") ? 2.5 : 1.5}
+                />
+                <text
+                  x="85"
+                  y="23"
+                  fill={isLeftSelectedInBranch("MEDICAL") ? "#345C7D" : "#64748B"}
+                  fontSize="12"
+                  fontWeight="800"
+                  textAnchor="middle"
+                >
+                  상태·도움 및 감정 (R) →
+                </text>
+              </g>
+
+              {/* LEVEL 2 NODES */}
+              <g transform="translate(45, 168)">
+                <rect
+                  width="130"
+                  height="32"
+                  rx="16"
+                  fill={isLeftSelectedInBranch("FOOD") ? "#E3EFEA" : "#FFFFFF"}
+                  stroke={isLeftSelectedInBranch("FOOD") ? "#2F6B5C" : "#E2E8F0"}
+                  strokeWidth={isLeftSelectedInBranch("FOOD") ? 2 : 1.2}
+                />
+                <text x="65" y="21" fill="#2F6B5C" fontSize="10.5" fontWeight="800" textAnchor="middle">
+                  음료 & 식사 (L)
+                </text>
+              </g>
+
+              <g transform="translate(225, 168)">
+                <rect
+                  width="130"
+                  height="32"
+                  rx="16"
+                  fill={isLeftSelectedInBranch("ENV") ? "#E3EFEA" : "#FFFFFF"}
+                  stroke={isLeftSelectedInBranch("ENV") ? "#2F6B5C" : "#E2E8F0"}
+                  strokeWidth={isLeftSelectedInBranch("ENV") ? 2 : 1.2}
+                />
+                <text x="65" y="21" fill="#64748B" fontSize="10.5" fontWeight="700" textAnchor="middle">
+                  자세 & 환경 (R)
+                </text>
+              </g>
+
+              <g transform="translate(405, 168)">
+                <rect
+                  width="130"
+                  height="32"
+                  rx="16"
+                  fill={isLeftSelectedInBranch("PAIN") ? "#E2EBF2" : "#FFFFFF"}
+                  stroke={isLeftSelectedInBranch("PAIN") ? "#345C7D" : "#E2E8F0"}
+                  strokeWidth={isLeftSelectedInBranch("PAIN") ? 2 : 1.2}
+                />
+                <text x="65" y="21" fill="#345C7D" fontSize="10.5" fontWeight="700" textAnchor="middle">
+                  통증 호소 (L)
+                </text>
+              </g>
+
+              <g transform="translate(585, 168)">
+                <rect
+                  width="130"
+                  height="32"
+                  rx="16"
+                  fill={isLeftSelectedInBranch("CARE") ? "#E2EBF2" : "#FFFFFF"}
+                  stroke={isLeftSelectedInBranch("CARE") ? "#345C7D" : "#E2E8F0"}
+                  strokeWidth={isLeftSelectedInBranch("CARE") ? 2 : 1.2}
+                />
+                <text x="65" y="21" fill="#345C7D" fontSize="10.5" fontWeight="700" textAnchor="middle">
+                  호출 & 감정 (R)
+                </text>
+              </g>
+
+              {/* LEVEL 3 TERMINAL NODES (8 Messages) */}
+              {[
+                { x: 18, text: "💧 물 주세요", active: currentNodeId === "FOOD", side: "left" },
+                { x: 118, text: "🍚 밥 먹을래요", active: currentNodeId === "FOOD", side: "left" },
+                { x: 208, text: "🛏 자세 변경", active: currentNodeId === "ENV", side: "left" },
+                { x: 298, text: "🌡 추워요/더워요", active: currentNodeId === "ENV", side: "left" },
+                { x: 388, text: "🤕 머리 아파요", active: currentNodeId === "PAIN", side: "right" },
+                { x: 478, text: "😣 배가 아파요", active: currentNodeId === "PAIN", side: "right" },
+                { x: 568, text: "🚨 간호사 호출", active: currentNodeId === "CARE", side: "right" },
+                { x: 658, text: "❤️ 고마워요", active: currentNodeId === "CARE", side: "right" },
+              ].map((item, idx) => (
+                <g key={idx} transform={`translate(${item.x}, 242)`}>
+                  <rect
+                    width="84"
+                    height="38"
+                    rx="8"
+                    fill={item.active ? (item.side === "left" ? "#2F6B5C" : "#345C7D") : "#FFFFFF"}
+                    stroke={item.active ? (item.side === "left" ? "#24584B" : "#284A65") : "#E2E8F0"}
+                    strokeWidth={item.active ? 2 : 1}
+                  />
+                  <text
+                    x="42"
+                    y="24"
+                    fill={item.active ? "#FFFFFF" : "#475569"}
+                    fontSize="9.5"
+                    fontWeight="800"
+                    textAnchor="middle"
+                  >
+                    {item.text}
+                  </text>
+                </g>
+              ))}
+            </svg>
+          </div>
+        ) : (
+          /* Concept 2: Dual-Wing Butterfly Tree */
+          <div className="butterfly-tree-container">
+            <div className="butterfly-wing left-wing">
+              <div className="wing-header">
+                <span className="wing-badge">← LEFT 상상 (신체 욕구)</span>
+                <strong>신체적·생리적 필요</strong>
+              </div>
+              <div className="wing-leaves">
+                <div className={`leaf-pill ${currentNodeId === "FOOD" ? "active-left" : ""}`}>
+                  <span>💧</span> 물 주세요
+                </div>
+                <div className={`leaf-pill ${currentNodeId === "FOOD" ? "active-left" : ""}`}>
+                  <span>🍚</span> 밥 먹을래요
+                </div>
+                <div className={`leaf-pill ${currentNodeId === "ENV" ? "active-left" : ""}`}>
+                  <span>🛏</span> 자세 변경
+                </div>
+                <div className={`leaf-pill ${currentNodeId === "ENV" ? "active-left" : ""}`}>
+                  <span>🌡</span> 춥다/덥다
+                </div>
+              </div>
             </div>
-            <p className={uncertain ? "uncertain" : "ready"}>{uncertain ? `UNCERTAIN · ${THRESHOLD}%까지 같은 방향을 계속 상상하세요.` : `${THRESHOLD}% 선택 임계값에 도달했습니다.`}</p>
+
+            <div className="butterfly-axis">
+              <div className="axis-node">
+                <Sparkles size={16} />
+              </div>
+              <span className="axis-title">중앙 80% 밸런스 축</span>
+              <small>C3 / C4 전극</small>
+            </div>
+
+            <div className="butterfly-wing right-wing">
+              <div className="wing-header">
+                <span className="wing-badge">RIGHT 상상 (상태/도움) →</span>
+                <strong>통증·의료 및 감정</strong>
+              </div>
+              <div className="wing-leaves">
+                <div className={`leaf-pill ${currentNodeId === "PAIN" ? "active-right" : ""}`}>
+                  <span>🤕</span> 머리 아파요
+                </div>
+                <div className={`leaf-pill ${currentNodeId === "PAIN" ? "active-right" : ""}`}>
+                  <span>😣</span> 배가 아파요
+                </div>
+                <div className={`leaf-pill ${currentNodeId === "CARE" ? "active-right" : ""}`}>
+                  <span>🚨</span> 간호사 호출
+                </div>
+                <div className={`leaf-pill ${currentNodeId === "CARE" ? "active-right" : ""}`}>
+                  <span>❤️</span> 고마워요
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Dedicated Dual Option Selection Cards (Directly Above the Gauge) */}
+      <div className="comm-option-cards-container">
+        <button
+          disabled={isCommitting}
+          className={`option-card left-card ${activeDirection === "LEFT" ? "imagining" : ""}`}
+          onClick={() => select("LEFT")}
+        >
+          <div className="card-top-bar">
+            <span className="dir-tag">← LEFT (왼손 상상)</span>
+            <span className="electrode-tag">C4 전극</span>
+          </div>
+          <div className="card-body">
+            <span className="card-symbol">{currentNode.left.symbol}</span>
+            <div>
+              <strong className="card-label">{currentNode.left.label}</strong>
+              <small className="card-english">{currentNode.left.english}</small>
+              <p className="card-desc">{currentNode.left.desc}</p>
+            </div>
+          </div>
+          {activeDirection === "LEFT" && (
+            <div className="card-live-indicator left-ind">
+              <Check size={14} /> 왼손 상상 감지 중 ({left}%)
+            </div>
+          )}
+        </button>
+
+        <button
+          disabled={isCommitting}
+          className={`option-card right-card ${activeDirection === "RIGHT" ? "imagining" : ""}`}
+          onClick={() => select("RIGHT")}
+        >
+          <div className="card-top-bar">
+            <span className="dir-tag">RIGHT (오른손 상상) →</span>
+            <span className="electrode-tag">C3 전극</span>
+          </div>
+          <div className="card-body">
+            <span className="card-symbol">{currentNode.right.symbol}</span>
+            <div>
+              <strong className="card-label">{currentNode.right.label}</strong>
+              <small className="card-english">{currentNode.right.english}</small>
+              <p className="card-desc">{currentNode.right.desc}</p>
+            </div>
+          </div>
+          {activeDirection === "RIGHT" && (
+            <div className="card-live-indicator right-ind">
+              <Check size={14} /> 오른손 상상 감지 중 ({right}%)
+            </div>
+          )}
+        </button>
+      </div>
+
+      {/* User's Original 80% Balance Gauge */}
+      <div className="evidence-bars balance-gauge" aria-live="polite">
+        <div className="gauge-labels">
+          <strong className="left-gauge-label">왼쪽 상상: {left}%</strong>
+          <span>가운데(50%)에서 시작해 {THRESHOLD}%까지 채우면 선택이 확정됩니다</span>
+          <strong className="right-gauge-label">오른쪽 상상: {right}%</strong>
+        </div>
+        <div className="balance-track">
+          <i className="left-threshold" title="80% 임계점" />
+          <i className="right-threshold" title="80% 임계점" />
+          <em title="중앙 50%" />
+          <span className="left-half">
+            <b style={{ width: `${Math.max(0, (left - 50) * 2)}%` }} />
+          </span>
+          <span className="right-half">
+            <b style={{ width: `${Math.max(0, (right - 50) * 2)}%` }} />
+          </span>
+        </div>
+        <p className={uncertain ? "uncertain" : "ready"}>
+          {uncertain
+            ? `UNCERTAIN · ${THRESHOLD}%까지 같은 방향을 계속 상상하세요 (현재 최고: ${confidence}%).`
+            : `✓ ${THRESHOLD}% 선택 임계값에 도달했습니다!`}
+        </p>
+      </div>
+
+      {/* 3-Piece Neuro Suite: [ 1. Brain Map | 2. EEG Control Monitor | 3. Control Settings ] Under the Gauge! */}
+      <div className="comm-neuro-suite">
+        {/* 1. Left: Brain Stimulation Map (Atlas2D) */}
+        <div className="neuro-suite-card brain-box">
+          <div className="suite-card-header">
+            <span className="suite-card-title">
+              <Brain size={15} /> 뇌 자극 영역
+            </span>
+            <span className={`suite-badge ${activeDirection ? activeDirection.toLowerCase() : "idle"}`}>
+              {activeDirection ? `${activeDirection} 활성` : "IDLE"}
+            </span>
+          </div>
+          <div className="brain-canvas-wrap">
+            <Atlas2D
+              mode="5ch"
+              selected={activeDirection === "LEFT" ? "C4" : activeDirection === "RIGHT" ? "C3" : ""}
+              onSelect={() => {}}
+              direction={activeDirection}
+            />
+          </div>
+          <div className="suite-sub-note">
+            <span>{activeDirection === "LEFT" ? "C4 전극 반응 (우측 운동피질)" : activeDirection === "RIGHT" ? "C3 전극 반응 (좌측 운동피질)" : "좌·우 운동상상 대기"}</span>
           </div>
         </div>
 
-        <aside className="communication-rail">
-          <div className="communication-tree" aria-label="의사소통 선택 구조">
-            <div className="rail-title">선택 경로</div>
-            <div className="tree-root">질문</div>
-            <div className="tree-main-connector"><i /><span /><i /></div>
-            <div className="tree-branches">
-              <div className={branch === "BASIC" ? "active" : ""}>
-                <strong>기본 욕구</strong>
-                <div className="tree-child-connector"><i /><span /><i /></div>
-                <div className="tree-children"><span>목말라요. 물을 주세요.</span><span>배고파요.</span></div>
-              </div>
-              <div className={branch === "CARE" ? "active" : ""}>
-                <strong>상태·도움</strong>
-                <div className="tree-child-connector"><i /><span /><i /></div>
-                <div className="tree-children"><span>아파요. 도와주세요.</span><span>소리를 키워주세요.</span></div>
-              </div>
+        {/* 2. Center: EEG Control Monitor (5 Channels F3, F4, C3, Cz, C4) */}
+        <div className="neuro-suite-card wave-box">
+          <div className="suite-card-header">
+            <span className="suite-card-title">
+              <Activity size={15} /> ((o)) EEG Control Monitor
+            </span>
+            <div className="wave-status-tags">
+              <span className="wave-sub-tag">Synthetic EEG Demo · μV illustrative</span>
+              <strong className={`status-badge ${activeDirection ? activeDirection.toLowerCase() : "idle"}`}>
+                {activeDirection ? `${activeDirection} 활성` : "READY"}
+              </strong>
             </div>
-            <small>진한 선과 색은 현재 선택 경로입니다.</small>
           </div>
+          <Waveform
+            channels={MONITOR_CHANNELS}
+            playing={Boolean(activeDirection)}
+            phase={activeDirection === "RIGHT" ? 2.8 : 0.2}
+          />
+          <div className="monitor-meta-grid">
+            <div className="meta-item">
+              <span className="meta-key">Current Trial</span>
+              <span className="meta-val">{history.length + 1}</span>
+            </div>
+            <div className="meta-item">
+              <span className="meta-key">Target Direction</span>
+              <span className="meta-val highlight">{activeDirection || "READY"}</span>
+            </div>
+            <div className="meta-item">
+              <span className="meta-key">Active Channels</span>
+              <span className="meta-val mono">F3 · F4 · C3 · Cz · C4</span>
+            </div>
+            <div className="meta-item">
+              <span className="meta-key">TTA Status</span>
+              <span className="meta-val status-on">ON</span>
+            </div>
+          </div>
+        </div>
 
-        </aside>
+        {/* 3. Right: Control Settings (Settings2) */}
+        <div className="neuro-suite-card settings-box">
+          <Settings compact embedded />
+        </div>
       </div>
-
-      <div className="communication-output" aria-live="polite"><Volume2 size={24} /><div><span>VOICE OUTPUT</span><strong>“{result}”</strong></div></div>
-      <p className="communication-note">교육용 합성 명령 시뮬레이션이며 실제 EEG 추론 결과가 아닙니다.</p>
     </section>
   );
 }
+
+export default CommunicationBoard;

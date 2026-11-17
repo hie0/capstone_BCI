@@ -1,45 +1,190 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Float, RoundedBox } from "@react-three/drei";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Battery, Gem, Heart, Pause, Play, Radio, RotateCcw, Trophy } from "lucide-react";
-import type { Group } from "three";
-import { CatmullRomCurve3, MathUtils, Vector3 } from "three";
+import { ArrowLeft, ArrowRight, Battery, Brain, Heart, Pause, Play, Radio, RotateCcw, Sliders, Star, Trophy } from "lucide-react";
+import type { Group, Mesh } from "three";
+import { CatmullRomCurve3, MathUtils, Shape, Vector3 } from "three";
 import { useBCI } from "../store";
 import { configuredChannels } from "../data/channels";
 import type { Direction } from "../data/research";
 import { Settings, Waveform } from "./Controls";
 import { RecordedMetrics } from "./RecordedMetrics";
+import { Atlas2D } from "./Scenes";
 import "./NeuroRunner.css";
 
-type GamePhase = "READY" | "RUNNING" | "WAITING_FOR_COMMAND" | "MOVING" | "SUCCESS" | "COLLISION" | "MISSION_COMPLETE" | "GAME_OVER" | "PAUSED";
+type GamePhase = "READY" | "RUNNING" | "WAITING_FOR_COMMAND" | "SUCCESS" | "COLLISION" | "PASSING" | "MISSION_COMPLETE" | "GAME_OVER" | "PAUSED";
 type HistoryEntry = { id: number; trial: number; target: Direction; predicted: Direction; valid: boolean; success: boolean };
 const TOTAL_MANUAL_STAGES = 20;
 
-function Robot({ lane, phase }: { lane: Direction; phase: GamePhase }) {
+/**
+ * Fall Guys Style Cute Yellow Jelly Bean Character
+ */
+function JellyBeanCharacter({ lane, phase }: { lane: Direction; phase: GamePhase }) {
   const group = useRef<Group>(null);
+  const legLeft = useRef<Group>(null);
+  const legRight = useRef<Group>(null);
+  const armLeft = useRef<Group>(null);
+  const armRight = useRef<Group>(null);
+  const propeller = useRef<Mesh>(null);
+
   useFrame(({ clock }, delta) => {
     if (!group.current) return;
     const targetX = lane === "LEFT" ? -1.15 : 1.15;
-    group.current.position.x = MathUtils.damp(group.current.position.x, targetX, 8, delta);
-    const moving = ["RUNNING", "MOVING"].includes(phase);
-    group.current.position.y = 0.54 + Math.sin(clock.elapsedTime * (moving ? 9 : 3)) * (moving ? 0.06 : 0.025);
-    group.current.rotation.z = MathUtils.damp(group.current.rotation.z, phase === "COLLISION" ? 0.22 : 0, 9, delta);
+    group.current.position.x = MathUtils.damp(group.current.position.x, targetX, 12, delta);
+
+    const moving = phase === "RUNNING" || phase === "PASSING";
+    const runSpeed = moving ? 13 : 3.5;
+    const time = clock.elapsedTime;
+
+    if (propeller.current) {
+      propeller.current.rotation.y += delta * (moving ? 18 : 3.5);
+    }
+
+    if (moving) {
+      const roll = Math.sin(time * runSpeed) * 0.14;
+      group.current.rotation.z = MathUtils.damp(group.current.rotation.z, roll, 12, delta);
+      group.current.rotation.y = Math.cos(time * runSpeed) * 0.08;
+      group.current.rotation.x = MathUtils.damp(group.current.rotation.x, 0.08, 10, delta);
+      group.current.position.y = 0.62 + Math.abs(Math.sin(time * runSpeed)) * 0.09;
+
+      const legAngle = Math.sin(time * runSpeed) * 0.55;
+      if (legLeft.current) legLeft.current.rotation.x = legAngle;
+      if (legRight.current) legRight.current.rotation.x = -legAngle;
+
+      if (armLeft.current) armLeft.current.rotation.x = -legAngle * 0.7;
+      if (armRight.current) armRight.current.rotation.x = legAngle * 0.7;
+    } else if (phase === "COLLISION") {
+      group.current.position.y = MathUtils.damp(group.current.position.y, 0.38, 12, delta);
+      group.current.rotation.z = MathUtils.damp(group.current.rotation.z, 0.55, 12, delta);
+      group.current.rotation.x = MathUtils.damp(group.current.rotation.x, -0.65, 12, delta);
+      if (armLeft.current) armLeft.current.rotation.z = 0.8;
+      if (armRight.current) armRight.current.rotation.z = -0.8;
+    } else if (phase === "SUCCESS") {
+      group.current.position.y = 0.68 + Math.abs(Math.sin(time * 12)) * 0.18;
+      group.current.rotation.z = MathUtils.damp(group.current.rotation.z, 0, 12, delta);
+      group.current.rotation.x = MathUtils.damp(group.current.rotation.x, -0.1, 10, delta);
+      if (armLeft.current) armLeft.current.rotation.z = -0.7 + Math.sin(time * 12) * 0.3;
+      if (armRight.current) armRight.current.rotation.z = 0.7 - Math.sin(time * 12) * 0.3;
+    } else {
+      group.current.position.y = 0.6 + Math.sin(time * 3) * 0.025;
+      group.current.rotation.z = MathUtils.damp(group.current.rotation.z, 0, 8, delta);
+      group.current.rotation.x = MathUtils.damp(group.current.rotation.x, 0, 8, delta);
+      group.current.rotation.y = MathUtils.damp(group.current.rotation.y, 0, 8, delta);
+      if (legLeft.current) legLeft.current.rotation.x = 0;
+      if (legRight.current) legRight.current.rotation.x = 0;
+      if (armLeft.current) armLeft.current.rotation.set(0, 0, 0);
+      if (armRight.current) armRight.current.rotation.set(0, 0, 0);
+    }
   });
+
   return (
-    <group ref={group} position={[-1.15, .54, 2.2]} scale={1.18}>
-      <RoundedBox args={[.72, .66, .58]} radius={.2} smoothness={4} castShadow>
-        <meshStandardMaterial color={phase === "COLLISION" ? "#E3A07B" : "#4C8E88"} roughness={.38} />
-      </RoundedBox>
-      <mesh position={[0, .48, .02]} castShadow><sphereGeometry args={[.38, 32, 24]} /><meshStandardMaterial color="#FFFFFF" roughness={.28} /></mesh>
-      {[-.14, .14].map((x) => <mesh key={x} position={[x, .5, -.36]}><sphereGeometry args={[.045, 16, 16]} /><meshStandardMaterial color="#4CB6A4" emissive="#54D0BB" emissiveIntensity={1.8} /></mesh>)}
-      <mesh position={[0, .04, .302]}><circleGeometry args={[.1, 24]} /><meshStandardMaterial color="#66CBB7" emissive="#51BBA7" emissiveIntensity={1.1} /></mesh>
-      <mesh position={[0, .24, .302]}><boxGeometry args={[.52, .07, .025]} /><meshStandardMaterial color="#DDEBEA" /></mesh>
-      {[-.24,.24].map(x => <mesh key={`shoulder-${x}`} position={[x,.18,.3]} rotation={[0,0,x > 0 ? -.35 : .35]}><boxGeometry args={[.09,.26,.025]} /><meshStandardMaterial color="#DDEBEA" /></mesh>)}
-      <mesh position={[0, .88, 0]}><cylinderGeometry args={[.025,.025,.18,12]} /><meshStandardMaterial color="#496C73" /></mesh>
-      <mesh position={[0, .99, 0]}><sphereGeometry args={[.055,12,12]} /><meshStandardMaterial color="#64C8B4" emissive="#64C8B4" emissiveIntensity={1.3} /></mesh>
-      {[-.25, .25].map((x) => <mesh key={x} position={[x, -.43, 0]}><capsuleGeometry args={[.08, .28, 5, 12]} /><meshStandardMaterial color="#E7EEF2" /></mesh>)}
-      {[-.25, .25].map((x) => <mesh key={`boot-${x}`} position={[x, -.65, .06]}><sphereGeometry args={[.12,16,12]} /><meshStandardMaterial color="#294F5A" /></mesh>)}
-      {[-.43, .43].map((x) => <mesh key={x} position={[x, .02, 0]} rotation={[0,0,Math.PI / 2]}><capsuleGeometry args={[.065, .26, 5, 12]} /><meshStandardMaterial color="#D8E5E7" /></mesh>)}
+    <group ref={group} position={[-1.15, 0.6, 2.2]} scale={1.22}>
+      {/* Cute Lemon Yellow Jelly Bean Body */}
+      <mesh castShadow position={[0, 0.15, 0]}>
+        <capsuleGeometry args={[0.38, 0.48, 16, 24]} />
+        <meshStandardMaterial
+          color={phase === "COLLISION" ? "#FCA5A5" : "#FACC15"}
+          roughness={0.28}
+          metalness={0.04}
+        />
+      </mesh>
+
+      {/* Cute White Tail Accent */}
+      <mesh position={[0, -0.06, 0.28]}>
+        <sphereGeometry args={[0.16, 16, 14]} />
+        <meshStandardMaterial color="#FFFFFF" roughness={0.35} />
+      </mesh>
+
+      {/* Propeller Beanie (Red & Orange Hat on head) */}
+      <group position={[0, 0.72, 0]}>
+        <mesh position={[0, 0.02, 0]}>
+          <sphereGeometry args={[0.2, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial color="#FB923C" roughness={0.3} />
+        </mesh>
+        <mesh position={[0, 0.08, 0]}>
+          <cylinderGeometry args={[0.02, 0.02, 0.1, 10]} />
+          <meshStandardMaterial color="#333333" />
+        </mesh>
+        <mesh ref={propeller} position={[0, 0.13, 0]}>
+          <boxGeometry args={[0.54, 0.02, 0.08]} />
+          <meshStandardMaterial color="#EF4444" roughness={0.25} />
+        </mesh>
+      </group>
+
+      {/* Toned-down Sage BCI Sensor Headband */}
+      <mesh position={[0, 0.58, 0]}>
+        <torusGeometry args={[0.385, 0.028, 12, 32]} />
+        <meshStandardMaterial color="#4D7C5F" roughness={0.35} />
+      </mesh>
+      {[-0.22, 0, 0.22].map((x, i) => (
+        <mesh key={i} position={[x, 0.6, 0.34]}>
+          <sphereGeometry args={[0.045, 14, 12]} />
+          <meshStandardMaterial color="#38BDF8" emissive="#0284C7" emissiveIntensity={1.8} />
+        </mesh>
+      ))}
+
+      {/* Mini Green/Mint Backpack */}
+      <group position={[0, 0.16, 0.32]}>
+        <RoundedBox args={[0.36, 0.38, 0.15]} radius={0.06} smoothness={3} castShadow>
+          <meshStandardMaterial color="#10B981" roughness={0.3} />
+        </RoundedBox>
+        <mesh position={[0, -0.04, 0.08]}>
+          <boxGeometry args={[0.26, 0.18, 0.04]} />
+          <meshStandardMaterial color="#F0FDF4" roughness={0.3} />
+        </mesh>
+        <mesh position={[0, 0.1, 0.08]}>
+          <sphereGeometry args={[0.035, 12, 12]} />
+          <meshStandardMaterial color="#FACC15" emissive="#EAB308" emissiveIntensity={2.2} />
+        </mesh>
+      </group>
+
+      {/* Left Leg & Shoe */}
+      <group ref={legLeft} position={[-0.18, -0.22, 0]}>
+        <mesh position={[0, -0.14, 0]} castShadow>
+          <capsuleGeometry args={[0.085, 0.18, 8, 12]} />
+          <meshStandardMaterial color="#FACC15" roughness={0.3} />
+        </mesh>
+        <mesh position={[0, -0.27, 0.04]} castShadow>
+          <sphereGeometry args={[0.13, 16, 12]} />
+          <meshStandardMaterial color="#365314" roughness={0.35} />
+        </mesh>
+      </group>
+
+      {/* Right Leg & Shoe */}
+      <group ref={legRight} position={[0.18, -0.22, 0]}>
+        <mesh position={[0, -0.14, 0]} castShadow>
+          <capsuleGeometry args={[0.085, 0.18, 8, 12]} />
+          <meshStandardMaterial color="#FACC15" roughness={0.3} />
+        </mesh>
+        <mesh position={[0, -0.27, 0.04]} castShadow>
+          <sphereGeometry args={[0.13, 16, 12]} />
+          <meshStandardMaterial color="#365314" roughness={0.35} />
+        </mesh>
+      </group>
+
+      {/* Left Arm */}
+      <group ref={armLeft} position={[-0.38, 0.18, 0.05]}>
+        <mesh rotation={[0, 0, 0.35]} castShadow>
+          <capsuleGeometry args={[0.07, 0.22, 6, 10]} />
+          <meshStandardMaterial color="#FACC15" roughness={0.3} />
+        </mesh>
+        <mesh position={[-0.08, -0.14, 0]}>
+          <sphereGeometry args={[0.09, 12, 10]} />
+          <meshStandardMaterial color="#FFFFFF" roughness={0.4} />
+        </mesh>
+      </group>
+
+      {/* Right Arm */}
+      <group ref={armRight} position={[0.38, 0.18, 0.05]}>
+        <mesh rotation={[0, 0, -0.35]} castShadow>
+          <capsuleGeometry args={[0.07, 0.22, 6, 10]} />
+          <meshStandardMaterial color="#FACC15" roughness={0.3} />
+        </mesh>
+        <mesh position={[0.08, -0.14, 0]}>
+          <sphereGeometry args={[0.09, 12, 10]} />
+          <meshStandardMaterial color="#FFFFFF" roughness={0.4} />
+        </mesh>
+      </group>
     </group>
   );
 }
@@ -47,64 +192,299 @@ function Robot({ lane, phase }: { lane: Direction; phase: GamePhase }) {
 function RunnerCamera() {
   const { camera } = useThree();
   useEffect(() => {
-    camera.position.set(0, 3.4, 7.2);
-    camera.lookAt(0, .35, -2);
+    camera.position.set(0, 3.5, 7.3);
+    camera.lookAt(0, 0.45, -2);
     camera.updateProjectionMatrix();
   }, [camera]);
   return null;
 }
 
-const ROAD_LENGTH = 2.76;
-const ROAD_COUNT = 12;
+/**
+ * Continuous Seamless Track with Toned-down Green / Olive Guardrails
+ */
+const ROAD_LENGTH = 3.0;
+const ROAD_COUNT = 16;
 function RoadTile({ index, moving }: { index: number; moving: boolean }) {
   const tile = useRef<Group>(null);
   useFrame((_, delta) => {
     if (!tile.current || !moving) return;
-    tile.current.position.z += delta * 2.2;
-    if (tile.current.position.z > 4.35)
+    tile.current.position.z += delta * 2.8;
+    if (tile.current.position.z > 6.0) {
       tile.current.position.z -= ROAD_LENGTH * ROAD_COUNT;
+    }
   });
+
+  const isEven = index % 2 === 0;
   return (
-    <group ref={tile} position={[0, 0, 3.1 - index * ROAD_LENGTH]}>
-      <RoundedBox args={[3.4, .22, 2.8]} radius={.08} smoothness={3} receiveShadow>
-        <meshStandardMaterial color={index % 2 ? "#68838E" : "#718B95"} roughness={.68} metalness={.08} />
-      </RoundedBox>
-      <mesh position={[0, .13, 0]}><boxGeometry args={[.045, .025, 2.58]} /><meshStandardMaterial color="#C5DDD8" emissive="#83BFB3" emissiveIntensity={.35} /></mesh>
-      {[-1.72, 1.72].map(x => <mesh key={x} position={[x, .22, 0]}><boxGeometry args={[.07, .22, 2.64]} /><meshStandardMaterial color="#4F7883" emissive="#5BAA9B" emissiveIntensity={.45} /></mesh>)}
-      {[-.82,.82].map(x => <mesh key={`lane-${x}`} position={[x,.125,0]}><boxGeometry args={[.018,.015,1.25]} /><meshStandardMaterial color="#91ADA9" transparent opacity={.55}/></mesh>)}
+    <group ref={tile} position={[0, 0, 4.5 - index * ROAD_LENGTH]}>
+      {/* Floor Block: Toned-down Soft Sage and Light Cream */}
+      <mesh receiveShadow position={[0, -0.1, 0]}>
+        <boxGeometry args={[3.6, 0.2, ROAD_LENGTH]} />
+        <meshStandardMaterial
+          color={isEven ? "#86B393" : "#EDE6CE"}
+          roughness={0.45}
+          metalness={0.02}
+        />
+      </mesh>
+
+      {/* Center White Line */}
+      <mesh position={[0, 0.005, 0]}>
+        <boxGeometry args={[0.08, 0.01, ROAD_LENGTH]} />
+        <meshStandardMaterial color="#FFFFFF" roughness={0.3} />
+      </mesh>
+
+      {/* Toned-down Green Pillars / Guardrails on both sides */}
+      {[-1.82, 1.82].map((x) => (
+        <group key={x} position={[x, 0.18, 0]}>
+          <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <cylinderGeometry args={[0.14, 0.14, ROAD_LENGTH, 16]} />
+            <meshStandardMaterial
+              color="#4D7C5F"
+              roughness={0.35}
+            />
+          </mesh>
+          <mesh position={[0, -0.14, 0]}>
+            <cylinderGeometry args={[0.06, 0.07, 0.24, 10]} />
+            <meshStandardMaterial color="#E2E8F0" roughness={0.4} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Lane divider soft dots */}
+      {[-0.92, 0.92].map((x) => (
+        <group key={`dots-${x}`}>
+          {[-0.75, 0.75].map((z) => (
+            <mesh key={z} position={[x, 0.01, z]}>
+              <cylinderGeometry args={[0.07, 0.07, 0.015, 14]} />
+              <meshStandardMaterial color="#FFFFFF" transparent opacity={0.65} />
+            </mesh>
+          ))}
+        </group>
+      ))}
     </group>
   );
 }
 
-function Bomb({ x }: { x: number }) {
-  const fuse = useMemo(() => new CatmullRomCurve3([
-    new Vector3(.1,.35,0), new Vector3(.2,.58,.02), new Vector3(.42,.7,.03), new Vector3(.5,.54,.04),
+/**
+ * Cartoon Bomb Obstacle
+ */
+function CartoonBomb({ x, isHit }: { x: number; isHit: boolean }) {
+  const fuseCurve = useMemo(() => new CatmullRomCurve3([
+    new Vector3(0.05, 0.42, 0),
+    new Vector3(0.16, 0.62, 0.02),
+    new Vector3(0.35, 0.74, 0.04),
+    new Vector3(0.48, 0.64, 0.05),
   ]), []);
+
+  const bombRef = useRef<Group>(null);
+  const sparkRef = useRef<Mesh>(null);
+
+  useFrame(({ clock }, delta) => {
+    if (bombRef.current) {
+      const targetScale = isHit ? 1.45 : 1.0;
+      bombRef.current.scale.x = MathUtils.damp(bombRef.current.scale.x, targetScale, 15, delta);
+      bombRef.current.scale.y = MathUtils.damp(bombRef.current.scale.y, targetScale, 15, delta);
+      bombRef.current.scale.z = MathUtils.damp(bombRef.current.scale.z, targetScale, 15, delta);
+    }
+    if (sparkRef.current) {
+      const s = 0.85 + Math.sin(clock.elapsedTime * 24) * 0.35;
+      sparkRef.current.scale.set(s, s, s);
+    }
+  });
+
   return (
-    <group position={[x,.62,0]}>
-      <mesh castShadow scale={[1,1,.92]}><sphereGeometry args={[.43,32,24]} /><meshStandardMaterial color="#171D21" roughness={.42} metalness={.25} /></mesh>
-      <mesh position={[.08,.39,0]} rotation={[0,0,-.32]} castShadow><cylinderGeometry args={[.14,.17,.2,18]} /><meshStandardMaterial color="#30383D" roughness={.5}/></mesh>
-      <mesh><tubeGeometry args={[fuse,24,.035,8,false]} /><meshStandardMaterial color="#B66E3D" roughness={.48}/></mesh>
-      <mesh position={[.51,.54,.04]}><sphereGeometry args={[.09,16,14]} /><meshStandardMaterial color="#FFB13B" emissive="#FF572F" emissiveIntensity={2.6}/></mesh>
-      <pointLight position={[.51,.54,.1]} color="#FF6B3D" intensity={3.2} distance={2}/>
+    <group ref={bombRef} position={[x, 0.64, 0]}>
+      <mesh castShadow>
+        <sphereGeometry args={[0.48, 32, 24]} />
+        <meshStandardMaterial
+          color={isHit ? "#EF4444" : "#1E293B"}
+          emissive={isHit ? "#DC2626" : "#000000"}
+          emissiveIntensity={isHit ? 1.8 : 0}
+          roughness={0.32}
+          metalness={0.2}
+        />
+      </mesh>
+      <mesh position={[0.06, 0.42, 0]} rotation={[0, 0, -0.15]} castShadow>
+        <cylinderGeometry args={[0.16, 0.19, 0.16, 18]} />
+        <meshStandardMaterial color="#FBBF24" metalness={0.7} roughness={0.25} />
+      </mesh>
+      <mesh>
+        <tubeGeometry args={[fuseCurve, 20, 0.038, 8, false]} />
+        <meshStandardMaterial color="#D97706" roughness={0.6} />
+      </mesh>
+      <mesh ref={sparkRef} position={[0.48, 0.64, 0.05]}>
+        <sphereGeometry args={[0.11, 16, 14]} />
+        <meshStandardMaterial color="#EF4444" emissive="#F59E0B" emissiveIntensity={3.2} />
+      </mesh>
+      <pointLight position={[0.48, 0.64, 0.12]} color={isHit ? "#EF4444" : "#F59E0B"} intensity={isHit ? 12 : 4.5} distance={3} />
     </group>
   );
 }
 
+/**
+ * 3D Golden Star Coin Collectible
+ */
+function GoldenStarCoin({ x, isCollected }: { x: number; isCollected: boolean }) {
+  const starShape = useMemo(() => {
+    const shape = new Shape();
+    const points = 5;
+    const outerRadius = 0.52;
+    const innerRadius = 0.25;
+    for (let i = 0; i < points * 2; i++) {
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
+      const angle = (i * Math.PI) / points - Math.PI / 2;
+      const px = Math.cos(angle) * radius;
+      const py = Math.sin(angle) * radius;
+      if (i === 0) shape.moveTo(px, py);
+      else shape.lineTo(px, py);
+    }
+    shape.closePath();
+    return shape;
+  }, []);
+
+  const starGroup = useRef<Group>(null);
+  const starMesh = useRef<Mesh>(null);
+
+  useFrame((_, delta) => {
+    if (starMesh.current) {
+      starMesh.current.rotation.y += delta * (isCollected ? 8.5 : 2.2);
+    }
+    if (starGroup.current) {
+      if (isCollected) {
+        starGroup.current.position.y = MathUtils.damp(starGroup.current.position.y, 1.6, 10, delta);
+        const curScale = starGroup.current.scale.x;
+        const targetScale = MathUtils.damp(curScale, 1.4, 10, delta);
+        starGroup.current.scale.set(targetScale, targetScale, targetScale);
+      } else {
+        starGroup.current.position.y = 0.9;
+        starGroup.current.scale.set(1, 1, 1);
+      }
+    }
+  });
+
+  return (
+    <Float speed={2.8} rotationIntensity={0.2} floatIntensity={0.3}>
+      <group ref={starGroup} position={[x, 0.9, 0]}>
+        <mesh ref={starMesh} castShadow position={[0, 0, -0.09]}>
+          <extrudeGeometry
+            args={[
+              starShape,
+              { depth: 0.18, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.04, bevelThickness: 0.04 },
+            ]}
+          />
+          <meshStandardMaterial
+            color="#FBBF24"
+            emissive={isCollected ? "#FDE047" : "#D97706"}
+            emissiveIntensity={isCollected ? 1.5 : 0.45}
+            metalness={0.88}
+            roughness={0.16}
+          />
+        </mesh>
+        <mesh position={[0, 0, 0.14]}>
+          <sphereGeometry args={[0.07, 14, 12]} />
+          <meshStandardMaterial color="#FFFFFF" emissive="#FEF08A" emissiveIntensity={2.5} />
+        </mesh>
+        <pointLight position={[0, 0, 0.25]} color="#FDE047" intensity={isCollected ? 14 : 5} distance={4} />
+      </group>
+    </Float>
+  );
+}
+
+/**
+ * Obstacle Track Group
+ */
+function ObstacleStageGroup({
+  safeLane,
+  phase,
+  progress,
+}: {
+  safeLane: Direction;
+  phase: GamePhase;
+  progress: number;
+}) {
+  const obstacleLane = safeLane === "LEFT" ? 1.15 : -1.15;
+  const starLane = safeLane === "LEFT" ? -1.15 : 1.15;
+  const group = useRef<Group>(null);
+
+  useFrame((_, delta) => {
+    if (!group.current) return;
+    let targetZ = -18;
+    if (phase === "RUNNING") {
+      targetZ = -18 + progress * 18.5;
+    } else if (["WAITING_FOR_COMMAND", "SUCCESS", "COLLISION"].includes(phase)) {
+      targetZ = 0.5;
+    } else if (phase === "PASSING") {
+      targetZ = 4.8;
+    } else if (phase === "READY" || phase === "PAUSED") {
+      targetZ = -18;
+    }
+    group.current.position.z = MathUtils.damp(
+      group.current.position.z,
+      targetZ,
+      phase === "PASSING" ? 7 : 7.5,
+      delta
+    );
+  });
+
+  return (
+    <group ref={group} position={[0, 0.38, -18]}>
+      <CartoonBomb x={obstacleLane} isHit={phase === "COLLISION"} />
+      <GoldenStarCoin x={starLane} isCollected={phase === "SUCCESS"} />
+    </group>
+  );
+}
+
+/**
+ * Clear Sky Blue Environment with Clear White Clouds
+ */
 function RunnerWorld() {
   const clouds = [
-    [-3.8, 1.8, 1], [3.9, 2.35, -1.8], [-4.5, 2.7, -5.4],
-    [4.4, 1.7, -8.5], [-3.7, 2.15, -12], [3.8, 2.8, -15],
+    [-4.5, 2.8, 1], [4.4, 3.2, -2.5], [-5.2, 3.8, -7],
+    [5.0, 3.0, -11], [-4.8, 3.6, -16], [4.8, 4.0, -21],
   ] as const;
+
   return (
     <group>
-      {clouds.map(([x,y,z], index) => (
-        <Float key={`${x}-${z}`} speed={.45 + index * .04} rotationIntensity={.03} floatIntensity={.12}>
-          <group position={[x,y,z]} scale={index % 2 ? 1.05 : .85}>
-            <mesh position={[-.55,0,0]}><sphereGeometry args={[.58,20,14]}/><meshStandardMaterial color="#FFFFFF" transparent opacity={.88} roughness={1}/></mesh>
-            <mesh position={[0,.2,.02]}><sphereGeometry args={[.78,20,14]}/><meshStandardMaterial color="#F8FCFD" transparent opacity={.92} roughness={1}/></mesh>
-            <mesh position={[.7,.02,0]}><sphereGeometry args={[.52,20,14]}/><meshStandardMaterial color="#FFFFFF" transparent opacity={.86} roughness={1}/></mesh>
-            <mesh position={[.05,-.18,0]} scale={[1.7,.5,.72]}><sphereGeometry args={[.72,20,14]}/><meshStandardMaterial color="#F3FAFB" transparent opacity={.9} roughness={1}/></mesh>
+      {clouds.map(([x, y, z], index) => (
+        <Float key={`${x}-${z}`} speed={0.35 + index * 0.04} rotationIntensity={0.03} floatIntensity={0.12}>
+          <group position={[x, y, z]} scale={index % 2 ? 1.25 : 1.05}>
+            <mesh position={[-0.55, 0, 0]}>
+              <sphereGeometry args={[0.68, 20, 16]} />
+              <meshStandardMaterial color="#FFFFFF" roughness={0.9} />
+            </mesh>
+            <mesh position={[0, 0.22, 0.02]}>
+              <sphereGeometry args={[0.88, 20, 16]} />
+              <meshStandardMaterial color="#FFFFFF" roughness={0.9} />
+            </mesh>
+            <mesh position={[0.68, 0.02, 0]}>
+              <sphereGeometry args={[0.62, 20, 16]} />
+              <meshStandardMaterial color="#FFFFFF" roughness={0.9} />
+            </mesh>
+            <mesh position={[0.05, -0.18, 0]} scale={[1.7, 0.5, 0.75]}>
+              <sphereGeometry args={[0.82, 20, 16]} />
+              <meshStandardMaterial color="#FFFFFF" roughness={0.9} />
+            </mesh>
+          </group>
+        </Float>
+      ))}
+
+      {/* Floating Balloons */}
+      {[
+        [-3.6, 5.0, -9, "#10B981"],
+        [3.8, 5.4, -13, "#38BDF8"],
+        [-2.8, 5.8, -17, "#FBBF24"],
+        [3.2, 5.2, -7, "#6EE7B7"],
+      ].map(([x, y, z, color], idx) => (
+        <Float key={`balloon-${idx}`} speed={0.5 + idx * 0.1} floatIntensity={0.3}>
+          <group position={[Number(x), Number(y), Number(z)]}>
+            <mesh>
+              <sphereGeometry args={[0.44, 18, 14]} />
+              <meshStandardMaterial color={String(color)} roughness={0.25} />
+            </mesh>
+            <mesh position={[0, -0.48, 0]}>
+              <cylinderGeometry args={[0.015, 0.015, 0.36, 8]} />
+              <meshStandardMaterial color="#FFFFFF" transparent opacity={0.65} />
+            </mesh>
           </group>
         </Float>
       ))}
@@ -112,40 +492,37 @@ function RunnerWorld() {
   );
 }
 
-function RunnerScene({ lane, safeLane, phase, stage }: { lane: Direction; safeLane: Direction; phase: GamePhase; stage: number }) {
-  const moving = phase === "RUNNING";
-  const obstacleLane = safeLane === "LEFT" ? 1.15 : -1.15;
-  const crystalLane = safeLane === "LEFT" ? -1.15 : 1.15;
+function RunnerScene({
+  lane,
+  safeLane,
+  phase,
+  progress,
+}: {
+  lane: Direction;
+  safeLane: Direction;
+  phase: GamePhase;
+  progress: number;
+}) {
+  const moving = phase === "RUNNING" || phase === "PASSING";
+
   return (
     <>
       <RunnerCamera />
-      <color attach="background" args={["#EAF2F6"]} />
-      <fog attach="fog" args={["#EAF2F6", 8, 19]} />
-      <ambientLight intensity={1.8} />
-      <directionalLight position={[4, 8, 5]} intensity={3.3} castShadow />
-      <pointLight position={[0, 2, -2]} intensity={7} color="#8CCAC0" />
+      <color attach="background" args={["#BAE6FD"]} />
+      <fog attach="fog" args={["#BAE6FD", 12, 28]} />
+
+      <ambientLight intensity={2.4} />
+      <directionalLight position={[5, 10, 6]} intensity={3.5} castShadow />
+      <pointLight position={[0, 4, -2]} intensity={5} color="#FEF08A" />
+
       <RunnerWorld />
-      {Array.from({ length: ROAD_COUNT }, (_, i) => <RoadTile key={i} index={i} moving={moving} />)}
-      <group position={[0, .38, -.8]}>
-        <Bomb x={obstacleLane} />
-        <Float speed={2.6} rotationIntensity={1.2} floatIntensity={.3}>
-          <group position={[crystalLane, .82, 0]}>
-            <mesh position={[0,.2,0]} castShadow>
-              <cylinderGeometry args={[.34,.62,.3,8,1,false]} /><meshStandardMaterial color="#A7F7F0" emissive="#41D9D0" emissiveIntensity={1.8} metalness={.18} roughness={.12} flatShading />
-            </mesh>
-            <mesh position={[0,-.27,0]} castShadow>
-              <cylinderGeometry args={[.62,.025,.66,8,1,false]} /><meshStandardMaterial color="#4ED5E4" emissive="#18B8C9" emissiveIntensity={2.1} metalness={.22} roughness={.1} flatShading />
-            </mesh>
-            <mesh position={[0,.37,0]}><cylinderGeometry args={[.34,.34,.025,8]} /><meshBasicMaterial color="#E6FFFF" transparent opacity={.9}/></mesh>
-            <mesh position={[-.35,.24,.38]} rotation={[0,0,Math.PI/4]}><boxGeometry args={[.03,.3,.02]}/><meshBasicMaterial color="#FFFFFF"/></mesh>
-            <mesh position={[-.35,.24,.38]} rotation={[0,0,-Math.PI/4]}><boxGeometry args={[.03,.3,.02]}/><meshBasicMaterial color="#FFFFFF"/></mesh>
-          </group>
-          <pointLight position={[crystalLane,.82,.3]} color="#4FFFE0" intensity={7} distance={4} />
-        </Float>
-      </group>
-      <Robot lane={lane} phase={phase} />
-      <mesh position={[0, 3.1, -6]}><planeGeometry args={[7, 2]} /><meshBasicMaterial color="#DCEAF0" transparent opacity={.24} /></mesh>
-      <group position={[0, .15, -7.5]}>{Array.from({length: 9},(_,i)=><mesh key={`${stage}-${i}`} position={[(i%3-1)*1.7, Math.floor(i/3)*.65, 0]}><boxGeometry args={[.12,.12,.12]} /><meshStandardMaterial color="#79AAA4" emissive="#79AAA4" emissiveIntensity={.8}/></mesh>)}</group>
+
+      {Array.from({ length: ROAD_COUNT }, (_, i) => (
+        <RoadTile key={i} index={i} moving={moving} />
+      ))}
+
+      <ObstacleStageGroup safeLane={safeLane} phase={phase} progress={progress} />
+      <JellyBeanCharacter lane={lane} phase={phase} />
     </>
   );
 }
@@ -164,10 +541,20 @@ export default function NeuroRunner() {
   const [avoided, setAvoided] = useState(0);
   const [collisions, setCollisions] = useState(0);
   const [excluded, setExcluded] = useState(0);
+  const [progress, setProgress] = useState(0);
   const processedTrial = useRef<number | null>(null);
   const timers = useRef<number[]>([]);
+  const animFrame = useRef<number | null>(null);
   const channels = recorded && s.recordedPrediction?.active_channels?.length ? s.recordedPrediction.active_channels : configuredChannels(s.channelMode);
-  const clearTimers = () => { timers.current.forEach(window.clearTimeout); timers.current = []; };
+
+  const clearTimers = () => {
+    timers.current.forEach(window.clearTimeout);
+    timers.current = [];
+    if (animFrame.current) {
+      cancelAnimationFrame(animFrame.current);
+      animFrame.current = null;
+    }
+  };
   const later = (fn: () => void, delay: number) => { timers.current.push(window.setTimeout(fn, delay)); };
   const chooseSafeLane = useCallback((): Direction => Math.random() > .5 ? "LEFT" : "RIGHT", []);
 
@@ -176,38 +563,63 @@ export default function NeuroRunner() {
     s.stop();
     if (recorded) s.setSettings({ inputMode: "recorded" });
     setPhase("READY"); setStage(1); setScore(0); setLives(3); setLane("LEFT"); setSafeLane(chooseSafeLane());
-    setHistory([]); setAvoided(0); setCollisions(0); setExcluded(0); processedTrial.current = null;
+    setHistory([]); setAvoided(0); setCollisions(0); setExcluded(0); setProgress(0); processedTrial.current = null;
   };
 
   useEffect(() => {
     clearTimers();
     s.stop();
     setPhase("READY"); setStage(1); setScore(0); setLives(3); setLane("LEFT"); setSafeLane(chooseSafeLane());
-    setHistory([]); setAvoided(0); setCollisions(0); setExcluded(0); processedTrial.current = null;
+    setHistory([]); setAvoided(0); setCollisions(0); setExcluded(0); setProgress(0); processedTrial.current = null;
   }, [s.participantId, s.sessionId, s.channelMode, s.recordedLowChannel, s.ttaEnabled, s.inputMode, chooseSafeLane]);
   useEffect(() => () => clearTimers(), []);
 
   const beginStage = useCallback(() => {
     setPhase("RUNNING");
+    setProgress(0);
     const runningTime = s.inputMode === "manual" ? 3400 : 3400 / s.speed;
-    later(() => setPhase("WAITING_FOR_COMMAND"), runningTime);
+    const startTime = performance.now();
+
+    const updateProg = (now: number) => {
+      const elapsed = now - startTime;
+      const p = Math.min(1, elapsed / runningTime);
+      setProgress(p);
+      if (p < 1) {
+        animFrame.current = requestAnimationFrame(updateProg);
+      } else {
+        setPhase("WAITING_FOR_COMMAND");
+      }
+    };
+    animFrame.current = requestAnimationFrame(updateProg);
   }, [s.inputMode, s.speed]);
 
   const finishStage = useCallback((direction: Direction, target: Direction, trial = stage, valid = true) => {
     if (!valid) { setExcluded(v => v + 1); setPhase("WAITING_FOR_COMMAND"); return; }
-    setLane(direction); setPhase("MOVING");
+    setLane(direction);
+    const success = direction === target;
+    setHistory(old => [{ id: old.length + 1, trial, target, predicted: direction, valid, success }, ...old]);
+
+    if (success) {
+      setScore(v => v + 10);
+      setAvoided(v => v + 1);
+      setPhase("SUCCESS");
+    } else {
+      setCollisions(v => v + 1);
+      setLives(v => recorded ? v : Math.max(0, v - 1));
+      setPhase("COLLISION");
+    }
+
     later(() => {
-      const success = direction === target;
-      setHistory(old => [{ id: old.length + 1, trial, target, predicted: direction, valid, success }, ...old]);
-      if (success) { setScore(v => v + 10); setAvoided(v => v + 1); setPhase("SUCCESS"); }
-      else { setCollisions(v => v + 1); setLives(v => recorded ? v : Math.max(0, v - 1)); setPhase("COLLISION"); }
+      setPhase("PASSING");
       later(() => {
         const nextLives = success || recorded ? lives : lives - 1;
         if (!recorded && nextLives <= 0) { setPhase("GAME_OVER"); return; }
         if (trial >= totalStages) { setPhase("MISSION_COMPLETE"); return; }
-        setStage(v => v + 1); setSafeLane(chooseSafeLane()); beginStage();
-      }, 700);
-    }, 560);
+        setStage(v => v + 1);
+        setSafeLane(chooseSafeLane());
+        beginStage();
+      }, 500);
+    }, 700);
   }, [beginStage, chooseSafeLane, lives, recorded, stage, totalStages]);
 
   const start = () => {
@@ -259,57 +671,95 @@ export default function NeuroRunner() {
   }, [recorded, validTrials.length, leftRecall, rightRecall]);
   const percent = (v: number | null) => v === null ? "—" : `${(v * 100).toFixed(1)}%`;
 
+  const activeStimulusDirection = s.recordedPrediction?.predicted_direction ?? (phase === "WAITING_FOR_COMMAND" ? undefined : lane);
+
   return (
     <div className="neuro-runner">
       <section className="runner-shell panel">
-        <div className="runner-titlebar">
-          <div><span className="eyebrow">APPLICATION 02</span><h2>Neuro Runner</h2><p>LEFT / RIGHT 운동 상상 명령으로 로봇을 움직여 장애물을 피하세요.</p></div>
+        <div className="runner-titlebar application-heading">
+          <div><span className="eyebrow">APPLICATION 02</span><h2>Neuro Runner</h2><p>LEFT / RIGHT 운동 상상 명령으로 젤리빈을 움직여 폭탄을 피하고 황금 별을 획득하세요.</p></div>
           <div className="runner-title-actions">
             {phase === "READY" || phase === "PAUSED" ? <button className="button primary" onClick={start}><Play size={15}/> Start</button> : <button className="button primary" onClick={pause}><Pause size={15}/> Pause</button>}
             <button className="button subtle" onClick={resetGame}><RotateCcw size={14}/> Reset</button>
           </div>
         </div>
+
         <div className="runner-console">
-          <div className="runner-play-area">
-            <div className={`runner-canvas phase-${phase.toLowerCase()}`}>
-              <Canvas shadows camera={{ position: [0, 3.4, 7.2], fov: 40 }}><RunnerScene lane={lane} safeLane={safeLane} phase={phase} stage={stage}/></Canvas>
-              <div className="runner-hud">
-                <div><Trophy size={15}/><span>Score</span><strong>{score}</strong></div>
-                <div><Battery size={15}/><span>Stage</span><strong>{stage} / {totalStages}</strong></div>
-                <div><Heart size={15}/><span>Lives</span><strong>{recorded ? "∞" : "♥".repeat(lives) || "0"}</strong></div>
-                <div><Radio size={15}/><span>Command</span><strong>{s.recordedPrediction?.predicted_direction ?? (phase === "WAITING_FOR_COMMAND" ? "WAITING" : lane)}</strong></div>
+          {/* Top Row: Main 3D Canvas (Left) + Brain Stimulation EEG Map (Right Up!) */}
+          <div className="runner-stage-row">
+            <div className="runner-play-area">
+              <div className={`runner-canvas phase-${phase.toLowerCase()}`}>
+                <Canvas shadows camera={{ position: [0, 3.5, 7.3], fov: 40 }}>
+                  <RunnerScene lane={lane} safeLane={safeLane} phase={phase} progress={progress} />
+                </Canvas>
+                <div className="runner-hud">
+                  <div><Trophy size={15}/><span>Score</span><strong>{score}</strong></div>
+                  <div><Battery size={15}/><span>Stage</span><strong>{stage} / {totalStages}</strong></div>
+                  <div><Heart size={15}/><span>Lives</span><strong>{recorded ? "∞" : "♥".repeat(lives) || "0"}</strong></div>
+                  <div><Radio size={15}/><span>Command</span><strong>{s.recordedPrediction?.predicted_direction ?? (phase === "WAITING_FOR_COMMAND" ? "WAITING" : lane)}</strong></div>
+                </div>
+
+                {/* Embedded Mini Brain Stimulation Box (Rounded Square Inside Canvas) */}
+                <div className="runner-mini-brain-box" title="실시간 뇌 활성화 맵">
+                  <div className="mini-brain-header">
+                    <Brain size={12} />
+                    <span>EEG Map</span>
+                    <span className={`mini-brain-dot ${activeStimulusDirection ? activeStimulusDirection.toLowerCase() : "idle"}`} />
+                  </div>
+                  <div className="mini-brain-svg-wrap">
+                    <Atlas2D
+                      mode={s.channelMode}
+                      selected={activeStimulusDirection === "LEFT" ? "C4" : activeStimulusDirection === "RIGHT" ? "C3" : ""}
+                      onSelect={() => {}}
+                      direction={activeStimulusDirection}
+                    />
+                  </div>
+                  <span className="mini-brain-label">
+                    {activeStimulusDirection ? (activeStimulusDirection === "LEFT" ? "C4 활성" : "C3 활성") : "대기 중"}
+                  </span>
+                </div>
+
+                <div className="runner-lane-hints"><span>← LEFT</span><span>RIGHT →</span></div>
+                {["WAITING_FOR_COMMAND","MISSION_COMPLETE","GAME_OVER","PAUSED"].includes(phase) && (
+                  <div className="runner-message">
+                    <strong>{phase === "WAITING_FOR_COMMAND" ? "💣 폭탄을 피하고 ⭐ 황금 별을 잡으세요!" : phase.replaceAll("_", " ")}</strong>
+                    <span>{phase === "WAITING_FOR_COMMAND" ? "LEFT 또는 RIGHT 안전 차선을 선택하세요." : phase === "MISSION_COMPLETE" ? "축하합니다! 모든 스테이지를 클리어했습니다 🎉" : phase === "GAME_OVER" ? "아쉽네요! 생명을 모두 소진했습니다." : "게임이 일시정지되었습니다."}</span>
+                  </div>
+                )}
+                {phase === "SUCCESS" && <div className="runner-feedback success"><Star size={18} fill="currentColor"/> +10 STAR COIN!</div>}
+                {phase === "COLLISION" && <div className="runner-feedback collision">💥 BOMB HIT!</div>}
               </div>
-              <div className="runner-lane-hints"><span>← LEFT</span><span>RIGHT →</span></div>
-              {["WAITING_FOR_COMMAND","MISSION_COMPLETE","GAME_OVER","PAUSED"].includes(phase) && <div className="runner-message"><strong>{phase === "WAITING_FOR_COMMAND" ? "폭탄을 피하고, 크리스털을 획득하세요!" : phase.replaceAll("_", " ")}</strong><span>{phase === "WAITING_FOR_COMMAND" ? "LEFT 또는 RIGHT 안전 차선을 선택하세요." : phase === "MISSION_COMPLETE" ? "모든 스테이지를 완료했습니다." : phase === "GAME_OVER" ? "생명을 모두 사용했습니다." : "게임이 일시정지되었습니다."}</span></div>}
-              {phase === "SUCCESS" && <div className="runner-feedback success"><Gem/> +10 CRYSTAL</div>}
-              {phase === "COLLISION" && <div className="runner-feedback collision">COLLISION</div>}
+              <div className="runner-controls">
+                <button disabled={s.inputMode !== "manual" || phase !== "WAITING_FOR_COMMAND"} onClick={() => manualCommand("LEFT")}><ArrowLeft/> LEFT</button>
+                <button disabled={s.inputMode !== "manual" || phase !== "WAITING_FOR_COMMAND"} onClick={() => manualCommand("RIGHT")}>RIGHT <ArrowRight/></button>
+              </div>
+              <div className="runner-status-line"><span>EEG 추론 상태</span><strong>{recorded ? s.backendStatus : "Manual Demo · Backend 불필요"}</strong></div>
             </div>
-            <div className="runner-controls">
-              <button disabled={s.inputMode !== "manual" || phase !== "WAITING_FOR_COMMAND"} onClick={() => manualCommand("LEFT")}><ArrowLeft/> LEFT</button>
-              <button disabled={s.inputMode !== "manual" || phase !== "WAITING_FOR_COMMAND"} onClick={() => manualCommand("RIGHT")}>RIGHT <ArrowRight/></button>
-            </div>
-            <div className="runner-status-line"><span>EEG 추론 상태</span><strong>{recorded ? s.backendStatus : "Manual Demo · Backend 불필요"}</strong></div>
           </div>
-          <div className="runner-side-stack">
-            <section className="runner-side-card runner-settings">
+
+          {/* Bottom Row: Settings (Left, Compact) + Monitor (Right, Wide) */}
+          <div className="runner-side-stack two-columns">
+            <section className="runner-side-card runner-settings compact">
+              <div className="panel-title"><Sliders size={15}/> 제어 설정</div>
               <Settings embedded />
             </section>
+
             <aside className="runner-side-card runner-monitor">
-          <div className="panel-title"><Radio size={16}/> EEG Control Monitor <i className="status-dot"/></div>
-          <Waveform channels={channels} playing={s.isPlaying || !recorded} recorded={recorded} samples={s.recordedPrediction?.waveform}/>
-          <dl className="monitor-stats">
-            <div><dt>Current Trial</dt><dd>{recorded ? s.recordedPrediction?.trial_id ?? "—" : stage}</dd></div>
-            <div><dt>Target Direction</dt><dd>{recorded ? s.recordedPrediction?.true_direction ?? "—" : safeLane}</dd></div>
-            <div><dt>Predicted Direction</dt><dd>{recorded ? s.recordedPrediction?.predicted_direction ?? "—" : lane}</dd></div>
-            <div><dt>Active Channels</dt><dd>{channels.join(" · ")}</dd></div>
-            <div><dt>TTA Status</dt><dd>{s.ttaEnabled ? "ON" : "OFF"}</dd></div>
-            <div><dt>Macro-F1</dt><dd>{recorded ? percent(macroF1) : "Manual Demo"}</dd></div>
-            <div><dt>Valid / Excluded</dt><dd>{validTrials.length} / {excluded}</dd></div>
-            <div><dt>Observed classes</dt><dd>{[leftRecall !== null ? "LEFT" : "", rightRecall !== null ? "RIGHT" : ""].filter(Boolean).join(" · ") || "—"}</dd></div>
-          </dl>
-          {recorded && <RecordedMetrics />}
-          <div className="log-heading">COMMAND HISTORY <span>현재 게임</span></div>
-          <div className="command-history">{history.length ? history.slice(0, 12).map(row => <div key={row.id}><span className={row.success ? "cyan" : "purple"}>{row.predicted === "LEFT" ? "←" : "→"}</span><p>Trial {row.trial} · {row.success ? "장애물 회피" : "충돌"}<small>Target {row.target}</small></p><span className="mono">{row.success ? "+10" : "MISS"}</span></div>) : <p className="empty">게임 명령 기록이 여기에 표시됩니다.</p>}</div>
+              <div className="panel-title"><Radio size={15}/> EEG Control Monitor <i className="status-dot"/></div>
+              <Waveform channels={channels} playing={s.isPlaying || !recorded} recorded={recorded} samples={s.recordedPrediction?.waveform}/>
+              <dl className="monitor-stats">
+                <div><dt>Current Trial</dt><dd>{recorded ? s.recordedPrediction?.trial_id ?? "—" : stage}</dd></div>
+                <div><dt>Target Direction</dt><dd>{recorded ? s.recordedPrediction?.true_direction ?? "—" : safeLane}</dd></div>
+                <div><dt>Predicted Direction</dt><dd>{recorded ? s.recordedPrediction?.predicted_direction ?? "—" : lane}</dd></div>
+                <div><dt>Active Channels</dt><dd>{channels.join(" · ")}</dd></div>
+                <div><dt>TTA Status</dt><dd>{s.ttaEnabled ? "ON" : "OFF"}</dd></div>
+                <div><dt>Macro-F1</dt><dd>{recorded ? percent(macroF1) : "Manual Demo"}</dd></div>
+                <div><dt>Valid / Excluded</dt><dd>{validTrials.length} / {excluded}</dd></div>
+                <div><dt>Observed classes</dt><dd>{[leftRecall !== null ? "LEFT" : "", rightRecall !== null ? "RIGHT" : ""].filter(Boolean).join(" · ") || "—"}</dd></div>
+              </dl>
+              {recorded && <RecordedMetrics />}
+              <div className="log-heading">COMMAND HISTORY <span>현재 게임</span></div>
+              <div className="command-history">{history.length ? history.slice(0, 10).map(row => <div key={row.id}><span className={row.success ? "cyan" : "purple"}>{row.predicted === "LEFT" ? "←" : "→"}</span><p>Trial {row.trial} · {row.success ? "별 획득" : "폭탄 충돌"}<small>Target {row.target}</small></p><span className="mono">{row.success ? "+10" : "MISS"}</span></div>) : <p className="empty">게임 명령 기록이 여기에 표시됩니다.</p>}</div>
             </aside>
           </div>
         </div>
