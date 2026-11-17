@@ -260,27 +260,54 @@
 }
 .smart-home-active .monitor {
   display: grid;
-  grid-template-columns: minmax(180px, 0.7fr) minmax(320px, 1.3fr);
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  grid-template-areas:
+    "title title"
+    "eyebrow waveform"
+    "prediction waveform"
+    "confidence waveform"
+    "progress waveform"
+    "summary waveform"
+    "stats stats"
+    "metrics metrics"
+    "history-title history-title"
+    "history history";
   align-content: start;
   gap: 0 20px;
 }
-.smart-home-active .monitor > .panel-title,
-.smart-home-active .monitor > .eyebrow,
-.smart-home-active .monitor > .monitor-stats,
-.smart-home-active .monitor > .recorded-metrics,
-.smart-home-active .monitor > .log-heading,
-.smart-home-active .monitor > .command-history {
-  grid-column: 1 / -1;
+.smart-home-active .monitor > .panel-title {
+  grid-area: title;
 }
-.smart-home-active .monitor > .prediction,
-.smart-home-active .monitor > .confidence,
-.smart-home-active .monitor > .progress,
+.smart-home-active .monitor > .eyebrow {
+  grid-area: eyebrow;
+}
+.smart-home-active .monitor > .prediction {
+  grid-area: prediction;
+}
+.smart-home-active .monitor > .confidence {
+  grid-area: confidence;
+}
+.smart-home-active .monitor > .progress {
+  grid-area: progress;
+}
 .smart-home-active .monitor > .small {
-  grid-column: 1;
+  grid-area: summary;
 }
 .smart-home-active .monitor > .waveform {
-  grid-column: 2;
-  grid-row: 3 / 8;
+  grid-area: waveform;
+}
+.smart-home-active .monitor > .monitor-stats {
+  grid-area: stats;
+}
+.smart-home-active .monitor > .recorded-metrics {
+  grid-area: metrics;
+  min-width: 0;
+}
+.smart-home-active .monitor > .log-heading {
+  grid-area: history-title;
+}
+.smart-home-active .monitor > .command-history {
+  grid-area: history;
 }
 .smart-home-active .monitor .eyebrow {
   font-size: 10px;

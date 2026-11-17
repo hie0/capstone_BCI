@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { Scene, Atlas2D, activeChannels } from "../components/Scenes";
 import { HeroBust } from "../components/HeroBust";
+import { StabilityDiagram } from "../components/StabilityDiagram";
+import { StabilityFormula } from "../components/StabilityFormula";
 import { ResultChart, SubjectResultChart } from "../components/Comparison";
 export function Pipeline() {
   const steps = [
@@ -42,7 +44,7 @@ export function Pipeline() {
     {
       icon: BrainCircuit,
       title: "모델링",
-      desc: "CSP·리만 접공간 특징과 개인별 분류 모델 구성",
+      desc: "CSP·Riemannian Tangent Space 기반 특징과 개인별 분류 모델 구성",
     },
     {
       icon: Scan,
@@ -66,46 +68,25 @@ export function Pipeline() {
 
 function StabilityVisual() {
   return (
-    <div
-      className="stability-visual"
-      role="img"
-      aria-label="흩어진 공분산을 OAS로 수축하고 리만 접공간 특징으로 변환한 뒤 CausalEA와 CausalLogitCenter로 온라인 중심을 정렬하는 과정"
-    >
-      <div className="stability-visual-step raw-covariance">
-        <div className="covariance-shapes" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-        </div>
-        <span>날짜마다 흩어진 공분산</span>
+    <div className="stability-visual" role="group" aria-label="BCI 신호 정렬 파이프라인">
+      <div className="stability-visual-step">
+        <StabilityDiagram kind="covariance" />
+        <span>Cross-session Covariance</span>
       </div>
       <b aria-hidden="true">→</b>
-      <div className="stability-visual-step oas-shrink">
-        <div className="shrink-target" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-        </div>
-        <span>OAS로 안정적 추정</span>
+      <div className="stability-visual-step">
+        <StabilityDiagram kind="shrinkage" />
+        <span>OAS Shrinkage</span>
       </div>
       <b aria-hidden="true">→</b>
-      <div className="stability-visual-step tangent-map">
-        <div className="tangent-plane" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-          <i />
-        </div>
-        <span>리만 접공간 특징</span>
+      <div className="stability-visual-step">
+        <StabilityDiagram kind="tangent" />
+        <span>Riemannian Tangent Space</span>
       </div>
       <b aria-hidden="true">→</b>
-      <div className="stability-visual-step online-center">
-        <div className="centered-distribution" aria-hidden="true">
-          <i />
-          <i />
-          <em />
-        </div>
-        <span>CausalEA · LogitCenter</span>
+      <div className="stability-visual-step">
+        <StabilityDiagram kind="centering" />
+        <span>CausalEA · CausalLogitCenter</span>
       </div>
     </div>
   );
@@ -450,50 +431,54 @@ export default function Home() {
               <h3>안정화는 이렇게 진행했습니다.</h3>
             </div>
             <p>
-              저채널 공분산을 안정적으로 추정한 뒤, 기하학적 특징을 만들고
-              온라인 신호와 분류 출력의 기준점을 순차적으로 정렬합니다.
+              Low-channel covariance를 안정적으로 추정한 뒤, geometric features를 만들고
+              온라인 신호와 classifier output의 기준점을 순차적으로 정렬합니다.
             </p>
           </div>
           <StabilityVisual />
           <div className="stability-flow">
             <article>
-              <span>01 · 공분산 안정화</span>
-              <strong>OAS 수축</strong>
-              <p>수축 정규화로 저채널 공분산의 수치적 불안정을 완화합니다.</p>
-              <code>Σ̂ → ΣOAS</code>
+              <span>01 · Covariance Stabilization</span>
+              <strong>OAS Shrinkage</strong>
+              <StabilityDiagram kind="oas-detail" />
+              <p>Shrinkage regularization으로 low-channel covariance 추정의 수치적 불안정을 완화합니다.</p>
+              <code><StabilityFormula kind="oas" /></code>
             </article>
             <i aria-hidden="true">→</i>
             <article>
-              <span>02 · 판별 특징 추출</span>
-              <strong>CSP · 리만 접공간</strong>
-              <p>CSP의 분산 차이와 SPD 공분산의 접공간 벡터로 좌·우 특징을 만듭니다.</p>
-              <code>Sᵢ = log(R⁻¹ᐟ² Cᵢ R⁻¹ᐟ²)</code>
+              <span>02 · Feature Extraction</span>
+              <strong>CSP · Riemannian Tangent Space</strong>
+              <StabilityDiagram kind="features" />
+              <p>CSP의 variance 차이와 SPD covariance의 tangent-space vector로 LEFT/RIGHT 분류 특징을 만듭니다.</p>
+              <code><StabilityFormula kind="tangent" /></code>
             </article>
             <i aria-hidden="true">→</i>
             <article>
-              <span>03 · 입력 중심 정렬</span>
+              <span>03 · Input Alignment</span>
               <strong>CausalEA</strong>
-              <p>현재까지의 EEG 공분산 중심을 온라인으로 갱신해 신호를 정렬합니다.</p>
-              <code>X̃ₜ = R̄ₜ⁻¹ᐟ² Xₜ</code>
+              <StabilityDiagram kind="alignment" />
+              <p>현재까지의 EEG covariance reference를 온라인으로 갱신해 신호를 정렬합니다.</p>
+              <code><StabilityFormula kind="alignment" /></code>
             </article>
             <i aria-hidden="true">→</i>
             <article>
-              <span>04 · 출력 영점 보정</span>
+              <span>04 · Logit Centering</span>
               <strong>CausalLogitCenter</strong>
-              <p>분류기 출력의 중심 편향을 보정해 세션별 영점 이동에 대응합니다.</p>
-              <code>ŷₜ = σ(zₜ − μₜ)</code>
+              <StabilityDiagram kind="centering" />
+              <p>Classifier output의 logit bias를 보정해 session별 decision boundary shift에 대응합니다.</p>
+              <code><StabilityFormula kind="centering" /></code>
             </article>
           </div>
           <div className="stability-summary">
-            <span>저채널 공분산 안정화</span>
+            <span>Covariance Stabilization</span>
             <b>+</b>
-            <span>온라인 입력 정렬</span>
+            <span>Online Input Alignment</span>
             <b>+</b>
-            <span>분류 출력 영점 보정</span>
-            <strong>→ 좌·우 운동상상 분류</strong>
+            <span>Logit Centering</span>
+            <strong>→ LEFT / RIGHT MI Classification</strong>
           </div>
           <p className="source-note">
-            연구 포스터의 공분산 안정화·온라인 안정화 방법을 기준으로 정리했습니다.
+            연구 포스터의 covariance stabilization·online adaptation 방법을 기준으로 정리했습니다.
           </p>
         </div>
       </section>

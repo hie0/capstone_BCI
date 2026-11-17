@@ -3522,147 +3522,33 @@ td:first-child {
 
 .stability-visual-step > span {
   color: var(--primary);
-  font-size: 10px;
+  font-size: 11px;
+  line-height: 1.5;
   font-weight: 700;
   text-align: center;
 }
 
-.covariance-shapes,
-.shrink-target,
-.tangent-plane,
-.centered-distribution {
-  position: relative;
-  width: 118px;
-  height: 68px;
+.stability-diagram {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  overflow: visible;
 }
 
-.covariance-shapes i,
-.shrink-target i {
-  position: absolute;
-  width: 54px;
-  height: 28px;
-  border: 2px solid #789c95;
-  border-radius: 50%;
-  background: rgba(120, 156, 149, 0.08);
+.stability-diagram .diagram-math {
+  fill: var(--primary);
+  font: 19px "STIX Two Math", "Cambria Math", "STIXGeneral", "Times New Roman", serif;
+  font-synthesis: none;
 }
 
-.covariance-shapes i:nth-child(1) {
-  top: 2px;
-  left: 1px;
-  transform: rotate(-22deg);
+.stability-diagram .diagram-posterior {
+  font-size: 14px;
 }
 
-.covariance-shapes i:nth-child(2) {
-  top: 31px;
-  left: 55px;
-  transform: rotate(18deg);
-}
-
-.covariance-shapes i:nth-child(3) {
-  top: 4px;
-  right: 2px;
-  transform: rotate(42deg);
-}
-
-.shrink-target::before,
-.shrink-target::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.shrink-target::before {
-  width: 72px;
-  height: 52px;
-  border: 1px dashed #a9bdb8;
-}
-
-.shrink-target::after {
-  width: 6px;
-  height: 6px;
-  background: var(--accent-strong);
-}
-
-.shrink-target i {
-  top: 20px;
-  left: 32px;
-  width: 52px;
-  height: 29px;
-}
-
-.shrink-target i:nth-child(2) {
-  transform: rotate(18deg) scale(0.86);
-}
-
-.shrink-target i:nth-child(3) {
-  transform: rotate(-18deg) scale(0.72);
-}
-
-.tangent-plane {
-  border: 1px solid #9fb7b1;
-  background:
-    linear-gradient(90deg, transparent 49%, #d9e4e1 50%, transparent 51%),
-    linear-gradient(transparent 49%, #d9e4e1 50%, transparent 51%), #ffffff;
-  transform: skewX(-14deg) rotate(-4deg) scale(0.82);
-}
-
-.tangent-plane i {
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #638c84;
-  box-shadow: 0 0 0 4px rgba(99, 140, 132, 0.12);
-}
-
-.tangent-plane i:nth-child(1) { top: 13px; left: 20px; }
-.tangent-plane i:nth-child(2) { top: 38px; left: 48px; }
-.tangent-plane i:nth-child(3) { top: 17px; right: 24px; }
-.tangent-plane i:nth-child(4) { bottom: 8px; right: 12px; }
-
-.centered-distribution {
-  border-bottom: 1px solid #a9bdb8;
-}
-
-.centered-distribution::before {
-  content: "0";
-  position: absolute;
-  bottom: -17px;
-  left: 50%;
-  color: var(--text-muted-aa);
-  font: 8px monospace;
-  transform: translateX(-50%);
-}
-
-.centered-distribution i {
-  position: absolute;
-  bottom: 0;
-  width: 58px;
-  height: 48px;
-  border: 2px solid transparent;
-  border-top-color: #7d9f98;
-  border-radius: 50%;
-}
-
-.centered-distribution i:nth-child(1) {
-  left: 8px;
-  transform: rotate(-16deg);
-}
-
-.centered-distribution i:nth-child(2) {
-  right: 8px;
-  transform: rotate(16deg);
-}
-
-.centered-distribution em {
-  position: absolute;
-  top: 2px;
-  bottom: 0;
-  left: 50%;
-  border-left: 2px dashed var(--accent-strong);
+.stability-flow article > .stability-diagram {
+  flex: none;
+  margin: 12px 0 4px;
 }
 
 .stability-flow {
@@ -3674,6 +3560,8 @@ td:first-child {
 }
 
 .stability-flow article {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   padding: 20px 18px;
   border: 1px solid #d4e1de;
@@ -3712,11 +3600,20 @@ td:first-child {
 }
 
 .stability-flow article > code {
+  margin-top: auto;
   padding-top: 10px;
   border-top: 1px solid #dce6e3;
   color: var(--accent-strong);
-  font: 600 10px/1.5 monospace;
+  font: 400 17px/1.6 "STIX Two Math", "Cambria Math", "STIXGeneral", "Times New Roman", serif;
   overflow-wrap: anywhere;
+}
+
+.stability-formula {
+  font-family: "STIX Two Math", "Cambria Math", "STIXGeneral", "Times New Roman", serif;
+  font-size: 17px;
+  font-style: normal;
+  font-synthesis: none;
+  math-style: normal;
 }
 
 .stability-flow > i {
@@ -3728,6 +3625,7 @@ td:first-child {
 
 .stability-summary {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 12px;
@@ -4871,6 +4769,9 @@ td:first-child {
   }
 
   .stability-visual-step {
+    width: 100%;
+    max-width: 320px;
+    margin-inline: auto;
     padding-bottom: 16px;
     border-bottom: 1px solid #dce6e3;
   }
@@ -4882,6 +4783,11 @@ td:first-child {
 
   .stability-flow {
     grid-template-columns: 1fr;
+  }
+
+  .stability-flow article > .stability-diagram {
+    max-width: 320px;
+    align-self: center;
   }
 
   .stability-summary {
