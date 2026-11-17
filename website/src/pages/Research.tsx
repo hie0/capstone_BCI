@@ -3,7 +3,7 @@ import { BaselineSpecification } from "../components/BaselineSpecification";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 import { Atlas2D } from "../components/Scenes";
-import { channelInfo, type ChannelMode, sourceNote } from "../data/research";
+import { channelInfo, type ChannelMode } from "../data/research";
 import { Pipeline } from "./Home";
 import { ResultChart, SubjectResultChart } from "../components/Comparison";
 export default function Research() {
@@ -138,7 +138,6 @@ export default function Research() {
         <h2>영점조절 적용 전후 온라인 성능</h2>
         <div className="panel">
           <ResultChart />
-          <p className="source-note">{sourceNote}</p>
         </div>
         <div className="panel subject-comparison-panel">
           <div className="panel-title">

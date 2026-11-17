@@ -11,7 +11,6 @@ import {
 import { useBCI } from "../store";
 import {
   comparison,
-  sourceNote,
   subjectResults,
   type ChannelMode,
 } from "../data/research";
@@ -205,10 +204,6 @@ export function SubjectResultChart() {
           </div>
         </div>
       </div>
-      <p className="subject-source-note">
-        출처: 최종 연구발표자료 p.12 · 피험자 독립 LOSO · 4인 · 18개 런 ·
-        1,440회. 16채널 기준 대비 4명 모두 향상했습니다.
-      </p>
     </div>
   );
 }
@@ -391,7 +386,7 @@ export default function Comparison() {
           </div>
         )}
         <p className="source-note">
-          {sourceNote} 서로 다른 평가 조건을 직접 비교할 때는 세션 수와 트라이얼
+          서로 다른 평가 조건을 직접 비교할 때는 세션 수와 트라이얼
           수를 함께 확인하세요.
         </p>
       </div>

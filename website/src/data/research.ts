@@ -138,5 +138,3 @@ export const subjectResults: SubjectResult[] = [
     proposedAUC: 0.9022,
   },
 ];
-export const sourceNote =
-  "출처: 최종 연구발표자료 p.12(4인 LOSO) 및 p.16(실전 온라인 50세션). LOSO와 온라인 검증은 평가 조건이 다른 별도 결과입니다.";

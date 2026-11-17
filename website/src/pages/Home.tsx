@@ -4,7 +4,6 @@ import {
   core,
   electrodeNames,
   positions,
-  sourceNote,
   type ChannelMode,
   type Direction,
 } from "../data/research";
@@ -504,7 +503,6 @@ export default function Home() {
             50세션 3,910회의 실전 온라인 검증에서 적응형 영점조절 적용 전후를
             비교했습니다. <b>p &lt; 10⁻¹⁷</b>
           </p>
-          <small className="result-source">{sourceNote}</small>
         </div>
         <div className="panel">
           <div className="panel-title">
