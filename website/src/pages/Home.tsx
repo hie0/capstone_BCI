@@ -17,6 +17,8 @@ import {
   Scan,
   ShieldCheck,
   House,
+  Gamepad2,
+  MessageSquareText,
 } from "lucide-react";
 import { Scene, Atlas2D, activeChannels } from "../components/Scenes";
 import { HeroBust } from "../components/HeroBust";
@@ -540,18 +542,25 @@ export default function Home() {
           </Link>
         </div>
         <div className="application-preview">
-          <Link to="/simulation">
+          <Link to="/simulation?tab=applications&app=home">
             <House size={40} />
             <span>APPLICATION 01</span>
-            <h3>Smart Home Control</h3>
-            <p>LEFT와 RIGHT, 두 가지 명령으로 바뀌는 거실.</p>
+            <h3>SMART HOME 제어</h3>
+            <p>LEFT와 RIGHT 명령으로 일상 기기를 제어합니다.</p>
             <ArrowUpRight />
           </Link>
-          <Link to="/simulation?app=wearable">
-            <Scan size={40} />
+          <Link to="/simulation?tab=applications&app=game">
+            <Gamepad2 size={40} />
             <span>APPLICATION 02</span>
-            <h3>Wearable BCI Experience</h3>
-            <p>전극을 선택하고, 가벼운 디바이스의 가능성을 탐색하세요.</p>
+            <h3>MINI GAME - NEURO RUNNER</h3>
+            <p>두 방향 운동 상상으로 장애물을 피하고 목적지에 도달합니다.</p>
+            <ArrowUpRight />
+          </Link>
+          <Link to="/simulation?tab=applications&app=communication">
+            <MessageSquareText size={40} />
+            <span>APPLICATION 03</span>
+            <h3>BCI Communication</h3>
+            <p>두 방향 명령을 단계별 선택으로 확장해 의사를 표현합니다.</p>
             <ArrowUpRight />
           </Link>
         </div>

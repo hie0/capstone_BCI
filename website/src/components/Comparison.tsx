@@ -11,7 +11,7 @@ import {
 import { useBCI } from "../store";
 import BenchmarkChart, {
   BenchmarkValueTable,
-  MacroF1Info,
+  MetricInfo,
 } from "./BenchmarkChart";
 import {
   losoMacroF1,
@@ -97,7 +97,7 @@ export function SubjectResultChart() {
               </button>
             ))}
           </div>
-          <MacroF1Info />
+          <MetricInfo metric={metric} />
         </div>
       </div>
       <div className="subject-dashboard-body">

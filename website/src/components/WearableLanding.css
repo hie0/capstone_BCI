@@ -370,12 +370,12 @@
 .wearable-everyday-copy h2 {
   color: var(--primary);
   margin: 14px 0 22px;
-  font-size: 32px;
+  font-size: 34px;
   line-height: 1.4;
   letter-spacing: -0.045em;
 }
 .wearable-everyday-copy > p:not(.wearable-image-note) {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.9;
 }
@@ -389,11 +389,18 @@
   align-items: center;
   gap: 8px;
   margin: 12px 0;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--accent-strong);
 }
 .wearable-everyday-copy .wearable-image-note {
   margin-top: 20px;
+  font-size: 11px;
+}
+.wearable-everyday-copy .button.primary {
+  min-width: 230px;
+  justify-content: center;
+  padding: 15px 22px;
+  font-size: 13px;
 }
 .wearable-story button:focus-visible,
 .wearable-story a:focus-visible {

@@ -2,6 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   House,
   Gamepad2,
+  MessageSquareText,
   Scan,
   Headphones,
   ArrowUpRight,
@@ -11,12 +12,15 @@ import SmartHome from "../components/SmartHome";
 import WearableLanding, { WearableHero } from "../components/WearableLanding";
 import { useBCI } from "../store";
 import { useRecordedEEG } from "../useRecordedEEG";
+import CommunicationBoard from "../components/CommunicationBoard";
+import NeuroRunner from "../components/NeuroRunner";
 export default function Simulation() {
   const [params, setParams] = useSearchParams();
-  const app = params.get("app") === "game" ? "game" : "home";
+  const requestedApp = params.get("app");
+  const app = requestedApp === "game" || requestedApp === "communication" ? requestedApp : "home";
   const tab =
     params.get("tab") === "applications" ||
-    ["home", "game"].includes(params.get("app") ?? "")
+    ["home", "game", "communication"].includes(params.get("app") ?? "")
       ? "applications"
       : "wearable";
   const s = useBCI();
@@ -101,7 +105,7 @@ export default function Simulation() {
                 <House size={21} />
               </div>
               <div>
-                <strong>통합 BCI 홈 제어</strong>
+                <strong>SMART HOME 제어</strong>
                 <span>자극 부위·신호·장치 반응을 한 화면에서</span>
               </div>
               <ArrowUpRight size={18} />
@@ -116,22 +120,31 @@ export default function Simulation() {
                 <Gamepad2 size={21} />
               </div>
               <div>
-                <strong>미니 게임 (임시)</strong>
-                <span>운동 상상 명령으로 캐릭터 제어하기</span>
+                <strong>MINI GAME - NEURO RUNNER</strong>
+                <span>운동 상상으로 장애물을 피하는 3D 게임</span>
+              </div>
+              <ArrowUpRight size={18} />
+            </button>
+            <button
+              className={app === "communication" ? "active" : ""}
+              onClick={() => navigate("applications", "communication")}
+            >
+              <div className="app-icon">
+                <MessageSquareText size={21} />
+              </div>
+              <div>
+                <strong>BCI Communication</strong>
+                <span>두 방향 명령을 여러 의사표현으로 확장</span>
               </div>
               <ArrowUpRight size={18} />
             </button>
           </div>
           {app === "home" ? (
             <SmartHome />
+          ) : app === "game" ? (
+            <NeuroRunner />
           ) : (
-            <section className="panel mini-game-placeholder">
-              <Gamepad2 size={36} />
-              <strong>미니 게임 준비 중</strong>
-              <span>
-                LEFT / RIGHT 운동 상상으로 움직이는 게임을 추가할 예정입니다.
-              </span>
-            </section>
+            <CommunicationBoard />
           )}
           <div className="how-it-works">
             <span>HOW IT WORKS</span>
@@ -144,7 +157,7 @@ export default function Simulation() {
             </div>
             <i>→</i>
             <div>
-              <b>03</b> 가상 장치 제어
+              <b>03</b> {app === "communication" ? "의사표현 선택" : "가상 장치 제어"}
             </div>
             <small>
               {s.inputMode === "recorded"

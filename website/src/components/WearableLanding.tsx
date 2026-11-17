@@ -269,20 +269,23 @@ export default function WearableLanding({ onHome }: { onHome: () => void }) {
             일상의 제어로.
           </h2>
           <p>
-            조명을 켜고, 커튼을 열고, 공간의 온도를 바꾸는 일.
+            저채널 BCI에서 분류한 LEFT / RIGHT 명령이
             <br />
-            웨어러블 BCI가 일상과 만나는 가능성을 탐색합니다.
+            실제 응용으로 어떻게 이어지는지 세 가지 체험으로 확인합니다.
           </p>
           <ul>
             <li>
-              <Check size={15} /> 조명 · 커튼 · 온도 · TV 제어
+              <Check size={15} /> 스마트홈 · 조명, 커튼, 온도, TV 제어
             </li>
             <li>
-              <Check size={15} /> LEFT / RIGHT 운동 상상 인터랙션
+              <Check size={15} /> Neuro Runner · 좌우 명령으로 장애물 회피
+            </li>
+            <li>
+              <Check size={15} /> BCI Communication · 단계별 선택으로 의사표현
             </li>
           </ul>
           <button className="button primary" onClick={onHome}>
-            Smart Home 체험하기 <ArrowUpRight size={17} />
+            세 가지 응용 체험 보기 <ArrowUpRight size={17} />
           </button>
           <p className="wearable-image-note">
             이미지는 AI 생성 활용 컨셉입니다. 실제 저채널 웨어러블 하드웨어의

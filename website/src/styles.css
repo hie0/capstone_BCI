@@ -1639,7 +1639,7 @@ td:first-child {
 }
 .application-preview {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 22px;
 }
 .application-preview > a {

@@ -112,24 +112,47 @@ function BenchmarkTooltip({
   );
 }
 
-export function MacroF1Info() {
+export function MetricInfo({ metric }: { metric: Metric }) {
+  const content = {
+    "Macro-F1": {
+      title: "Macro-F1이란?",
+      description:
+        "좌·우 운동 상상 클래스의 정밀도와 재현율을 함께 고려하고, 두 클래스의 F1-score를 동일한 비중으로 평균한 지표입니다.",
+      formulas: [
+        "F1 = 2 × Precision × Recall / (Precision + Recall)",
+        "Macro-F1 = (F1_LEFT + F1_RIGHT) / 2",
+      ],
+    },
+    BA: {
+      title: "BA란?",
+      description:
+        "Balanced Accuracy는 좌·우 클래스의 재현율을 동일한 비중으로 평균합니다. 클래스별 데이터 수가 다르더라도 한쪽 클래스의 성능에 치우치지 않게 평가합니다.",
+      formulas: ["BA = (Recall_LEFT + Recall_RIGHT) / 2"],
+    },
+    AUC: {
+      title: "AUC란?",
+      description:
+        "AUC는 분류 임계값을 바꾸었을 때의 민감도와 오탐률 관계를 종합한 지표입니다. 1에 가까울수록 좌·우 운동 상상을 안정적으로 구분합니다.",
+      formulas: ["AUC = Area Under the ROC Curve", "0.5 = 무작위 수준 · 1.0 = 완전 분리"],
+    },
+  }[metric];
   return (
-    <details className="macro-f1-info">
-      <summary aria-label="Macro-F1 지표 설명">
+    <details className="macro-f1-info" key={metric}>
+      <summary aria-label={`${metric} 지표 설명`}>
         <Info size={14} />
-        <span>Macro-F1</span>
+        <span>{metric}</span>
       </summary>
       <div>
-        <strong>Macro-F1이란?</strong>
-        <p>
-          Macro-F1은 좌·우 운동 상상 클래스의 정밀도와 재현율을 동시에 고려하며,
-          두 클래스의 F1-score를 동일한 비중으로 평균한 분류 성능 지표입니다.
-        </p>
-        <code>F1 = 2 × Precision × Recall / (Precision + Recall)</code>
-        <code>Macro-F1 = (F1_LEFT + F1_RIGHT) / 2</code>
+        <strong>{content.title}</strong>
+        <p>{content.description}</p>
+        {content.formulas.map((formula) => <code key={formula}>{formula}</code>)}
       </div>
     </details>
   );
+}
+
+export function MacroF1Info() {
+  return <MetricInfo metric="Macro-F1" />;
 }
 
 export function BenchmarkValueTable({

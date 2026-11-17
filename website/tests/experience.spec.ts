@@ -95,12 +95,44 @@ test("wearable channel exploration leaves inference settings unchanged", async (
   await page.getByRole("button", { name: "전극 Fp1", exact: true }).click();
   await expect(page.locator(".wearable-selected-channel b")).toHaveText("Fp1");
   await page
-    .getByRole("button", { name: "Smart Home 체험하기", exact: true })
+    .getByRole("button", { name: "세 가지 응용 체험 보기", exact: true })
     .click();
   await expect(page.getByLabel("Channel configuration")).toHaveValue("low");
   await expect(page.getByRole("tab", { name: "Model Comparison" })).toHaveCount(
     0,
   );
+});
+
+test("Neuro Runner manual demo starts and accepts one directional command", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/#/simulation?tab=applications&app=game");
+  await expect(page.getByRole("heading", { name: "Neuro Runner" })).toBeVisible();
+  await expect(page.locator(".runner-canvas canvas")).toBeVisible();
+  await page.getByRole("button", { name: /Start/ }).click();
+  await expect(page.getByText("폭탄을 피하고, 크리스털을 획득하세요!")).toBeVisible({ timeout: 5000 });
+  await page.getByRole("button", { name: "LEFT", exact: true }).click();
+  await expect(page.getByText(/장애물 회피|충돌/)).toBeVisible({ timeout: 2000 });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test("communication board exposes the tree and selects a sentence at 80 percent", async ({ page }) => {
+  await page.goto("/#/simulation?tab=applications&app=communication");
+  await expect(page.getByRole("heading", { name: "BCI Communication Board" })).toBeVisible();
+  await expect(page.getByText(/목말라요\. 물을 주세요\./).first()).toBeVisible();
+  const basic = page.getByRole("button", { name: /LEFT.*기본 욕구/ });
+  await basic.click(); await basic.click(); await basic.click();
+  const water = page.getByRole("button", { name: /LEFT.*목말라요/ });
+  await water.click(); await water.click(); await water.click();
+  await expect(page.locator(".communication-output")).toContainText("목말라요. 물을 주세요.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 test("home research wearable and mobile layout", async ({ page }) => {
   await page.goto("/");
