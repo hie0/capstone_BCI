@@ -1,13 +1,15 @@
 import { useEffect, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
-import { Html, OrbitControls, useGLTF } from '@react-three/drei';
+import { OrbitControls, useGLTF } from '@react-three/drei';
+import { SceneHtml as Html } from './Scenes';
 import * as T from 'three';
 import { MeshBVH, acceleratedRaycast } from 'three-mesh-bvh';
-import { channelInfo, core } from '../data/research';
+import { channelInfo, core, type Direction } from '../data/research';
 
-export function HeroBust({selected,onSelect,activeChannels,labelMode="core"}:{selected:string;onSelect:(name:string)=>void;activeChannels?:readonly string[];labelMode?:"core"|"selected"}) {
+export function HeroBust({selected,onSelect,activeChannels,labelMode="core",direction}:{selected:string;onSelect:(name:string)=>void;activeChannels?:readonly string[];labelMode?:"core"|"selected";direction?:Direction}) {
  const {scene:asset}=useGLTF('./models/neurolink-head-bust.glb');
  const {camera}=useThree();
+ const motorChannel=direction==='LEFT'?'C4':direction==='RIGHT'?'C3':null;
  useEffect(()=>{camera.position.set(-3,1.15,5);camera.lookAt(0,0,0);},[camera]);
  const {model,equipment,sensors}=useMemo(()=>{
   const model=asset.clone(true);const bounds=new T.Box3().setFromObject(model);const scale=2.8/bounds.getSize(new T.Vector3()).y;
@@ -23,5 +25,5 @@ export function HeroBust({selected,onSelect,activeChannels,labelMode="core"}:{se
   const s=surface(1.4,3.6);if(s){const module=new T.Mesh(new T.BoxGeometry(.14,.23,.08),new T.MeshStandardMaterial({color:'#B8C4CE',roughness:.55,metalness:.3}));module.position.copy(s.p).addScaledVector(s.n,.06);module.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),s.n);equipment.add(module);}
   return {model,equipment,sensors};
  },[asset]);
- return <><hemisphereLight args={['#ffffff','#879b9a',2]}/><directionalLight position={[-3,5,4]} intensity={3}/><directionalLight position={[4,2,2]} intensity={1}/><directionalLight position={[1,4,-3]} intensity={2}/><primitive object={model}/><primitive object={equipment}/>{sensors.map(s=><group key={s.name} position={s.position} quaternion={s.rotation} onClick={e=>{e.stopPropagation();onSelect(s.name);}}><mesh><cylinderGeometry args={[activeChannels && !activeChannels.includes(s.name) ? .035 : .085,activeChannels && !activeChannels.includes(s.name) ? .035 : .085,.045,32]}/><meshStandardMaterial color={selected===s.name?'#527C98':'#DCE5EB'} metalness={.4} roughness={.45}/></mesh><mesh position={[0,.029,0]}><cylinderGeometry args={[activeChannels && !activeChannels.includes(s.name) ? .018 : .052,activeChannels && !activeChannels.includes(s.name) ? .018 : .052,.012,32]}/><meshStandardMaterial color={(activeChannels ?? core).includes(s.name)?'#39776F':activeChannels?'#CBD5DF':'#A8B8C5'} roughness={.5}/></mesh>{(labelMode === 'selected' ? selected === s.name : core.includes(s.name))&&<Html center position={[0,.14,0]}><button className={`electrode ${selected===s.name?'selected':''}`} title={channelInfo(s.name)} onClick={()=>onSelect(s.name)}>{s.name}</button></Html>}</group>)}<OrbitControls makeDefault enablePan={false} enableZoom={false}/></>;
+ return <><hemisphereLight args={['#ffffff','#879b9a',2]}/><directionalLight position={[-3,5,4]} intensity={3}/><directionalLight position={[4,2,2]} intensity={1}/><directionalLight position={[1,4,-3]} intensity={2}/><primitive object={model}/><primitive object={equipment}/>{sensors.map(s=><group key={s.name} position={s.position} quaternion={s.rotation} onClick={e=>{e.stopPropagation();onSelect(s.name);}}><mesh><cylinderGeometry args={[activeChannels && !activeChannels.includes(s.name) ? .035 : .085,activeChannels && !activeChannels.includes(s.name) ? .035 : .085,.045,32]}/><meshStandardMaterial color={selected===s.name?'#527C98':'#DCE5EB'} metalness={.4} roughness={.45}/></mesh><mesh position={[0,.029,0]}><cylinderGeometry args={[activeChannels && !activeChannels.includes(s.name) ? .018 : .052,activeChannels && !activeChannels.includes(s.name) ? .018 : .052,.012,32]}/><meshStandardMaterial color={s.name===motorChannel?(direction==='RIGHT'?'#8A79AF':'#527C98'):(activeChannels ?? core).includes(s.name)?'#39776F':activeChannels?'#CBD5DF':'#A8B8C5'} roughness={.5}/></mesh>{(labelMode === 'selected' ? selected === s.name : core.includes(s.name))&&<Html center position={[0,.14,0]}><button className={`electrode ${selected===s.name?'selected':''}`} title={channelInfo(s.name)} onClick={()=>onSelect(s.name)}>{s.name}</button></Html>}</group>)}<OrbitControls makeDefault enablePan={false} enableZoom={false}/></>;
 }

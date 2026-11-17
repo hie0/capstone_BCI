@@ -9,30 +9,55 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useBCI } from "../store";
+import BenchmarkChart, {
+  BenchmarkValueTable,
+  MacroF1Info,
+} from "./BenchmarkChart";
 import {
-  comparison,
-  subjectResults,
-  type ChannelMode,
-} from "../data/research";
+  losoMacroF1,
+  onlineMacroF1,
+  onlinePosterBA,
+  comparisonConditions,
+  externalMacroF1,
+  benchmarkStatistics,
+  percentagePointDelta,
+  type BenchmarkParticipant,
+} from "../data/researchBenchmarks";
+import { comparison, subjectResults, type ChannelMode } from "../data/research";
 
 export function SubjectResultChart() {
-  const [subject, setSubject] = useState("ALL");
-  const [metric, setMetric] = useState<"BA" | "AUC">("BA");
+  const [subject, setSubject] = useState<BenchmarkParticipant>("ALL");
+  const [metric, setMetric] = useState<"Macro-F1" | "BA" | "AUC">("Macro-F1");
   const selected = subjectResults.find((item) => item.id === subject);
-  const rows = (selected ? [selected] : subjectResults).map((item) => ({
-    name: item.id,
+  const f1 = losoMacroF1.find((item) => item.participant === subject)!;
+  const macro = metric === "Macro-F1";
+  const legacySubjects = selected ? [selected] : subjectResults;
+  const rows = legacySubjects.map((item) => ({
+    participant: item.id,
     baseline: metric === "BA" ? item.baselineBA : item.baselineAUC,
-    proposed: metric === "BA" ? item.proposedBA : item.proposedAUC,
+    lowTta: metric === "BA" ? item.proposedBA : item.proposedAUC,
   }));
-  const improvement = selected
-    ? metric === "BA"
-      ? selected.proposedBA - selected.baselineBA
-      : selected.proposedAUC - selected.baselineAUC
-    : metric === "BA"
-      ? 7.78
-      : 0.0711;
+  const average = (
+    key: "baselineBA" | "proposedBA" | "baselineAUC" | "proposedAUC",
+  ) =>
+    subjectResults.reduce((sum, item) => sum + item[key], 0) /
+    subjectResults.length;
+  const baseline = macro
+    ? f1.baseline
+    : selected
+      ? metric === "BA"
+        ? selected.baselineBA
+        : selected.baselineAUC
+      : average(metric === "BA" ? "baselineBA" : "baselineAUC");
+  const proposed = macro
+    ? f1.lowTta
+    : selected
+      ? metric === "BA"
+        ? selected.proposedBA
+        : selected.proposedAUC
+      : average(metric === "BA" ? "proposedBA" : "proposedAUC");
   const formatValue = (value: number) =>
-    metric === "BA" ? `${value.toFixed(2)}%` : value.toFixed(4);
+    metric === "AUC" ? value.toFixed(4) : `${value.toFixed(2)}%`;
   const modelDescriptions: Record<string, string> = {
     KGE: "OAS로 공분산을 안정화하고 리만 접공간 특징을 SVC로 분류",
     KHY: "SPD 공분산을 보정한 접공간 특징을 sLDA로 분류",
@@ -43,30 +68,25 @@ export function SubjectResultChart() {
     <div className="subject-results-dashboard">
       <div className="subject-toolbar">
         <div className="subject-tabs" aria-label="피험자 선택">
-          <button
-            className={subject === "ALL" ? "active" : ""}
-            aria-pressed={subject === "ALL"}
-            onClick={() => setSubject("ALL")}
-          >
-            <strong>ALL</strong>
-            <span>4인 비교</span>
-          </button>
-          {subjectResults.map((item) => (
+          {(["ALL", "KGE", "KHY", "OYJ", "WMJ"] as const).map((id) => (
             <button
-              key={item.id}
-              className={subject === item.id ? "active" : ""}
-              aria-pressed={subject === item.id}
-              onClick={() => setSubject(item.id)}
+              key={id}
+              className={subject === id ? "active" : ""}
+              aria-pressed={subject === id}
+              aria-label={
+                id === "ALL" ? "ALL 4인 비교" : `${id} Participant ${id}`
+              }
+              onClick={() => setSubject(id)}
             >
-              <strong>{item.id}</strong>
-              <span>{item.name}</span>
+              <strong>{id}</strong>
+              <span>{id === "ALL" ? "4인 비교" : "피험자"}</span>
             </button>
           ))}
         </div>
         <div className="metric-control">
           <span>평가 지표</span>
           <div className="metric-tabs" aria-label="평가 지표 선택">
-            {(["BA", "AUC"] as const).map((item) => (
+            {(["Macro-F1", "BA", "AUC"] as const).map((item) => (
               <button
                 key={item}
                 className={metric === item ? "active" : ""}
@@ -77,86 +97,60 @@ export function SubjectResultChart() {
               </button>
             ))}
           </div>
+          <MacroF1Info />
         </div>
       </div>
       <div className="subject-dashboard-body">
         <div className="subject-chart-card">
-          <div className="chart-legend">
-            <span>
-              <i className="baseline" />
-              16채널 기준
-            </span>
-            <span>
-              <i className="proposed" />
-              5~7채널 개선 모델
-            </span>
-          </div>
-          <ResponsiveContainer width="100%" height={330}>
-            <BarChart
-              data={rows}
-              margin={{ top: 24, right: 14, left: 0, bottom: 8 }}
-            >
-              <CartesianGrid stroke="#DCE5EB" vertical={false} />
-              <XAxis
-                dataKey="name"
-                tick={{ fill: "#526574", fontWeight: 700 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                domain={metric === "BA" ? [50, 100] : [0.5, 1]}
-                tickFormatter={(v) =>
-                  metric === "BA" ? `${v}%` : Number(v).toFixed(1)
-                }
-                tick={{ fill: "#526574", fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                formatter={(value, _name, item) => [
-                  formatValue(Number(value)),
-                  item.dataKey === "baseline"
-                    ? "16채널 기준"
-                    : "5~7채널 개선 모델",
-                ]}
-                contentStyle={{
-                  background: "#fff",
-                  border: "1px solid #DCE5EB",
-                  borderRadius: 12,
-                }}
-              />
-              <Bar
-                dataKey="baseline"
-                name="16채널 기준"
-                fill="#A6B4C0"
-                radius={[7, 7, 0, 0]}
-              />
-              <Bar
-                dataKey="proposed"
-                name="5~7채널 개선 모델"
-                fill="#5F877F"
-                radius={[7, 7, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+          <h3 className="benchmark-chart-title">
+            Cross-session Generalization — LOSO {metric}
+          </h3>
+          <BenchmarkChart
+            rows={
+              macro
+                ? selected
+                  ? [f1]
+                  : losoMacroF1.filter((row) => row.participant !== "ALL")
+                : rows
+            }
+            metric={metric}
+            label={`Cross-session Generalization — LOSO ${metric}`}
+          />
         </div>
         <aside className="subject-summary" aria-live="polite">
-          <span className="eyebrow">선택 결과</span>
+          <span className="eyebrow">선택 결과 · {metric}</span>
           <div className="subject-identity">
-            <strong>{selected?.id ?? "ALL"}</strong>
-            <span>{selected?.name ?? "4인 전체 비교"}</span>
+            <strong>{subject}</strong>
+            <span>
+              {subject === "ALL" ? "4인 평균" : `Participant ${subject}`}
+            </span>
           </div>
           <dl>
+            {(macro
+              ? comparisonConditions.map((c) => ({
+                  name: c.name,
+                  value: f1[c.key],
+                }))
+              : [
+                  { name: "16ch Baseline", value: baseline },
+                  { name: "Low Channel + TTA", value: proposed },
+                ]
+            ).map((item) => (
+              <div className="benchmark-selected-score" key={item.name}>
+                <dt>{item.name}</dt>
+                <dd>{formatValue(item.value)}</dd>
+              </div>
+            ))}
             <div>
               <dt>채널 수</dt>
               <dd>{selected?.channels ?? "5ch / 7ch"}</dd>
             </div>
             <div>
-              <dt>개선 폭</dt>
-              <dd>
-                {metric === "BA"
-                  ? `+${improvement.toFixed(2)}%p`
-                  : `+${improvement.toFixed(4)}`}
+              <dt>개선 폭 · vs 16ch</dt>
+              <dd data-testid="loso-improvement">
+                {metric === "AUC"
+                  ? `+${(proposed - baseline).toFixed(4)}`
+                  : percentagePointDelta(proposed - baseline)}
               </dd>
             </div>
             <div>
@@ -166,9 +160,13 @@ export function SubjectResultChart() {
             <div>
               <dt>평가 규모</dt>
               <dd>
-                {selected
-                  ? `${selected.sessions} · ${selected.trials}회`
-                  : "18개 런 · 1,440회"}
+                {macro
+                  ? subject === "ALL"
+                    ? "4인 · 타 날짜 LOSO"
+                    : `Participant ${subject} · 타 날짜 LOSO`
+                  : selected
+                    ? `${selected.sessions} · ${selected.trials}회`
+                    : "18개 런 · 1,440회"}
               </dd>
             </div>
           </dl>
@@ -177,12 +175,16 @@ export function SubjectResultChart() {
       <div className="model-roster">
         <div className="model-roster-heading">
           <span>개인별 최적 모델</span>
-          <strong>각 피험자의 신호 특성에 맞는 최적 조합을 적용했습니다.</strong>
+          <strong>
+            각 피험자의 신호 특성에 맞는 최적 조합을 적용했습니다.
+          </strong>
         </div>
         <div className="model-roster-grid">
           {subjectResults.map((item) => (
             <div key={item.id}>
-              <span>{item.id} · {item.name} · {item.channels}</span>
+              <span>
+                {item.id} · {item.channels}
+              </span>
               <strong>{item.model}</strong>
               <p>{modelDescriptions[item.id]}</p>
             </div>
@@ -196,18 +198,115 @@ export function SubjectResultChart() {
               핵심 5~7채널 선택 → OAS 공분산 안정화 → 리만 접공간 특징 →
               CausalEA 입력 정렬 → CausalLogitCenter 출력 영점 보정
             </p>
+            <div className="external-f1-conditions">
+              {externalMacroF1
+                .filter((_, index) => index === 0 || index === 3)
+                .map((item) => (
+                  <span key={item.condition}>
+                    {item.condition}
+                    <b>
+                      {item.mean.toFixed(2)} ± {item.sd.toFixed(2)}%
+                    </b>
+                  </span>
+                ))}
+            </div>
           </div>
           <div className="external-model-result">
-            <span>평균 BA</span>
-            <strong>59.98% → 65.87%</strong>
-            <b>100명 중 74명 성능 향상</b>
+            <span>평균 Macro-F1</span>
+            <strong>59.33% → 65.77%</strong>
+            <b>+6.44%p · 74/100명 성능 향상</b>
+            <p className="benchmark-statistics">
+              Paired t-test: p = {benchmarkStatistics.external.pairedT}
+              <br />
+              Wilcoxon: p = {benchmarkStatistics.external.wilcoxon}
+              <br />N = 100 participants
+            </p>
           </div>
         </div>
       </div>
     </div>
   );
 }
-export function ResultChart() {
+export function ResultChart({
+  metric = "Macro-F1",
+}: {
+  metric?: "Macro-F1" | "BA";
+}) {
+  const [showLegacyBA, setShowLegacyBA] = useState(false);
+  if (metric === "BA") return <LegacyOnlineBAChart />;
+  return (
+    <div className="result-chart online-result-chart macro-f1-result-chart">
+      <BenchmarkChart
+        rows={onlineMacroF1}
+        label="Online 50-session Performance — Macro-F1"
+        showGain
+      />
+      <div className="online-chart-summary">
+        <span>4인 평균 Macro-F1</span>
+        <strong>67.46% → 74.23%</strong>
+        <b>+6.77%p</b>
+      </div>
+      <p className="benchmark-context-note">
+        4인 전원 16ch Baseline 대비 Macro-F1 향상 · Historical research
+        benchmark · ArtGate90 적용
+      </p>
+      <p className="benchmark-statistics">
+        <strong>50-session paired tests</strong>
+        <br />
+        Paired t-test: p = {benchmarkStatistics.online.pairedT}
+        <br />
+        Wilcoxon signed-rank test: p = {benchmarkStatistics.online.wilcoxon}
+        <br />N = 50 sessions · 세션 단위 평균 차이 +6.79%p. 위의 +6.77%p는 4인
+        균등 평균입니다.
+      </p>
+      <details
+        className="legacy-ba-details"
+        onToggle={(event) => setShowLegacyBA(event.currentTarget.open)}
+      >
+        <summary>기존 BA 보조 지표 보기</summary>
+        {showLegacyBA && (
+          <>
+            <BenchmarkValueTable
+              rows={onlinePosterBA}
+              label="Online BA · poster"
+            />
+            <h4 className="benchmark-chart-title">
+              기존 현장 라이브 대비 보정 결과 — BA
+            </h4>
+            <div className="benchmark-table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>기존 BA 평가</th>
+                    <th>현장 라이브</th>
+                    <th>보정 결과</th>
+                    <th>차이</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {comparison.map((item) => (
+                    <tr key={item.name}>
+                      <th>{item.name}</th>
+                      <td>{item.baselineBA.toFixed(2)}%</td>
+                      <td>{item.adjustedBA.toFixed(2)}%</td>
+                      <td>{percentagePointDelta(item.improvement)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p>
+              위 BA 코호트 표는 현장 라이브와 보정 결과의 비교이며, 새로운
+              Macro-F1의 16ch Baseline 비교와 다릅니다. 기존 BA 데이터와 유의성
+              값은 보조 지표로 보존했습니다.
+            </p>
+          </>
+        )}
+      </details>
+    </div>
+  );
+}
+function LegacyOnlineBAChart() {
   return (
     <div className="result-chart online-result-chart">
       <div className="chart-legend online-legend">
@@ -363,7 +462,7 @@ export default function Comparison() {
           </button>
         </div>
         {dataset === "online" && metric === "BA" ? (
-          <ResultChart />
+          <ResultChart metric="BA" />
         ) : (
           <div className="metric-empty">
             <span>
@@ -386,8 +485,8 @@ export default function Comparison() {
           </div>
         )}
         <p className="source-note">
-          서로 다른 평가 조건을 직접 비교할 때는 세션 수와 트라이얼
-          수를 함께 확인하세요.
+          서로 다른 평가 조건을 직접 비교할 때는 세션 수와 트라이얼 수를 함께
+          확인하세요.
         </p>
       </div>
       <div className="panel subject-comparison-panel">

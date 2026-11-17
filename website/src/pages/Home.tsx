@@ -23,6 +23,7 @@ import { HeroBust } from "../components/HeroBust";
 import { StabilityDiagram } from "../components/StabilityDiagram";
 import { StabilityFormula } from "../components/StabilityFormula";
 import { ResultChart, SubjectResultChart } from "../components/Comparison";
+import { losoF1Average, onlineF1Average, externalMacroF1 } from "../data/researchBenchmarks";
 export function Pipeline() {
   const steps = [
     {
@@ -183,15 +184,15 @@ export default function Home() {
       </section>
       <section className="container metrics">
         {[
-          ["16 → 5~7", "CHANNEL OPTIMIZATION", "핵심 채널 중심 최적화"],
-          ["0.8100", "LOSO · MEAN AUC", "4인 제안 모델 평균"],
-          ["76.06%", "LOSO · MEAN BA", "18개 런 · 1,440회"],
-          ["74.71%", "ONLINE · 50 SESSIONS", "3,910회 · 영점조절 적용"],
+          ["16 → 5–7", "Electrode Reduction", "최대 68.75% 전극 감소"],
+          [`${losoF1Average.lowTta.toFixed(2)}%`, "LOSO Macro-F1", "타 날짜 일반화 성능"],
+          [`${onlineF1Average.lowTta.toFixed(2)}%`, "Online Macro-F1", "실전 온라인 50세션"],
+          [`${externalMacroF1[3].mean.toFixed(2)}%`, "External Validation", "PhysioNet 100명 검증"],
         ].map(([v, l, d]) => (
           <div
             key={l}
             tabIndex={0}
-            title={`출처: 사용자 제공 보고서 요약 · ${d}. 평가 조건 간 직접 비교에 유의하세요.`}
+            title={`Historical research benchmark · ${l} · ${d}`}
           >
             <span>{l}</span>
             <strong>{v}</strong>
@@ -488,25 +489,25 @@ export default function Home() {
         <div>
           <span className="eyebrow">04 / 연구 결과</span>
           <h2>
-            실전 온라인 세션.
+            실전 온라인 Macro-F1.
           </h2>
           <div className="result-highlight">
-            <span>평균 BA</span>
+            <span>4인 평균 Macro-F1 · 16ch Baseline 대비</span>
             <div>
-              <strong>54.50%</strong>
+              <strong>67.46%</strong>
               <i>→</i>
-              <strong>74.71%</strong>
+              <strong>74.23%</strong>
             </div>
-            <b>+20.21%p</b>
+            <b>+6.77%p</b>
           </div>
           <p className="result-explanation">
-            50세션 3,910회의 실전 온라인 검증에서 적응형 영점조절 적용 전후를
-            비교했습니다. <b>p &lt; 10⁻¹⁷</b>
+            실전 온라인 50세션에서 16ch Baseline과 Low Channel + TTA를 비교했습니다.
+            4인 전원 Macro-F1이 향상했으며, 4인 평균 개선 폭은 <b>+6.77%p</b>입니다.
           </p>
         </div>
         <div className="panel">
           <div className="panel-title">
-            실전 온라인 정확도 → 영점조절 적용 후{" "}
+            Online 50-session Performance — Macro-F1{" "}
             <span className="badge research">Research Data</span>
           </div>
           <ResultChart />
@@ -521,32 +522,14 @@ export default function Home() {
           <SubjectResultChart />
         </div>
         <div className="insight-row">
-          <div>
-            <span>LOSO AUC</span>
-            <strong>0.8100</strong>
-            <p>4인 LOSO 제안 모델 평균</p>
-          </div>
-          <div>
-            <span>LOSO BA</span>
-            <strong>76.06%</strong>
-            <p>18개 런 · 1,440회</p>
-          </div>
-          <div>
-            <span>ONLINE 50 SESSIONS</span>
-            <strong>74.71%</strong>
-            <p>영점조절 적용 · 3,910회</p>
-          </div>
-          <div>
-            <span>외부 검증 · 100명</span>
-            <strong>65.87%</strong>
-            <p>59.98% → 65.87% · 74명 향상</p>
-          </div>
+          <div><span>LOSO Macro-F1</span><strong>71.72%</strong><p>+8.47%p 향상</p></div>
+          <div><span>Online Macro-F1</span><strong>74.23%</strong><p>+6.77%p 향상</p></div>
+          <div><span>External Macro-F1</span><strong>65.77%</strong><p>+6.44%p 향상</p></div>
+          <div><span>External Improvement</span><strong>74/100</strong><p>성능 향상 피험자 수</p></div>
         </div>
         <p className="muted">
-          LOSO는 저채널 모델의 피험자·날짜 일반화 검증이며, 온라인 50세션은
-          영점조절 적용 전후의 실전 온라인 검증입니다. 외부검증은 PhysioNet
-          EEGBCI 100명에게 동일한 저채널+TTA 파이프라인을 적용한 결과입니다.
-          서로 다른 평가 조건의 수치를 직접 비교하지 않습니다.
+          LOSO, 온라인 50세션, PhysioNet EEGBCI 100명 검증은 별도 평가입니다.
+          이 값은 historical research benchmark이며 실제 웹사이트 Backend의 동적 추론 결과와 구분합니다.
         </p>
       </section>
       <section className="container section">

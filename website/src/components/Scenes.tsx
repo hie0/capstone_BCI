@@ -55,6 +55,7 @@ function Html(props: ComponentProps<typeof DreiHtml>) {
     />
   );
 }
+export { Html as SceneHtml };
 class SceneBoundary extends Component<
   { children: ReactNode; fallback: ReactNode },
   { failed: boolean }

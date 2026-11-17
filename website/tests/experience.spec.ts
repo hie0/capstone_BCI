@@ -47,6 +47,20 @@ test("all smart home commands, immediate selection, logs, reset and synthetic pl
   ).toContainText("OFF");
   await page.getByRole("button", { name: /RIGHT.*TV 켜기/ }).click();
   await expect(page.getByTestId("command-count")).toHaveText("009");
+  await expect(page.locator(".wearable-live-scene canvas")).toHaveCount(0);
+  await expect(
+    page
+      .locator(".wearable-live-scene")
+      .getByRole("img", { name: "EEG 두피 전극 배치도" }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(".wearable-live-scene")
+      .getByRole("button", { name: "전극 C3", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByRole("button", { name: "3D 보기", exact: true }),
+  ).toHaveCount(0);
   await page.screenshot({
     path: "tests/artifacts/smart-home-1440.png",
     fullPage: true,
@@ -105,10 +119,10 @@ test("home research wearable and mobile layout", async ({ page }) => {
   await page.getByRole("link", { name: "연구 결과", exact: true }).click();
   await expect(page).toHaveURL(/#\/#research-results$/);
   await expect(
-    page.getByRole("heading", { name: "실전 온라인 세션." }),
+    page.getByRole("heading", { name: "실전 온라인 Macro-F1." }),
   ).toBeVisible();
-  await expect(page.locator(".result-highlight")).toContainText("54.50%");
-  await expect(page.locator(".result-highlight")).toContainText("74.71%");
+  await expect(page.locator(".result-highlight")).toContainText("67.46%");
+  await expect(page.locator(".result-highlight")).toContainText("74.23%");
   await page.getByRole("link", { name: "연구 내용", exact: true }).click();
   await page.screenshot({
     path: "tests/artifacts/research-1440.png",
@@ -120,7 +134,7 @@ test("home research wearable and mobile layout", async ({ page }) => {
     .hover();
   await expect(
     page.locator(".subject-comparison-panel .recharts-tooltip-wrapper"),
-  ).toContainText("16채널 기준");
+  ).toContainText("16ch Baseline");
   await page.getByRole("button", { name: "제외 채널" }).click();
   await page
     .getByRole("button", { name: "전극 Fp2", exact: true })

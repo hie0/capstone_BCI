@@ -137,7 +137,7 @@ export default function Research() {
         <span className="eyebrow">04 / RESULTS & ABLATION</span>
         <h2>영점조절 적용 전후 온라인 성능</h2>
         <div className="panel">
-          <ResultChart />
+          <ResultChart metric="BA" />
         </div>
         <div className="panel subject-comparison-panel">
           <div className="panel-title">

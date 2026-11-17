@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useBCI, menus } from "../store";
 import { Settings, Waveform, PlayButton } from "./Controls";
-import { Atlas2D, Brain, Room, RoomFallback, Scene } from "./Scenes";
+import { Atlas2D, Room, RoomFallback, Scene } from "./Scenes";
 import "./SmartHome.css";
 import { configuredChannels } from "../data/channels";
 import { RecordedMetrics } from "./RecordedMetrics";
@@ -27,8 +27,7 @@ const actions = [
 ];
 export default function SmartHome() {
   const s = useBCI();
-  const [, setSelectedElectrode] = useState("C4");
-  const [flatElectrodes, setFlatElectrodes] = useState(false);
+  const [selectedElectrode, setSelectedElectrode] = useState("C4");
   const [visualDirection, setVisualDirection] = useState<Direction>();
   const recorded = s.inputMode === "recorded";
   const channels = recorded
@@ -82,43 +81,16 @@ export default function SmartHome() {
               <strong>뇌 자극 부위</strong>
               <span>운동 상상 명령에 따라 강조 위치가 바뀝니다.</span>
             </div>
-            <button
-              className="text-button"
-              onClick={() => setFlatElectrodes((value) => !value)}
-            >
-              {flatElectrodes ? "3D 보기" : "2D 배치도"}
-            </button>
+            <span className="small muted">2D CHANNEL MAP</span>
           </div>
           <div className="wearable-live-scene">
-            {flatElectrodes ? (
-              <Atlas2D
-                mode={s.channelMode}
-                selected=""
-                onSelect={setSelectedElectrode}
-                direction={visualDirection}
-                activeOverride={channels}
-              />
-            ) : (
-              <Scene
-                fallback={
-                  <Atlas2D
-                    mode={s.channelMode}
-                    selected=""
-                    onSelect={setSelectedElectrode}
-                    direction={visualDirection}
-                    activeOverride={channels}
-                  />
-                }
-              >
-                <Brain
-                  mode={s.channelMode}
-                  selected=""
-                  onSelect={setSelectedElectrode}
-                  direction={visualDirection}
-                  activeOverride={channels}
-                />
-              </Scene>
-            )}
+            <Atlas2D
+              mode={s.channelMode}
+              selected={selectedElectrode}
+              onSelect={setSelectedElectrode}
+              direction={visualDirection}
+              activeOverride={channels}
+            />
           </div>
           <div className="wearable-live-status" aria-live="polite">
             <span>{s.currentCommand ?? "READY"}</span>
