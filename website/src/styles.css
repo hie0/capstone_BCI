@@ -3600,20 +3600,29 @@ td:first-child {
 }
 
 .stability-flow article > code {
+  container-type: inline-size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
   margin-top: auto;
-  padding-top: 10px;
+  padding: 12px 0 0;
   border-top: 1px solid #dce6e3;
   color: var(--accent-strong);
-  font: 400 17px/1.6 "STIX Two Math", "Cambria Math", "STIXGeneral", "Times New Roman", serif;
-  overflow-wrap: anywhere;
+  font: 400 17px/1 "STIX Two Math", "Cambria Math", "STIXGeneral", "Times New Roman", serif;
 }
 
 .stability-formula {
+  display: inline-block;
+  flex: none;
+  margin: 0;
   font-family: "STIX Two Math", "Cambria Math", "STIXGeneral", "Times New Roman", serif;
-  font-size: 17px;
+  font-size: clamp(14px, 9cqi, 17px);
   font-style: normal;
   font-synthesis: none;
   math-style: normal;
+  white-space: nowrap;
+  line-height: 1.5;
 }
 
 .stability-flow > i {
@@ -3621,6 +3630,80 @@ td:first-child {
   color: var(--accent-strong);
   font-size: 18px;
   font-style: normal;
+}
+
+.stability-formula .formula-accent {
+  position: relative;
+  display: inline-block;
+  padding-top: 0.4em;
+  line-height: 1;
+}
+
+.stability-formula .formula-accent > svg {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0.85em;
+  height: 0.4em;
+  overflow: visible;
+}
+
+.stability-formula .formula-accent > i {
+  display: inline-block;
+  line-height: 1;
+}
+
+.stability-formula .formula-script {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.stability-formula .formula-scripts {
+  display: inline-flex;
+  flex-direction: column;
+  align-self: center;
+  margin-left: 0.04em;
+  font-size: 0.65em;
+  line-height: 1;
+}
+
+.stability-formula .formula-scripts > sup,
+.stability-formula .formula-scripts > sub {
+  position: static;
+  font-size: inherit;
+  line-height: 1;
+}
+
+.stability-formula .formula-scripts > sub:only-child {
+  transform: translateY(0.45em);
+}
+
+.stability-formula .formula-scripts > sup:only-child {
+  transform: translateY(-0.55em);
+}
+
+.stability-formula-oas {
+  font-size: clamp(11px, 7.1cqi, 17px);
+}
+
+.stability-formula-oas .formula-oas-symbol {
+  font-size: 1.12em;
+}
+
+.stability-formula .formula-fraction {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  vertical-align: middle;
+  margin: 0 0.2em;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.stability-formula .formula-fraction > span:first-child {
+  border-bottom: 1px solid currentColor;
+  padding: 0 0.1em 0.15em;
 }
 
 .stability-summary {

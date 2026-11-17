@@ -477,9 +477,6 @@ export default function Home() {
             <span>Logit Centering</span>
             <strong>→ LEFT / RIGHT MI Classification</strong>
           </div>
-          <p className="source-note">
-            연구 포스터의 covariance stabilization·online adaptation 방법을 기준으로 정리했습니다.
-          </p>
         </div>
       </section>
       <section
