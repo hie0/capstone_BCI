@@ -5,15 +5,12 @@ import {
   Brain,
   Check,
   RotateCcw,
-  Sparkles,
   Volume2,
 } from "lucide-react";
 import { Atlas2D } from "./Scenes";
 import { Settings, Waveform } from "./Controls";
 import type { Direction } from "../data/research";
 import "./CommunicationBoard.css";
-
-type TreeViewMode = "curved" | "butterfly";
 
 type OptionData = {
   label: string;
@@ -178,7 +175,6 @@ const TREE_NODES: Record<string, DecisionNode> = {
 export function CommunicationBoard() {
   const [currentNodeId, setCurrentNodeId] = useState<string>("ROOT");
   const [history, setHistory] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<TreeViewMode>("curved");
 
   // Balance Gauge State: 50% Center, Threshold 80%
   const [left, setLeft] = useState(50);
@@ -360,276 +356,202 @@ export function CommunicationBoard() {
         </div>
       ) : null}
 
-      {/* View Switcher: Concept 1 vs Concept 2 */}
-      <div className="tree-view-switcher">
-        <span className="switcher-label">트리 구조도 시안 비교:</span>
-        <div className="switcher-tabs">
-          <button
-            className={viewMode === "curved" ? "active" : ""}
-            onClick={() => setViewMode("curved")}
-          >
-            🌿 시안 1: 모던 실크 곡선 트리
-          </button>
-          <button
-            className={viewMode === "butterfly" ? "active" : ""}
-            onClick={() => setViewMode("butterfly")}
-          >
-            🦋 시안 2: 좌우 듀얼 윙 트리
-          </button>
-        </div>
-      </div>
-
       {/* Tree Visualization Container (Refined Sage Green vs Slate Blue Harmony) */}
       <div className="tree-diagram-shell">
-        {viewMode === "curved" ? (
-          <div className="curved-tree-container">
-            <svg viewBox="0 0 760 300" className="curved-tree-svg" fill="none">
-              {/* Connector Bezier Curves: Left is Sage Green, Right is Slate Blue */}
-              <path
-                d="M 380 35 C 380 65, 200 60, 200 90"
+        <div className="curved-tree-container">
+          <svg viewBox="0 0 760 300" className="curved-tree-svg" fill="none">
+            {/* Connector Bezier Curves: Left is Sage Green, Right is Slate Blue */}
+            <path
+              d="M 380 35 C 380 65, 200 60, 200 90"
+              stroke={isLeftSelectedInBranch("PHYSICAL") ? "#2F6B5C" : "#CBD5E1"}
+              strokeWidth={isLeftSelectedInBranch("PHYSICAL") ? 3 : 1.8}
+              strokeDasharray={isLeftSelectedInBranch("PHYSICAL") ? undefined : "4"}
+            />
+            <path
+              d="M 380 35 C 380 65, 560 60, 560 90"
+              stroke={isLeftSelectedInBranch("MEDICAL") ? "#345C7D" : "#CBD5E1"}
+              strokeWidth={isLeftSelectedInBranch("MEDICAL") ? 3 : 1.8}
+              strokeDasharray={isLeftSelectedInBranch("MEDICAL") ? undefined : "4"}
+            />
+
+            <path
+              d="M 200 125 C 200 148, 110 145, 110 170"
+              stroke={isLeftSelectedInBranch("FOOD") ? "#2F6B5C" : "#CBD5E1"}
+              strokeWidth={isLeftSelectedInBranch("FOOD") ? 2.5 : 1.5}
+              strokeDasharray={isLeftSelectedInBranch("FOOD") ? undefined : "3"}
+            />
+            <path
+              d="M 200 125 C 200 148, 290 145, 290 170"
+              stroke={isLeftSelectedInBranch("ENV") ? "#2F6B5C" : "#CBD5E1"}
+              strokeWidth={isLeftSelectedInBranch("ENV") ? 2.5 : 1.5}
+              strokeDasharray={isLeftSelectedInBranch("ENV") ? undefined : "3"}
+            />
+
+            <path
+              d="M 560 125 C 560 148, 470 145, 470 170"
+              stroke={isLeftSelectedInBranch("PAIN") ? "#345C7D" : "#CBD5E1"}
+              strokeWidth={isLeftSelectedInBranch("PAIN") ? 2.5 : 1.5}
+              strokeDasharray={isLeftSelectedInBranch("PAIN") ? undefined : "3"}
+            />
+            <path
+              d="M 560 125 C 560 148, 650 145, 650 170"
+              stroke={isLeftSelectedInBranch("CARE") ? "#345C7D" : "#CBD5E1"}
+              strokeWidth={isLeftSelectedInBranch("CARE") ? 2.5 : 1.5}
+              strokeDasharray={isLeftSelectedInBranch("CARE") ? undefined : "3"}
+            />
+
+            {/* Terminal Connection Lines */}
+            <path d="M 110 205 C 110 220, 65 220, 65 240" stroke="#CBD5E1" strokeWidth={1.5} />
+            <path d="M 110 205 C 110 220, 155 220, 155 240" stroke="#CBD5E1" strokeWidth={1.5} />
+            <path d="M 290 205 C 290 220, 245 220, 245 240" stroke="#CBD5E1" strokeWidth={1.5} />
+            <path d="M 290 205 C 290 220, 335 220, 335 240" stroke="#CBD5E1" strokeWidth={1.5} />
+            <path d="M 470 205 C 470 220, 425 220, 425 240" stroke="#CBD5E1" strokeWidth={1.5} />
+            <path d="M 470 205 C 470 220, 515 220, 515 240" stroke="#CBD5E1" strokeWidth={1.5} />
+            <path d="M 650 205 C 650 220, 605 220, 605 240" stroke="#CBD5E1" strokeWidth={1.5} />
+            <path d="M 650 205 C 650 220, 695 220, 695 240" stroke="#CBD5E1" strokeWidth={1.5} />
+
+            {/* ROOT NODE */}
+            <g transform="translate(315, 14)">
+              <rect width="130" height="34" rx="17" fill="#1E293B" />
+              <text x="65" y="22" fill="#FFFFFF" fontSize="11" fontWeight="800" textAnchor="middle">
+                🧠 의사표현 시작
+              </text>
+            </g>
+
+            {/* LEVEL 1 NODES: Left (Sage Green) vs Right (Slate Blue) */}
+            <g transform="translate(115, 88)">
+              <rect
+                width="170"
+                height="36"
+                rx="18"
+                fill={isLeftSelectedInBranch("PHYSICAL") ? "#F0F6F4" : "#FFFFFF"}
                 stroke={isLeftSelectedInBranch("PHYSICAL") ? "#2F6B5C" : "#CBD5E1"}
-                strokeWidth={isLeftSelectedInBranch("PHYSICAL") ? 3 : 1.8}
-                strokeDasharray={isLeftSelectedInBranch("PHYSICAL") ? undefined : "4"}
+                strokeWidth={isLeftSelectedInBranch("PHYSICAL") ? 2.5 : 1.5}
               />
-              <path
-                d="M 380 35 C 380 65, 560 60, 560 90"
+              <text
+                x="85"
+                y="23"
+                fill={isLeftSelectedInBranch("PHYSICAL") ? "#2F6B5C" : "#64748B"}
+                fontSize="12"
+                fontWeight="800"
+                textAnchor="middle"
+              >
+                ← 신체 욕구 (L)
+              </text>
+            </g>
+
+            <g transform="translate(475, 88)">
+              <rect
+                width="170"
+                height="36"
+                rx="18"
+                fill={isLeftSelectedInBranch("MEDICAL") ? "#F0F4F8" : "#FFFFFF"}
                 stroke={isLeftSelectedInBranch("MEDICAL") ? "#345C7D" : "#CBD5E1"}
-                strokeWidth={isLeftSelectedInBranch("MEDICAL") ? 3 : 1.8}
-                strokeDasharray={isLeftSelectedInBranch("MEDICAL") ? undefined : "4"}
+                strokeWidth={isLeftSelectedInBranch("MEDICAL") ? 2.5 : 1.5}
               />
+              <text
+                x="85"
+                y="23"
+                fill={isLeftSelectedInBranch("MEDICAL") ? "#345C7D" : "#64748B"}
+                fontSize="12"
+                fontWeight="800"
+                textAnchor="middle"
+              >
+                상태·도움 및 감정 (R) →
+              </text>
+            </g>
 
-              <path
-                d="M 200 125 C 200 148, 110 145, 110 170"
-                stroke={isLeftSelectedInBranch("FOOD") ? "#2F6B5C" : "#CBD5E1"}
-                strokeWidth={isLeftSelectedInBranch("FOOD") ? 2.5 : 1.5}
-                strokeDasharray={isLeftSelectedInBranch("FOOD") ? undefined : "3"}
+            {/* LEVEL 2 NODES */}
+            <g transform="translate(45, 168)">
+              <rect
+                width="130"
+                height="32"
+                rx="16"
+                fill={isLeftSelectedInBranch("FOOD") ? "#E3EFEA" : "#FFFFFF"}
+                stroke={isLeftSelectedInBranch("FOOD") ? "#2F6B5C" : "#E2E8F0"}
+                strokeWidth={isLeftSelectedInBranch("FOOD") ? 2 : 1.2}
               />
-              <path
-                d="M 200 125 C 200 148, 290 145, 290 170"
-                stroke={isLeftSelectedInBranch("ENV") ? "#2F6B5C" : "#CBD5E1"}
-                strokeWidth={isLeftSelectedInBranch("ENV") ? 2.5 : 1.5}
-                strokeDasharray={isLeftSelectedInBranch("ENV") ? undefined : "3"}
+              <text x="65" y="21" fill="#2F6B5C" fontSize="10.5" fontWeight="800" textAnchor="middle">
+                음료 & 식사 (L)
+              </text>
+            </g>
+
+            <g transform="translate(225, 168)">
+              <rect
+                width="130"
+                height="32"
+                rx="16"
+                fill={isLeftSelectedInBranch("ENV") ? "#E3EFEA" : "#FFFFFF"}
+                stroke={isLeftSelectedInBranch("ENV") ? "#2F6B5C" : "#E2E8F0"}
+                strokeWidth={isLeftSelectedInBranch("ENV") ? 2 : 1.2}
               />
+              <text x="65" y="21" fill="#64748B" fontSize="10.5" fontWeight="700" textAnchor="middle">
+                자세 & 환경 (R)
+              </text>
+            </g>
 
-              <path
-                d="M 560 125 C 560 148, 470 145, 470 170"
-                stroke={isLeftSelectedInBranch("PAIN") ? "#345C7D" : "#CBD5E1"}
-                strokeWidth={isLeftSelectedInBranch("PAIN") ? 2.5 : 1.5}
-                strokeDasharray={isLeftSelectedInBranch("PAIN") ? undefined : "3"}
+            <g transform="translate(405, 168)">
+              <rect
+                width="130"
+                height="32"
+                rx="16"
+                fill={isLeftSelectedInBranch("PAIN") ? "#E2EBF2" : "#FFFFFF"}
+                stroke={isLeftSelectedInBranch("PAIN") ? "#345C7D" : "#E2E8F0"}
+                strokeWidth={isLeftSelectedInBranch("PAIN") ? 2 : 1.2}
               />
-              <path
-                d="M 560 125 C 560 148, 650 145, 650 170"
-                stroke={isLeftSelectedInBranch("CARE") ? "#345C7D" : "#CBD5E1"}
-                strokeWidth={isLeftSelectedInBranch("CARE") ? 2.5 : 1.5}
-                strokeDasharray={isLeftSelectedInBranch("CARE") ? undefined : "3"}
+              <text x="65" y="21" fill="#345C7D" fontSize="10.5" fontWeight="700" textAnchor="middle">
+                통증 호소 (L)
+              </text>
+            </g>
+
+            <g transform="translate(585, 168)">
+              <rect
+                width="130"
+                height="32"
+                rx="16"
+                fill={isLeftSelectedInBranch("CARE") ? "#E2EBF2" : "#FFFFFF"}
+                stroke={isLeftSelectedInBranch("CARE") ? "#345C7D" : "#E2E8F0"}
+                strokeWidth={isLeftSelectedInBranch("CARE") ? 2 : 1.2}
               />
+              <text x="65" y="21" fill="#345C7D" fontSize="10.5" fontWeight="700" textAnchor="middle">
+                호출 & 감정 (R)
+              </text>
+            </g>
 
-              {/* Terminal Connection Lines */}
-              <path d="M 110 205 C 110 220, 65 220, 65 240" stroke="#CBD5E1" strokeWidth={1.5} />
-              <path d="M 110 205 C 110 220, 155 220, 155 240" stroke="#CBD5E1" strokeWidth={1.5} />
-              <path d="M 290 205 C 290 220, 245 220, 245 240" stroke="#CBD5E1" strokeWidth={1.5} />
-              <path d="M 290 205 C 290 220, 335 220, 335 240" stroke="#CBD5E1" strokeWidth={1.5} />
-              <path d="M 470 205 C 470 220, 425 220, 425 240" stroke="#CBD5E1" strokeWidth={1.5} />
-              <path d="M 470 205 C 470 220, 515 220, 515 240" stroke="#CBD5E1" strokeWidth={1.5} />
-              <path d="M 650 205 C 650 220, 605 220, 605 240" stroke="#CBD5E1" strokeWidth={1.5} />
-              <path d="M 650 205 C 650 220, 695 220, 695 240" stroke="#CBD5E1" strokeWidth={1.5} />
-
-              {/* ROOT NODE */}
-              <g transform="translate(315, 14)">
-                <rect width="130" height="34" rx="17" fill="#1E293B" />
-                <text x="65" y="22" fill="#FFFFFF" fontSize="11" fontWeight="800" textAnchor="middle">
-                  🧠 의사표현 시작
-                </text>
-              </g>
-
-              {/* LEVEL 1 NODES: Left (Sage Green) vs Right (Slate Blue) */}
-              <g transform="translate(115, 88)">
+            {/* LEVEL 3 TERMINAL NODES (8 Messages) */}
+            {[
+              { x: 18, text: "💧 물 주세요", active: currentNodeId === "FOOD", side: "left" },
+              { x: 118, text: "🍚 밥 먹을래요", active: currentNodeId === "FOOD", side: "left" },
+              { x: 208, text: "🛏 자세 변경", active: currentNodeId === "ENV", side: "left" },
+              { x: 298, text: "🌡 추워요/더워요", active: currentNodeId === "ENV", side: "left" },
+              { x: 388, text: "🤕 머리 아파요", active: currentNodeId === "PAIN", side: "right" },
+              { x: 478, text: "😣 배가 아파요", active: currentNodeId === "PAIN", side: "right" },
+              { x: 568, text: "🚨 간호사 호출", active: currentNodeId === "CARE", side: "right" },
+              { x: 658, text: "❤️ 고마워요", active: currentNodeId === "CARE", side: "right" },
+            ].map((item, idx) => (
+              <g key={idx} transform={`translate(${item.x}, 242)`}>
                 <rect
-                  width="170"
-                  height="36"
-                  rx="18"
-                  fill={isLeftSelectedInBranch("PHYSICAL") ? "#F0F6F4" : "#FFFFFF"}
-                  stroke={isLeftSelectedInBranch("PHYSICAL") ? "#2F6B5C" : "#CBD5E1"}
-                  strokeWidth={isLeftSelectedInBranch("PHYSICAL") ? 2.5 : 1.5}
+                  width="84"
+                  height="38"
+                  rx="8"
+                  fill={item.active ? (item.side === "left" ? "#2F6B5C" : "#345C7D") : "#FFFFFF"}
+                  stroke={item.active ? (item.side === "left" ? "#24584B" : "#284A65") : "#E2E8F0"}
+                  strokeWidth={item.active ? 2 : 1}
                 />
                 <text
-                  x="85"
-                  y="23"
-                  fill={isLeftSelectedInBranch("PHYSICAL") ? "#2F6B5C" : "#64748B"}
-                  fontSize="12"
+                  x="42"
+                  y="24"
+                  fill={item.active ? "#FFFFFF" : "#475569"}
+                  fontSize="9.5"
                   fontWeight="800"
                   textAnchor="middle"
                 >
-                  ← 신체 욕구 (L)
+                  {item.text}
                 </text>
               </g>
-
-              <g transform="translate(475, 88)">
-                <rect
-                  width="170"
-                  height="36"
-                  rx="18"
-                  fill={isLeftSelectedInBranch("MEDICAL") ? "#F0F4F8" : "#FFFFFF"}
-                  stroke={isLeftSelectedInBranch("MEDICAL") ? "#345C7D" : "#CBD5E1"}
-                  strokeWidth={isLeftSelectedInBranch("MEDICAL") ? 2.5 : 1.5}
-                />
-                <text
-                  x="85"
-                  y="23"
-                  fill={isLeftSelectedInBranch("MEDICAL") ? "#345C7D" : "#64748B"}
-                  fontSize="12"
-                  fontWeight="800"
-                  textAnchor="middle"
-                >
-                  상태·도움 및 감정 (R) →
-                </text>
-              </g>
-
-              {/* LEVEL 2 NODES */}
-              <g transform="translate(45, 168)">
-                <rect
-                  width="130"
-                  height="32"
-                  rx="16"
-                  fill={isLeftSelectedInBranch("FOOD") ? "#E3EFEA" : "#FFFFFF"}
-                  stroke={isLeftSelectedInBranch("FOOD") ? "#2F6B5C" : "#E2E8F0"}
-                  strokeWidth={isLeftSelectedInBranch("FOOD") ? 2 : 1.2}
-                />
-                <text x="65" y="21" fill="#2F6B5C" fontSize="10.5" fontWeight="800" textAnchor="middle">
-                  음료 & 식사 (L)
-                </text>
-              </g>
-
-              <g transform="translate(225, 168)">
-                <rect
-                  width="130"
-                  height="32"
-                  rx="16"
-                  fill={isLeftSelectedInBranch("ENV") ? "#E3EFEA" : "#FFFFFF"}
-                  stroke={isLeftSelectedInBranch("ENV") ? "#2F6B5C" : "#E2E8F0"}
-                  strokeWidth={isLeftSelectedInBranch("ENV") ? 2 : 1.2}
-                />
-                <text x="65" y="21" fill="#64748B" fontSize="10.5" fontWeight="700" textAnchor="middle">
-                  자세 & 환경 (R)
-                </text>
-              </g>
-
-              <g transform="translate(405, 168)">
-                <rect
-                  width="130"
-                  height="32"
-                  rx="16"
-                  fill={isLeftSelectedInBranch("PAIN") ? "#E2EBF2" : "#FFFFFF"}
-                  stroke={isLeftSelectedInBranch("PAIN") ? "#345C7D" : "#E2E8F0"}
-                  strokeWidth={isLeftSelectedInBranch("PAIN") ? 2 : 1.2}
-                />
-                <text x="65" y="21" fill="#345C7D" fontSize="10.5" fontWeight="700" textAnchor="middle">
-                  통증 호소 (L)
-                </text>
-              </g>
-
-              <g transform="translate(585, 168)">
-                <rect
-                  width="130"
-                  height="32"
-                  rx="16"
-                  fill={isLeftSelectedInBranch("CARE") ? "#E2EBF2" : "#FFFFFF"}
-                  stroke={isLeftSelectedInBranch("CARE") ? "#345C7D" : "#E2E8F0"}
-                  strokeWidth={isLeftSelectedInBranch("CARE") ? 2 : 1.2}
-                />
-                <text x="65" y="21" fill="#345C7D" fontSize="10.5" fontWeight="700" textAnchor="middle">
-                  호출 & 감정 (R)
-                </text>
-              </g>
-
-              {/* LEVEL 3 TERMINAL NODES (8 Messages) */}
-              {[
-                { x: 18, text: "💧 물 주세요", active: currentNodeId === "FOOD", side: "left" },
-                { x: 118, text: "🍚 밥 먹을래요", active: currentNodeId === "FOOD", side: "left" },
-                { x: 208, text: "🛏 자세 변경", active: currentNodeId === "ENV", side: "left" },
-                { x: 298, text: "🌡 추워요/더워요", active: currentNodeId === "ENV", side: "left" },
-                { x: 388, text: "🤕 머리 아파요", active: currentNodeId === "PAIN", side: "right" },
-                { x: 478, text: "😣 배가 아파요", active: currentNodeId === "PAIN", side: "right" },
-                { x: 568, text: "🚨 간호사 호출", active: currentNodeId === "CARE", side: "right" },
-                { x: 658, text: "❤️ 고마워요", active: currentNodeId === "CARE", side: "right" },
-              ].map((item, idx) => (
-                <g key={idx} transform={`translate(${item.x}, 242)`}>
-                  <rect
-                    width="84"
-                    height="38"
-                    rx="8"
-                    fill={item.active ? (item.side === "left" ? "#2F6B5C" : "#345C7D") : "#FFFFFF"}
-                    stroke={item.active ? (item.side === "left" ? "#24584B" : "#284A65") : "#E2E8F0"}
-                    strokeWidth={item.active ? 2 : 1}
-                  />
-                  <text
-                    x="42"
-                    y="24"
-                    fill={item.active ? "#FFFFFF" : "#475569"}
-                    fontSize="9.5"
-                    fontWeight="800"
-                    textAnchor="middle"
-                  >
-                    {item.text}
-                  </text>
-                </g>
-              ))}
-            </svg>
-          </div>
-        ) : (
-          /* Concept 2: Dual-Wing Butterfly Tree */
-          <div className="butterfly-tree-container">
-            <div className="butterfly-wing left-wing">
-              <div className="wing-header">
-                <span className="wing-badge">← LEFT 상상 (신체 욕구)</span>
-                <strong>신체적·생리적 필요</strong>
-              </div>
-              <div className="wing-leaves">
-                <div className={`leaf-pill ${currentNodeId === "FOOD" ? "active-left" : ""}`}>
-                  <span>💧</span> 물 주세요
-                </div>
-                <div className={`leaf-pill ${currentNodeId === "FOOD" ? "active-left" : ""}`}>
-                  <span>🍚</span> 밥 먹을래요
-                </div>
-                <div className={`leaf-pill ${currentNodeId === "ENV" ? "active-left" : ""}`}>
-                  <span>🛏</span> 자세 변경
-                </div>
-                <div className={`leaf-pill ${currentNodeId === "ENV" ? "active-left" : ""}`}>
-                  <span>🌡</span> 춥다/덥다
-                </div>
-              </div>
-            </div>
-
-            <div className="butterfly-axis">
-              <div className="axis-node">
-                <Sparkles size={16} />
-              </div>
-              <span className="axis-title">중앙 80% 밸런스 축</span>
-              <small>C3 / C4 전극</small>
-            </div>
-
-            <div className="butterfly-wing right-wing">
-              <div className="wing-header">
-                <span className="wing-badge">RIGHT 상상 (상태/도움) →</span>
-                <strong>통증·의료 및 감정</strong>
-              </div>
-              <div className="wing-leaves">
-                <div className={`leaf-pill ${currentNodeId === "PAIN" ? "active-right" : ""}`}>
-                  <span>🤕</span> 머리 아파요
-                </div>
-                <div className={`leaf-pill ${currentNodeId === "PAIN" ? "active-right" : ""}`}>
-                  <span>😣</span> 배가 아파요
-                </div>
-                <div className={`leaf-pill ${currentNodeId === "CARE" ? "active-right" : ""}`}>
-                  <span>🚨</span> 간호사 호출
-                </div>
-                <div className={`leaf-pill ${currentNodeId === "CARE" ? "active-right" : ""}`}>
-                  <span>❤️</span> 고마워요
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+            ))}
+          </svg>
+        </div>
       </div>
 
       {/* Dedicated Dual Option Selection Cards (Directly Above the Gauge) */}

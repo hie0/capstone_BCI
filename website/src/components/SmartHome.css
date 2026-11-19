@@ -1,6 +1,6 @@
 /* PDF reference: Smart Home only. Shared settings and wearable keep their own styles. */
 .smart-home-active .smart-layout {
-  grid-template-columns: minmax(215px, 0.52fr) minmax(560px, 1.98fr);
+  grid-template-columns: minmax(240px, 280px) minmax(560px, 1fr);
   grid-template-areas:
     "wearable room"
     "settings monitor";
@@ -64,17 +64,20 @@
   font-size: 10px;
 }
 .smart-home-active .wearable-live-scene {
-  height: 225px;
+  height: 360px;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: linear-gradient(145deg, #f4f8f7, #e8f0ee);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .smart-home-active .wearable-live-scene .atlas-svg {
   width: 100%;
   height: 100%;
-  transform: scale(.82);
-  transform-origin: center;
+  max-width: 100%;
+  max-height: 100%;
 }
 .smart-home-active .wearable-live-status {
   display: grid;
