@@ -1,0 +1,10 @@
+capstone_core_handover/
+capstone_BCI/
+node_modules/
+dist/
+tests/
+test-results/
+playwright-report/
+.env
+.env.local
+*.tsbuildinfo

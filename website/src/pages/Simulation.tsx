@@ -12,12 +12,16 @@ import SmartHome from "../components/SmartHome";
 import WearableLanding, { WearableHero } from "../components/WearableLanding";
 import { useBCI } from "../store";
 import { useRecordedEEG } from "../useRecordedEEG";
+import { isStaticRecordedReplay } from "../data/backend";
 import CommunicationBoard from "../components/CommunicationBoard";
 import NeuroRunner from "../components/NeuroRunner";
 export default function Simulation() {
   const [params, setParams] = useSearchParams();
   const requestedApp = params.get("app");
-  const app = requestedApp === "game" || requestedApp === "communication" ? requestedApp : "home";
+  const app =
+    requestedApp === "game" || requestedApp === "communication"
+      ? requestedApp
+      : "home";
   const tab =
     params.get("tab") === "applications" ||
     ["home", "game", "communication"].includes(params.get("app") ?? "")
@@ -157,11 +161,14 @@ export default function Simulation() {
             </div>
             <i>→</i>
             <div>
-              <b>03</b> {app === "communication" ? "의사표현 선택" : "가상 장치 제어"}
+              <b>03</b>{" "}
+              {app === "communication" ? "의사표현 선택" : "가상 장치 제어"}
             </div>
             <small>
               {s.inputMode === "recorded"
-                ? "실제 기록 EEG와 세션별 보정 모델을 이용한 가상 장치 제어입니다."
+                ? isStaticRecordedReplay
+                  ? "기록 EEG 기반 실제 모델의 추론 결과를 재생합니다."
+                  : "실제 기록 EEG와 세션별 보정 모델을 이용한 가상 장치 제어입니다."
                 : "실제 EEG 추론을 수행하지 않는 인터랙티브 데모입니다."}
             </small>
           </div>

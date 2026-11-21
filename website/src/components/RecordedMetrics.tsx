@@ -1,4 +1,5 @@
 import { useBCI } from "../store";
+import { isStaticRecordedReplay } from "../data/backend";
 
 // Labels are used only to score predictions already received, never to choose a command.
 export function RecordedMetrics() {
@@ -41,7 +42,11 @@ export function RecordedMetrics() {
           </dd>
         </div>
         <div>
-          <dt>Inference latency</dt>
+          <dt>
+            {isStaticRecordedReplay
+              ? "Inference latency · 사전 추론"
+              : "Inference latency"}
+          </dt>
           <dd data-testid="inference-latency">
             {p ? `${p.latency_ms.toFixed(2)} ms` : "—"}
           </dd>

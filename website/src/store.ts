@@ -101,7 +101,9 @@ export const useBCI = create<State>((set, get) => ({
           Math.max(prediction.probability_left, prediction.probability_right),
       ),
       backendStatus: prediction.quality.is_clean
-        ? "실제 EEG 추론 중"
+        ? prediction.playback_source === "precomputed"
+          ? "기록 추론 결과 재생 중"
+          : "실제 EEG 추론 중"
         : "Artifact · 명령 보류",
     }));
   },
@@ -232,7 +234,8 @@ export const useBCI = create<State>((set, get) => ({
   stop: () =>
     set((s) => ({
       isPlaying: false,
-      ...(s.inputMode === "recorded" && s.backendStatus === "실제 EEG 추론 중"
+      ...(s.inputMode === "recorded" &&
+      ["실제 EEG 추론 중", "기록 추론 결과 재생 중"].includes(s.backendStatus)
         ? { backendStatus: "일시정지" }
         : {}),
     })),

@@ -13,6 +13,7 @@ export type BackendSession = {
   available_models: Record<string, BackendModel>;
 };
 export type BackendPrediction = {
+  playback_source?: "precomputed";
   trial_id: number;
   timestamp: number;
   session_id: string;
@@ -52,6 +53,10 @@ export function selectedBackendModel(s: {
 const configured =
   (import.meta as ImportMeta & { env: Record<string, string> }).env
     .VITE_BCI_API_BASE ?? "";
+export const isStaticRecordedReplay =
+  ((import.meta as ImportMeta & { env: Record<string, string> }).env
+    .VITE_BCI_RECORDED_SOURCE ?? (configured ? "backend" : "static")) ===
+  "static";
 export const apiUrl = (path: string) =>
   `${configured.replace(/\/$/, "")}${path}`;
 export function eegSocketUrl() {

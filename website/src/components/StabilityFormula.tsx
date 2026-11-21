@@ -41,13 +41,13 @@ export function StabilityFormula({ kind }: { kind: "oas" | "tangent" | "alignmen
     ),
     tangent: <span><Script base={<i>S</i>} sub="i" /> = log({inverseR()}<Script base={<i>C</i>} sub="i" />{inverseR()})</span>,
     alignment: <span><Script base={<Accent base="X" mark="tilde" />} sub="t" /> = <Script base={<Accent base="R" mark="bar" />} sub="t" sup="−1/2" /><Script base={<i>X</i>} sub="t" /></span>,
-    centering: <span><Script base={<Accent base="y" mark="hat" />} sub="t" /> = <i>σ</i>(<Script base={<i>z</i>} sub="t" /> − <Script base={<i>μ</i>} sub="t" />)</span>,
+    centering: <span><Script base={<Accent base="p" mark="hat" />} sub="t" /> = <i>σ</i>(<Script base={<i>z</i>} sub="t" /> − <Script base={<i>μ</i>} sub="t" />)</span>,
   };
   const labels = {
     oas: "Σ_OAS = (1 − ρ) Σ-hat + ρ tr(Σ-hat) / C I",
     tangent: "S_i = log(R^(−1/2) C_i R^(−1/2))",
     alignment: "X-tilde_t = R-bar_t^(−1/2) X_t",
-    centering: "y-hat_t = σ(z_t − μ_t)",
+    centering: "p-hat_t = σ(z_t − μ_t)",
   };
   return <span className={`stability-formula stability-formula-${kind}`} role="math" aria-label={labels[kind]}>{formulas[kind]}</span>;
 }

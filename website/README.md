@@ -16,7 +16,7 @@ npm run dev
 
 http://127.0.0.1:5173 에 접속합니다. 빌드: `npm run build`, 정적 빌드 미리보기: `npm run preview`.
 
-Recorded EEG를 사용하려면 저장소 루트에서 `backend/.venv/bin/python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000`도 실행합니다. 데이터 경로·환경·배포 설정은 [Backend 실행 안내](../backend/LOCAL_SETUP.md)를 참고하세요. 구형 연구 Backend와 모델의 백업 목록은 [전환 기록](../BACKEND_MIGRATION.md)에 있습니다.
+Recorded EEG는 기본적으로 기존 모델이 생성한 추론 결과와 표시용 파형을 재생하므로 Python 서버 없이 사용할 수 있습니다. Vercel 설정과 생성·검증 방법은 [Recorded EEG 배포 안내](RECORDED_EEG_DEPLOYMENT.md)를 참고하세요. 원래 실시간 연구 Backend를 사용할 때만 `VITE_BCI_RECORDED_SOURCE=backend`로 설정하고 저장소 루트에서 `backend/.venv/bin/python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000`을 실행합니다. 데이터 경로·환경·배포 설정은 [Backend 실행 안내](../backend/LOCAL_SETUP.md)를 참고하세요. 구형 연구 Backend와 모델의 백업 목록은 [전환 기록](../BACKEND_MIGRATION.md)에 있습니다.
 
 ## 구조
 

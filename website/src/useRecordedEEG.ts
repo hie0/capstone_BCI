@@ -3,9 +3,14 @@ import { useBCI } from "./store";
 import {
   apiUrl,
   eegSocketUrl,
+  isStaticRecordedReplay,
   type BackendSession,
   type BackendPrediction,
 } from "./data/backend";
+import {
+  loadRecordedReplay,
+  loadRecordedSessions,
+} from "./data/recordedReplay";
 
 export function useRecordedEEG(controlDevices: boolean) {
   const {
@@ -16,6 +21,7 @@ export function useRecordedEEG(controlDevices: boolean) {
     recordedLowChannel,
     ttaEnabled,
     isPlaying,
+    speed,
   } = useBCI();
   useEffect(() => {
     if (inputMode !== "recorded") return;
@@ -25,21 +31,27 @@ export function useRecordedEEG(controlDevices: boolean) {
       backendError: null,
       backendSessions: [],
     });
-    fetch(apiUrl(`/api/sessions?participant_id=${participantId}`), {
-      signal: controller.signal,
-    })
-      .then(async (r) => {
-        if (!r.ok) throw new Error("Backend 세션 조회 실패");
-        return r.json() as Promise<{ sessions: BackendSession[] }>;
-      })
-      .then(({ sessions }) => {
+    const sessionsRequest = isStaticRecordedReplay
+      ? loadRecordedSessions(participantId, controller.signal)
+      : fetch(apiUrl(`/api/sessions?participant_id=${participantId}`), {
+          signal: controller.signal,
+        })
+          .then(async (r) => {
+            if (!r.ok) throw new Error("Backend 세션 조회 실패");
+            return r.json() as Promise<{ sessions: BackendSession[] }>;
+          })
+          .then(({ sessions }) => sessions);
+    sessionsRequest
+      .then((sessions) => {
         if (controller.signal.aborted) return;
         if (!sessions.length)
-          throw new Error("연결 가능한 로컬 EEG 세션이 없습니다.");
+          throw new Error("재생 가능한 EEG 세션이 없습니다.");
         const s = useBCI.getState();
         s.setBackend({
           backendSessions: sessions,
-          backendStatus: "실제 EEG 연결됨",
+          backendStatus: isStaticRecordedReplay
+            ? "기록 추론 결과 준비됨"
+            : "실제 EEG 연결됨",
         });
         if (!sessions.some((x) => x.session_id === s.sessionId))
           s.setSettings({ sessionId: sessions[0].session_id });
@@ -64,6 +76,64 @@ export function useRecordedEEG(controlDevices: boolean) {
     }
     let closed = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    if (isStaticRecordedReplay) {
+      const controller = new AbortController();
+      useBCI
+        .getState()
+        .setBackend({
+          backendStatus: "기록 추론 결과 불러오는 중",
+          backendError: null,
+        });
+      loadRecordedReplay(
+        participantId,
+        sessionId,
+        recordedLowChannel ? "low" : channelMode,
+        ttaEnabled,
+        controller.signal,
+      )
+        .then((replay) => {
+          const next = () => {
+            const current = useBCI.getState();
+            if (
+              closed ||
+              !current.isPlaying ||
+              current.participantId !== participantId ||
+              current.sessionId !== sessionId ||
+              current.channelMode !== channelMode ||
+              current.recordedLowChannel !== recordedLowChannel ||
+              current.ttaEnabled !== ttaEnabled
+            )
+              return;
+            const prediction = replay.predictions[current.recordedCursor];
+            if (!prediction) {
+              current.setBackend({ backendStatus: "세션 재생 완료" });
+              current.stop();
+              return;
+            }
+            current.receivePrediction(prediction, controlDevices);
+            timer = setTimeout(next, 2000 / current.speed);
+          };
+          next();
+        })
+        .catch((error: unknown) => {
+          if (closed || controller.signal.aborted) return;
+          useBCI
+            .getState()
+            .setBackend({
+              backendStatus: "재생 실패",
+              backendError:
+                error instanceof Error
+                  ? error.message
+                  : "EEG 재생 파일을 불러올 수 없습니다.",
+            });
+          useBCI.getState().stop();
+        });
+      return () => {
+        closed = true;
+        controller.abort();
+        clearTimeout(timer);
+      };
+    }
     const socket = new WebSocket(eegSocketUrl());
     const fail = (message: string) => {
       if (closed) return;
@@ -150,6 +220,7 @@ export function useRecordedEEG(controlDevices: boolean) {
     recordedLowChannel,
     ttaEnabled,
     isPlaying,
+    speed,
     controlDevices,
   ]);
 }

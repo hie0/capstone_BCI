@@ -460,6 +460,22 @@
   }
 }
 @media (max-width: 760px) {
+  .smart-home-active .workspace-heading.application-heading {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .smart-home-active .workspace-heading.application-heading > div:first-child {
+    flex: 1;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .smart-home-active .workspace-heading.application-heading p {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .smart-home-active .workspace-heading.application-heading > button {
+    flex-shrink: 0;
+  }
   .smart-home-active .smart-layout {
     display: flex;
     gap: 16px;

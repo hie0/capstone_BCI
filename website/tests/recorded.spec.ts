@@ -107,10 +107,11 @@ test("actual Recorded EEG controls devices, pauses, resets and preserves layouts
   expect(errors).toEqual([]);
 });
 
-test("backend failure stays explicit and never substitutes synthetic EEG", async ({
+test("recorded source failure stays explicit and never substitutes synthetic EEG", async ({
   page,
 }) => {
   await page.route("**/api/sessions**", (route) => route.abort());
+  await page.route("**/recorded-eeg/manifest.json", (route) => route.abort());
   await page.goto("/#/simulation?app=home");
   await page
     .getByRole("combobox", { name: "Input mode", exact: true })

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Activity, Settings2, Play, Pause, Info } from "lucide-react";
 import { useBCI } from "../store";
 import { participantModels, type ParticipantId } from "../data/channels";
-import { selectedBackendModel } from "../data/backend";
+import { selectedBackendModel, isStaticRecordedReplay } from "../data/backend";
 export function Settings({
   compact = false,
   embedded = false,
@@ -34,7 +34,10 @@ export function Settings({
         >
           <option value="manual">Manual Demo</option>
           <option value="synthetic">Simulated EEG</option>
-          <option value="recorded">Recorded EEG · 실제 추론</option>
+          <option value="recorded">
+            Recorded EEG ·{" "}
+            {isStaticRecordedReplay ? "추론 결과 재생" : "실제 추론"}
+          </option>
         </select>
       </label>
       <div className="field-pair">
@@ -188,7 +191,7 @@ export function Settings({
         <Info size={14} />
         <span>
           {recorded
-            ? `${s.backendStatus} · 실제 기록 EEG, 세션별 Calib20 모델. 품질 기준 미달 시 장치 명령은 보류합니다.`
+            ? `${s.backendStatus} · ${isStaticRecordedReplay ? "기록 EEG 기반 실제 모델 추론 결과 재생" : "실제 기록 EEG, 세션별 Calib20 모델"}. 품질 기준 미달 시 장치 명령은 보류합니다.`
             : "설정은 모든 체험에 공유됩니다. 모델·TTA는 구성만 표시하며 실제 추론은 실행하지 않습니다."}
           {s.backendError && <span role="alert">{s.backendError}</span>}
         </span>

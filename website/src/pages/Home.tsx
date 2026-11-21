@@ -186,7 +186,7 @@ export default function Home() {
       </section>
       <section className="container metrics">
         {[
-          ["16 → 5–7", "Electrode Reduction", "최대 68.75% 전극 감소"],
+          ["16 → 5 ~ 7", "Electrode Reduction", "최대 68.75% 전극 감소"],
           [`${losoF1Average.lowTta.toFixed(2)}%`, "LOSO Macro-F1", "타 날짜 일반화 성능"],
           [`${onlineF1Average.lowTta.toFixed(2)}%`, "Online Macro-F1", "실전 온라인 50세션"],
           [`${externalMacroF1[3].mean.toFixed(2)}%`, "External Validation", "PhysioNet 100명 검증"],
