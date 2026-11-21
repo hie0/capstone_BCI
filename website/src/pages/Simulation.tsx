@@ -1,4 +1,5 @@
 import { useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
 import {
   House,
   Gamepad2,
@@ -28,6 +29,9 @@ export default function Simulation() {
       ? "applications"
       : "wearable";
   const s = useBCI();
+  useEffect(() => {
+    if (s.inputMode === "synthetic") s.setSettings({ inputMode: "manual" });
+  }, [s.inputMode]);
   const navigate = (nextTab: "wearable" | "applications", nextApp = app) => {
     s.stop();
     setParams(

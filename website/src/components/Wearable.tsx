@@ -90,7 +90,6 @@ export default function Wearable(_: { onHome: () => void }) {
                 }
               >
                 <option value="manual">Manual Demo</option>
-                <option value="synthetic">Simulated EEG</option>
                 <option value="recorded">Recorded EEG · 실제 추론</option>
               </select>
             </label>

@@ -35,7 +35,6 @@ export function Settings({
           }
         >
           <option value="manual">Manual Demo</option>
-          <option value="synthetic">Simulated EEG</option>
           <option value="recorded">
             Recorded EEG ·{" "}
             {isStaticRecordedReplay ? "추론 결과 재생" : "실제 추론"}

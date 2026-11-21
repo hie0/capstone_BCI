@@ -173,7 +173,7 @@ test("communication manual cards keep the three-step selection and speech behavi
 
 test("communication demo waveform keeps moving while idle and between tree selections", async ({ page }) => {
   await page.goto("/#/simulation?app=communication");
-  await page.getByRole("combobox", { name: "Input mode", exact: true }).selectOption("synthetic");
+  await page.getByRole("combobox", { name: "Input mode", exact: true }).selectOption("manual");
   const signal = page.locator('.wave-box svg[aria-label="합성 EEG 파형"] path[stroke="#527C98"]').first();
   const initial = await signal.getAttribute("d");
   await expect.poll(() => signal.getAttribute("d")).not.toBe(initial);

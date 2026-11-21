@@ -70,15 +70,8 @@ test("all smart home commands, immediate selection, logs, reset and synthetic pl
   await expect(
     page.getByRole("button", { name: "Television 메뉴" }),
   ).toContainText("OFF");
-  await page.getByLabel("Input mode").selectOption("synthetic");
-  await page.getByRole("button", { name: "자동 데모 시작" }).click();
-  await expect(page.getByTestId("command-count")).not.toHaveText("000", {
-    timeout: 6000,
-  });
-  await page.getByRole("button", { name: "일시정지" }).click();
-  const count = await page.getByTestId("command-count").textContent();
-  await page.waitForTimeout(3200);
-  await expect(page.getByTestId("command-count")).toHaveText(count!);
+  await expect(page.getByLabel("Input mode").locator("option")).toHaveCount(2);
+  await expect(page.getByLabel("Input mode").locator('option[value="synthetic"]')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 test("wearable channel exploration leaves inference settings unchanged", async ({
@@ -223,18 +216,17 @@ test("WebGL unavailable provides usable fallback", async ({ page }) => {
   await expect(page.locator(".lamp")).toHaveText("◉ OFF");
 });
 
-test("fast synthetic mode confirms selection and tablet remains usable", async ({
+test("manual controls confirm selection and tablet remains usable", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1024, height: 900 });
   await page.goto("/#/simulation?app=home");
-  await page.getByLabel("Input mode").selectOption("synthetic");
-  await page.getByRole("slider", { name: "Playback speed" }).fill("2");
-  await page.getByRole("button", { name: "자동 데모 시작" }).click();
+  await page.getByLabel("Input mode").selectOption("manual");
+  await page.getByRole("button", { name: "Lighting 메뉴", exact: true }).click();
+  await page.getByRole("button", { name: /RIGHT.*조명 켜기/ }).click();
   await expect(page.getByText("DEVICE CONTROL", { exact: true })).toBeVisible({
     timeout: 9000,
   });
-  await page.getByRole("button", { name: "일시정지" }).click();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
