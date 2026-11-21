@@ -402,10 +402,6 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <p>
-              전극을 클릭하거나 Tab 키로 이동한 뒤 Enter를 눌러 역할을
-              확인하세요. 배치도는 교육용 개념도입니다.
-            </p>
           </div>
         </div>
       </section>

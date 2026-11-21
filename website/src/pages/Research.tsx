@@ -106,11 +106,6 @@ export default function Research() {
               <strong className="electrode-name">{selected}</strong>
               <h3>{channelInfo(selected)}</h3>
             </div>
-            <p>
-              전극을 클릭하거나 Tab 키로 이동한 뒤 Enter를 눌러 역할을
-              확인하세요. 배치도는 교육용 개념도이며 개인의 정확한 해부학적
-              좌표를 나타내지 않습니다.
-            </p>
             <p className="source-note">
               5ch_PM: F3·F4·C3·Cz·C4. 7ch_PM: Core 5 + P7·P8. WMJ·KHY는 7ch_PM,
               KGE·OYJ는 5ch_PM입니다.

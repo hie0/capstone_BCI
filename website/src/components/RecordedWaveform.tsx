@@ -10,31 +10,35 @@ export function RecordedWaveform({
   playing,
   speed,
   durationMs,
+  continuous = false,
+  history,
 }: {
   channels: string[];
   samples?: Record<string, number[]> | null;
   playing: boolean;
   speed: number;
   durationMs: number;
+  continuous?: boolean;
+  history?: Record<string, number[]> | null;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const driver = useRef<{
     send: (message: WaveformMessage) => void;
     destroy: () => void;
   } | null>(null);
-  const latest = useRef({ channels, samples, playing, speed, durationMs });
-  latest.current = { channels, samples, playing, speed, durationMs };
+  const latest = useRef({ channels, samples, playing, speed, durationMs, continuous, history });
+  latest.current = { channels, samples, playing, speed, durationMs, continuous, history };
   const channelKey = channels.join(",");
   const revision = useRef(0);
-  const previous = useRef<{ samples: typeof samples; channels: string } | null>(
+  const previous = useRef<{ samples: typeof samples; channels: string; history: typeof history } | null>(
     null,
   );
   if (
     previous.current?.samples !== samples ||
-    previous.current?.channels !== channelKey
+    previous.current?.channels !== channelKey || previous.current?.history !== history
   ) {
     revision.current++;
-    previous.current = { samples, channels: channelKey };
+    previous.current = { samples, channels: channelKey, history };
   }
   useEffect(() => {
     const element = host.current!;
@@ -57,7 +61,7 @@ export function RecordedWaveform({
     };
     const initialize = () => {
       const s = latest.current;
-      driver.current?.send({ type: "configure", channels: s.channels });
+      driver.current?.send({ type: "configure", channels: s.channels, continuous: s.continuous });
       driver.current?.send({
         type: "playback",
         playing: s.playing,
@@ -66,6 +70,7 @@ export function RecordedWaveform({
       driver.current?.send({
         type: "samples",
         samples: s.samples,
+        history: s.history,
         durationMs: s.durationMs,
         version: revision.current,
       });
@@ -119,16 +124,17 @@ export function RecordedWaveform({
     };
   }, []);
   useEffect(() => {
-    driver.current?.send({ type: "configure", channels });
-  }, [channelKey]);
+    driver.current?.send({ type: "configure", channels, continuous });
+  }, [channelKey, continuous]);
   useEffect(() => {
     driver.current?.send({
       type: "samples",
       samples,
+      history,
       durationMs,
       version: revision.current,
     });
-  }, [samples, channelKey]);
+  }, [samples, channelKey, continuous, history]);
   useEffect(() => {
     driver.current?.send({ type: "playback", playing, speed });
   }, [playing, speed]);
@@ -139,6 +145,7 @@ export function RecordedWaveform({
       role="img"
       aria-label="실제 EEG 파형"
       data-channels={channelKey}
+      data-history-samples={continuous ? history?.[channels[0]]?.length ?? 0 : 0}
     />
   );
 }

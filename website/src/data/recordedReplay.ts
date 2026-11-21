@@ -16,8 +16,8 @@ export type RecordedReplay = {
   total_trials: number;
   predictions: BackendPrediction[];
 };
-let manifestCache: ReplayManifest | undefined;
 const replayCache = new Map<string, RecordedReplay>();
+export class RecordedSessionUnavailableError extends Error {}
 const rootUrl = () =>
   new URL(
     `${(import.meta as ImportMeta & { env: Record<string, string> }).env.BASE_URL}recorded-eeg/`,
@@ -35,7 +35,6 @@ function validModel(model: BackendModel) {
 }
 async function loadManifest(signal: AbortSignal) {
   signal.throwIfAborted();
-  if (manifestCache) return manifestCache;
   const response = await fetch(new URL("manifest.json", rootUrl()), {
     signal,
     cache: "no-cache",
@@ -67,7 +66,6 @@ async function loadManifest(signal: AbortSignal) {
     }
   }
   signal.throwIfAborted();
-  manifestCache = data;
   return data;
 }
 export async function loadRecordedSessions(
@@ -85,11 +83,33 @@ export async function loadRecordedReplay(
   tta: boolean,
   signal: AbortSignal,
 ): Promise<RecordedReplay> {
+  // Revalidate the small manifest on every start/configuration load. Only
+  // immutable, SHA-verified replay bodies may stay in the in-memory cache.
+  // A deployment may change between the manifest and asset requests: refresh
+  // once in that case, retaining all integrity checks on the second response.
+  try {
+    return await readRecordedReplay(participant, session, channel, tta, signal);
+  } catch (error) {
+    signal.throwIfAborted();
+    if (error instanceof RecordedSessionUnavailableError) throw error;
+    return readRecordedReplay(participant, session, channel, tta, signal, true);
+  }
+}
+
+async function readRecordedReplay(
+  participant: string,
+  session: string,
+  channel: string,
+  tta: boolean,
+  signal: AbortSignal,
+  reload = false,
+): Promise<RecordedReplay> {
   const manifest = await loadManifest(signal);
   const entry = manifest.sessions.find(
     (s) => s.participant_id === participant && s.session_id === session,
   );
   const key = `${channel}__tta_${tta ? "on" : "off"}`;
+  if (!entry) throw new RecordedSessionUnavailableError("선택한 세션이 최신 재생 목록에서 제외되었습니다.");
   const asset = entry?.replays[key];
   requireValue(
     entry && asset,
@@ -100,7 +120,7 @@ export async function loadRecordedReplay(
   if (cached) return cached;
   const response = await fetch(new URL(asset.file, rootUrl()), {
     signal,
-    cache: "force-cache",
+    cache: reload ? "reload" : "force-cache",
   });
   requireValue(response.ok, "Recorded EEG 추론 결과를 불러올 수 없습니다.");
   const raw = await response.text();
@@ -129,6 +149,10 @@ export async function loadRecordedReplay(
     "EEG 재생 설정 또는 Trial 수가 일치하지 않습니다.",
   );
   for (const [i, p] of data.predictions.entries()) {
+    if (i === 0 && p.history_waveform) requireValue(
+      p.active_channels.every(c => p.history_waveform?.[c]?.length === 500 && p.history_waveform[c].every(Number.isFinite)),
+      "EEG 시작 전 파형이 올바르지 않습니다.",
+    );
     requireValue(
       p.trial_id === i + 1 &&
         p.participant_id === participant &&

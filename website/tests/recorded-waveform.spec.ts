@@ -68,7 +68,7 @@ test("recorded waveform scrolls within one trial using measured samples, freezes
   });
   await expect(
     page.getByRole("combobox", { name: "Session", exact: true }),
-  ).toHaveValue("kge_online0928_01");
+  ).toHaveValue(session.session_id);
   const wave = page.getByRole("img", { name: "실제 EEG 파형" });
   const canvas = wave.locator("canvas");
   await page.waitForTimeout(100);
@@ -151,7 +151,7 @@ test("recorded waveform also scrolls when OffscreenCanvas is unavailable", async
     .selectOption("recorded");
   await expect(
     page.getByRole("combobox", { name: "Session", exact: true }),
-  ).toHaveValue("kge_online0928_01");
+  ).toHaveValue(session.session_id);
   await page
     .getByRole("button", { name: "실제 EEG 재생", exact: true })
     .click();

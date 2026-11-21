@@ -424,7 +424,7 @@
 /* 3-Piece Neuro Suite: [ 1. Brain Map | 2. EEG Control Monitor | 3. Control Settings ] Under the Gauge */
 .comm-neuro-suite {
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr) 250px;
+  grid-template-columns: minmax(0, 1fr) 250px;
   gap: 16px;
   align-items: stretch;
 }
@@ -590,6 +590,7 @@
   gap: 6px;
 }
 .settings-box label {
+  min-width: 0;
   display: block;
   font-size: 10px;
   font-weight: 700;
@@ -598,18 +599,29 @@
 }
 .settings-box select {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   margin-top: 4px;
-  padding: 6px 8px;
+  padding: 6px 32px 6px 8px;
+  appearance: none;
+  -webkit-appearance: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   border-radius: 8px;
   border: 1px solid #E2E8F0;
   background: #F8FAFC;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='m3 4.5 3 3 3-3' stroke='%23526574' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 12px;
   font-size: 11px;
   color: #1E293B;
   font-weight: 600;
 }
 .settings-box .field-pair {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 .settings-box .toggle-row {
@@ -660,6 +672,55 @@
   }
 }
 
+/* Keep motor-cortex feedback and its decision path in one overview. */
+.comm-decision-overview {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 18px;
+}
+.comm-decision-overview > * {
+  min-width: 0;
+}
+.comm-decision-overview .tree-diagram-shell {
+  margin-bottom: 0;
+}
+.comm-decision-overview .brain-box {
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+}
+.comm-decision-overview .suite-card-header {
+  width: 100%;
+  flex-wrap: wrap;
+}
+@media (max-width: 760px) {
+  .comm-decision-overview {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .comm-decision-overview .brain-box {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 120px;
+    grid-template-areas: "heading brain" "note brain";
+    align-items: center;
+    gap: 8px 12px;
+  }
+  .comm-decision-overview .suite-card-header {
+    grid-area: heading;
+    margin-bottom: 0;
+  }
+  .comm-decision-overview .brain-canvas-wrap {
+    grid-area: brain;
+    width: 120px;
+    height: 120px;
+  }
+  .comm-decision-overview .suite-sub-note {
+    grid-area: note;
+  }
+}
+
 /* Recorded EEG uses real predictions; manual cards retain their demo behavior. */
 .recorded-communication .option-card:disabled {
   cursor: default;
@@ -671,6 +732,13 @@
   align-items: center;
   gap: 8px;
   margin: 4px 0;
+}
+.communication-load-error {
+  margin: 8px 0;
+  color: #963e3b;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 .communication-playback .button {
   min-height: 40px;

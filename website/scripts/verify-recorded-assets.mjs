@@ -16,6 +16,8 @@ for (const session of manifest.sessions) {
     const raw = readFileSync(new URL(asset.file, root));
     if (raw.length !== asset.bytes || createHash('sha256').update(raw).digest('hex') !== asset.sha256) throw new Error(`Invalid replay hash: ${asset.file}`);
     const data = JSON.parse(raw);
+    const initial = data.predictions[0];
+    if (!initial.active_channels.every(c => initial.history_waveform?.[c]?.length === 500 && initial.history_waveform[c].every(Number.isFinite))) throw new Error(`Missing measured pre-trial waveform: ${asset.file}`);
     const model = session.available_models[key];
     const expectedCount = key.startsWith('low__') ? lowCounts[session.participant_id] : 16;
     if (model.n_channels !== expectedCount || model.active_channels.length !== expectedCount) throw new Error(`Incorrect channel count: ${session.session_id}/${key}`);

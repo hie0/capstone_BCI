@@ -11,6 +11,7 @@ import { Atlas2D } from "./Scenes";
 import { Settings, Waveform, PlayButton } from "./Controls";
 import { useBCI } from "../store";
 import { selectedBackendModel, isStaticRecordedReplay } from "../data/backend";
+import { loadRecordedReplay } from "../data/recordedReplay";
 import { RecordedMetrics } from "./RecordedMetrics";
 import type { Direction } from "../data/research";
 import "./CommunicationBoard.css";
@@ -179,6 +180,20 @@ export function CommunicationBoard() {
   const s = useBCI();
   const recorded = s.inputMode === "recorded";
   const channels = recorded ? selectedBackendModel(s)?.active_channels ?? MONITOR_CHANNELS : MONITOR_CHANNELS;
+  const replayKey = `${s.participantId}/${s.sessionId}/${s.recordedLowChannel ? "low" : s.channelMode}/${s.ttaEnabled}`;
+  const [prefill, setPrefill] = useState<{ key: string; history: Record<string, number[]> | null } | null>(null);
+  useEffect(() => {
+    if (!recorded || !isStaticRecordedReplay || !s.backendSessions.some(x => x.participant_id === s.participantId && x.session_id === s.sessionId)) return;
+    const controller = new AbortController();
+    loadRecordedReplay(s.participantId, s.sessionId, s.recordedLowChannel ? "low" : s.channelMode, s.ttaEnabled, controller.signal)
+      .then(replay => {
+        if (!controller.signal.aborted) setPrefill({ key: replayKey, history: replay.predictions[0].history_waveform ?? null });
+      })
+      .catch(error => {
+        if (!controller.signal.aborted) useBCI.getState().setBackend({ backendError: `파형 미리보기: ${String(error.message)}` });
+      });
+    return () => controller.abort();
+  }, [recorded, replayKey, s.backendSessions]);
   const [currentNodeId, setCurrentNodeId] = useState<string>("ROOT");
   const [history, setHistory] = useState<string[]>([]);
 
@@ -314,14 +329,15 @@ export function CommunicationBoard() {
       committing.current = true; setIsCommitting(true);
       setResult(`✓ [${selected.label}] 확정 완료!`);
       schedule(() => {
-        resetEvidence(); setActiveDirection(undefined);
+        resetEvidence();
         committing.current = false; setIsCommitting(false);
         if (selected.subId) {
           node.current = selected.subId;
           setHistory(previous => [...previous, from]);
           setCurrentNodeId(selected.subId);
-          if (recorded) schedule(() => useBCI.getState().setRecordedTrialReady(true), 1400);
+          if (recorded) useBCI.getState().setRecordedTrialReady(true);
         } else if (selected.speech) {
+          setActiveDirection(undefined);
           setFinalSpeech(selected.speech); speakFemale(selected.speech);
           if (recorded) {
             useBCI.getState().setBackend({ backendStatus: "문장 선택 완료" });
@@ -410,6 +426,32 @@ export function CommunicationBoard() {
           </button>
         </div>
       ) : null}
+
+      <div className="comm-decision-overview" aria-label="뇌 자극 영역 및 선택 트리">
+        {/* Brain activity stays beside the decision tree. */}
+        <div className="neuro-suite-card brain-box">
+          <div className="suite-card-header">
+            <span className="suite-card-title">
+              <Brain size={15} /> 뇌 자극 영역
+            </span>
+            <span className={`suite-badge ${activeDirection ? activeDirection.toLowerCase() : "idle"}`}>
+              {activeDirection ? `${activeDirection} 활성` : recorded && s.recordedPrediction && !s.recordedPrediction.quality.is_clean ? "QUALITY" : "READY"}
+            </span>
+          </div>
+          <div className="brain-canvas-wrap">
+            <Atlas2D
+              mode={recorded ? s.channelMode : "5ch"}
+              activeOverride={recorded ? channels : undefined}
+              selected={activeDirection === "LEFT" ? "C4" : activeDirection === "RIGHT" ? "C3" : ""}
+              onSelect={() => {}}
+              direction={activeDirection}
+            />
+          </div>
+          <div className="suite-sub-note">
+            <span>{activeDirection === "LEFT" ? "C4 전극 반응 (우측 운동피질)" : activeDirection === "RIGHT" ? "C3 전극 반응 (좌측 운동피질)" : recorded && s.recordedPrediction && !s.recordedPrediction.quality.is_clean ? "품질 미달 · 선택 제외" : "LEFT / RIGHT로 항목 선택"}</span>
+          </div>
+        </div>
+
 
       {/* Tree Visualization Container (Refined Sage Green vs Slate Blue Harmony) */}
       <div className="tree-diagram-shell">
@@ -609,6 +651,8 @@ export function CommunicationBoard() {
         </div>
       </div>
 
+      </div>
+
       {/* Dedicated Dual Option Selection Cards (Directly Above the Gauge) */}
       <div className="comm-option-cards-container">
         <button
@@ -685,37 +729,13 @@ export function CommunicationBoard() {
         </p>
       </div>
 
-      {/* 3-Piece Neuro Suite: [ 1. Brain Map | 2. EEG Control Monitor | 3. Control Settings ] Under the Gauge! */}
+      {/* EEG Control Monitor and shared settings remain below the selection controls. */}
       <div className="comm-neuro-suite">
-        {/* 1. Left: Brain Stimulation Map (Atlas2D) */}
-        <div className="neuro-suite-card brain-box">
-          <div className="suite-card-header">
-            <span className="suite-card-title">
-              <Brain size={15} /> 뇌 자극 영역
-            </span>
-            <span className={`suite-badge ${activeDirection ? activeDirection.toLowerCase() : "idle"}`}>
-              {activeDirection ? `${activeDirection} 활성` : "IDLE"}
-            </span>
-          </div>
-          <div className="brain-canvas-wrap">
-            <Atlas2D
-              mode={recorded ? s.channelMode : "5ch"}
-              activeOverride={recorded ? channels : undefined}
-              selected={activeDirection === "LEFT" ? "C4" : activeDirection === "RIGHT" ? "C3" : ""}
-              onSelect={() => {}}
-              direction={activeDirection}
-            />
-          </div>
-          <div className="suite-sub-note">
-            <span>{activeDirection === "LEFT" ? "C4 전극 반응 (우측 운동피질)" : activeDirection === "RIGHT" ? "C3 전극 반응 (좌측 운동피질)" : "좌·우 운동상상 대기"}</span>
-          </div>
-        </div>
-
-        {/* 2. Center: EEG Control Monitor (5 Channels F3, F4, C3, Cz, C4) */}
+        {/* EEG Control Monitor */}
         <div className="neuro-suite-card wave-box">
           <div className="suite-card-header">
             <span className="suite-card-title">
-              <Activity size={15} /> ((o)) EEG Control Monitor
+              <Activity size={15} /> EEG Control Monitor
             </span>
             <div className="wave-status-tags">
               <span className="wave-sub-tag">{recorded ? isStaticRecordedReplay ? "Recorded EEG · 추론 결과 재생" : "Recorded EEG · 모델 추론" : "Synthetic EEG Demo · μV illustrative"}</span>
@@ -728,13 +748,17 @@ export function CommunicationBoard() {
             channels={channels}
             recorded={recorded}
             samples={s.recordedPrediction?.waveform}
-            playing={recorded ? s.isPlaying : Boolean(activeDirection)}
-            phase={activeDirection === "RIGHT" ? 2.8 : 0.2}
+            history={s.recordedPrediction?.history_waveform ?? (prefill?.key === replayKey ? prefill.history : null)}
+            playing={recorded ? s.isPlaying : true}
+            replayDurationMs={2200}
+            continuous
+            phase={0.2}
           />
           {recorded && <div className="communication-playback">
             {finalSpeech ? <button className="button primary" onClick={startRecorded}>다음 문장 선택</button> : <PlayButton recorded playing={s.isPlaying} onClick={s.isPlaying ? s.stop : startRecorded} />}
             <span className="small muted">{s.backendStatus}</span>
           </div>}
+          {recorded && s.backendError && <p className="communication-load-error" role="alert">{s.backendError}</p>}
           <div className="monitor-meta-grid">
             <div className="meta-item">
               <span className="meta-key">Current Trial</span>
@@ -756,7 +780,7 @@ export function CommunicationBoard() {
           {recorded && <RecordedMetrics />}
         </div>
 
-        {/* 3. Right: Control Settings (Settings2) */}
+        {/* Shared Control Settings */}
         <div className="neuro-suite-card settings-box">
           <Settings compact embedded />
         </div>

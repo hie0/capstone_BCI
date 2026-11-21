@@ -22,6 +22,52 @@ async function recorded(page: Page) {
     page.getByRole("combobox", { name: "Session", exact: true }),
   ).toHaveValue(/^kge_online/);
 }
+
+for (const app of ["home", "game", "communication"]) {
+  test(`${app}: refreshes obsolete manifests and replays the current verified asset`, async ({ page }) => {
+    const obsolete = structuredClone(manifest);
+    for (const s of obsolete.sessions)
+      for (const a of Object.values(s.replays) as { file: string }[]) a.file = `retired-${a.file}`;
+    let requests = 0;
+    await page.route("**/recorded-eeg/manifest.json", route => route.fulfill({
+      contentType: "application/json", body: JSON.stringify(++requests <= 2 ? obsolete : manifest),
+    }));
+    await page.route("**/recorded-eeg/retired-*.json", route => route.fulfill({
+      status: 200, contentType: "text/html", body: "<html>Asset replaced by a newer deployment</html>",
+    }));
+    await page.goto(`/#/simulation?app=${app}`);
+    await page.getByRole("combobox", { name: "Input mode", exact: true }).selectOption("recorded");
+    await expect(page.getByRole("combobox", { name: "Session", exact: true })).toHaveValue(/^kge_online/);
+    await page.getByRole("button", { name: app === "game" ? "Start" : "실제 EEG 재생", exact: true }).click();
+    const session = sessions.find(s => s.participant_id === "KGE")!;
+    const expected = asset(session, "low__tta_on").predictions[0];
+    await expect(page.getByTestId("decision-score")).toHaveText(expected.decision_score.toFixed(4));
+    await expect(page.getByTestId("observed-accuracy")).toContainText("n=1");
+    await expect(page.getByRole("alert")).toHaveCount(0);
+    expect(requests).toBeGreaterThanOrEqual(3);
+  });
+}
+
+test("excluded recorded session refreshes the selector without playing a different session automatically", async ({ page }) => {
+  const obsolete = structuredClone(manifest);
+  const removed = structuredClone(obsolete.sessions.find((s: Session) => s.participant_id === "KGE"));
+  removed.session_id = "kge_online0928_01";
+  obsolete.sessions.unshift(removed);
+  let requests = 0;
+  await page.route("**/recorded-eeg/manifest.json", route => route.fulfill({
+    contentType: "application/json", body: JSON.stringify(++requests === 1 ? obsolete : manifest),
+  }));
+  await page.goto("/#/simulation?app=home");
+  await page.getByRole("combobox", { name: "Input mode", exact: true }).selectOption("recorded");
+  await expect(page.getByRole("combobox", { name: "Session", exact: true })).toHaveValue(removed.session_id);
+  await page.getByRole("button", { name: "실제 EEG 재생", exact: true }).click();
+  const session = sessions.find(s => s.participant_id === "KGE")!;
+  await expect(page.getByRole("combobox", { name: "Session", exact: true })).toHaveValue(session.session_id);
+  await expect(page.getByTestId("observed-accuracy")).toContainText("n=0");
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await page.getByRole("button", { name: "실제 EEG 재생", exact: true }).click();
+  await expect(page.getByTestId("observed-accuracy")).toContainText("n=1");
+});
 for (const subject of ["KGE", "KHY", "OYJ", "WMJ"]) {
   test(`${subject}: all sessions and 16ch/low × TTA off/on replay actual exported predictions without Backend`, async ({
     page,
@@ -224,6 +270,19 @@ test("corrupt prediction asset fails integrity validation before any command", a
   await expect(page.getByRole("alert")).toContainText(/크기|무결성/);
   await expect(page.getByTestId("command-count")).toHaveText("000");
   await expect(page.getByTestId("decision-score")).toHaveText("—");
+});
+
+test("communication shows replay load errors visibly instead of silently leaving the start button idle", async ({ page }) => {
+  await page.route(/\/recorded-eeg\/(?!manifest\.json)[^/]+\.json/, route => route.fulfill({
+    status: 200, contentType: "text/html", body: "<html>Missing replay asset</html>",
+  }));
+  await page.goto("/#/simulation?app=communication");
+  await page.getByRole("combobox", { name: "Input mode", exact: true }).selectOption("recorded");
+  await expect(page.getByRole("combobox", { name: "Session", exact: true })).toHaveValue(/^kge_online/);
+  await page.getByRole("button", { name: "실제 EEG 재생", exact: true }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText(/크기|무결성/);
+  await expect(page.getByTestId("observed-accuracy")).toContainText("n=0");
 });
 
 test("Neuro Runner consumes the same recorded model prediction without server inference", async ({

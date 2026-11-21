@@ -1,5 +1,6 @@
 @import "tailwindcss";
 :root {
+  --site-header-height: 80px;
   font-family:
     Inter,
     Pretendard,
@@ -111,11 +112,12 @@ svg {
   width: calc(100% - 64px);
 }
 header {
-  height: 80px;
+  height: var(--site-header-height);
   border-bottom: 1px solid #85cce02b;
   background: #123049ed;
-  position: relative;
-  z-index: 10;
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 .header-inner {
   display: flex;
@@ -1839,7 +1841,7 @@ td:first-child {
   font-size: 13px;
 }
 .scroll-section {
-  scroll-margin-top: 105px;
+  scroll-margin-top: calc(var(--site-header-height) + 25px);
 }
 
 /* Brighter laboratory palette: preserves the scientific dark theme with clearer surfaces. */
@@ -2049,11 +2051,11 @@ td:first-child {
   }
 }
 @media (max-width: 760px) {
+  :root {
+    --site-header-height: 112px;
+  }
   .container {
     width: calc(100% - 32px);
-  }
-  header {
-    height: 112px;
   }
   .header-inner {
     flex-wrap: wrap;

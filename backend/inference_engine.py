@@ -332,6 +332,8 @@ class NeurolinkInferenceManager:
         )
         if include_waveform:
             rec["waveform"] = self.extract_waveform_snippet(xo_band[target_idx], fmodel.active_channels)
+            if target_idx == 0:
+                rec["history_waveform"] = self.extract_waveform_snippet(on["history_bands"][fmodel.band_name], fmodel.active_channels)
         return rec
 
     def evaluate_full_session_chronological(
@@ -375,6 +377,8 @@ class NeurolinkInferenceManager:
             )
             if include_waveforms:
                 rec["waveform"] = self.extract_waveform_snippet(xo_band[t_idx], fmodel.active_channels)
+                if t_idx == 0:
+                    rec["history_waveform"] = self.extract_waveform_snippet(on["history_bands"][fmodel.band_name], fmodel.active_channels)
             predictions.append(rec)
 
             # Build downsampled EEGFrame samples for website ReplaySource

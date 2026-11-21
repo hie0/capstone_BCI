@@ -31,6 +31,7 @@ class TTAStateInfo(BaseModel):
 
 
 class TrialPredictionResponse(BaseModel):
+    history_waveform: dict[str, list[float]] | None = Field(default=None, description="Display-only EEG immediately before trial 1")
     trial_id: int = Field(..., description="1-based chronological trial index")
     trialId: int = Field(..., description="Frontend-compatible alias for trial_id")
     step_index: int = Field(..., description="Sequential step counter in the active TTA session")

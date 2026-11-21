@@ -1,8 +1,9 @@
 export type WaveformMessage =
-  | { type: "configure"; channels: string[] }
+  | { type: "configure"; channels: string[]; continuous?: boolean }
   | {
       type: "samples";
       samples: Record<string, number[]> | null | undefined;
+      history?: Record<string, number[]> | null;
       durationMs: number;
       version: number;
     }
@@ -33,6 +34,8 @@ export class RecordedWaveformEngine {
   private width = 500;
   private height = 160;
   private ratio = 1;
+  private continuous = false;
+  private windowSamples = WINDOW;
   constructor(private canvas: HTMLCanvasElement | OffscreenCanvas) {
     this.ctx = canvas.getContext("2d", { alpha: false }) as
       CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -40,8 +43,10 @@ export class RecordedWaveformEngine {
   }
   message(message: WaveformMessage) {
     if (message.type === "configure") {
-      if (message.channels.join() !== this.channels.join()) {
+      if (message.channels.join() !== this.channels.join() || Boolean(message.continuous) !== this.continuous) {
         this.channels = message.channels;
+        this.continuous = Boolean(message.continuous);
+        this.windowSamples = this.continuous ? 500 : WINDOW;
         this.reset();
       }
     } else if (message.type === "resize") {
@@ -59,7 +64,11 @@ export class RecordedWaveformEngine {
     } else if (message.type === "samples") {
       if (message.version === this.version) return;
       if (!message.samples) this.reset();
-      else this.append(message.samples, message.durationMs);
+      if (this.continuous && !this.segments.length && message.history) {
+        this.append(message.history, message.durationMs);
+        this.cursor = this.end;
+      }
+      if (message.samples) this.append(message.samples, message.durationMs);
       this.version = message.version;
     } else {
       this.playing = message.playing;
@@ -94,11 +103,11 @@ export class RecordedWaveformEngine {
     const first = this.segments.length === 0;
     const start = first ? 0 : this.end + GAP;
     this.end = start + length;
-    // Begin with a real, populated window, rather than an empty graph. The
-    // rest of the snippet then flows into view without looping its samples.
-    if (first) this.cursor = Math.min(WINDOW, length - 1);
+    // Communication sweeps measured samples into a wider window at a steady
+    // rate. Other views retain their initially populated display and catch-up.
+    if (first) this.cursor = this.continuous ? 0 : Math.min(WINDOW, length - 1);
     const active = this.segments.find((s) => s.end > this.cursor);
-    if (active)
+    if (active && !this.continuous)
       active.rate = Math.max(active.rate, (active.end - this.cursor) / 350);
     this.segments.push({
       start,
@@ -123,7 +132,7 @@ export class RecordedWaveformEngine {
       remaining -= elapsed;
     }
     this.segments = this.segments.filter(
-      (s) => s.end >= this.cursor - WINDOW - 1,
+      (s) => s.end >= this.cursor - this.windowSamples - 1,
     );
     this.draw();
     this.frame = requestAnimationFrame(this.animate);
@@ -161,7 +170,7 @@ export class RecordedWaveformEngine {
     ctx.lineWidth = 1.5;
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
-    const left = this.cursor - WINDOW;
+    const left = this.cursor - this.windowSamples;
     for (const [row, channel] of this.channels.entries()) {
       ctx.strokeStyle = row % 2 ? "#8A79AF" : "#527C98";
       ctx.beginPath();
@@ -178,7 +187,7 @@ export class RecordedWaveformEngine {
           Math.ceil(this.cursor - segment.start),
         );
         for (let i = first; i <= last; i++) {
-          const x = labelEdge + ((segment.start + i - left) * (500 - labelEdge)) / WINDOW;
+          const x = labelEdge + ((segment.start + i - left) * (500 - labelEdge)) / this.windowSamples;
           const y = 24 + row * 48 - values[i];
           if (i === first) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);

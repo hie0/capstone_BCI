@@ -68,7 +68,13 @@ def _load_session(calibration_path: Path):
         if not is_cal and (log.decision_time_s<2).any():
             raise ValueError(f'{folder.name}: insufficient MI for fixed2s export epoch')
         alignment['calibration' if is_cal else 'online']=delta.tolist()
-        return dict(bands={k:np.stack([a[i:i+500].T.astype(np.float32) for i in samples]) for k,a in bands.items()},
+        # Four seconds immediately before the first online epoch, from the
+        # same continuously filtered stream. Display prefill only, never fit.
+        if not is_cal and samples[0] < 1000:
+            raise ValueError(f'{folder.name}: insufficient pre-trial display history')
+        return dict(history_bands={} if is_cal else {
+                k:a[samples[0]-1000:samples[0]].T.astype(np.float32) for k,a in bands.items()},
+            bands={k:np.stack([a[i:i+500].T.astype(np.float32) for i in samples]) for k,a in bands.items()},
             y=np.where(log.target_direction.to_numpy()=='LEFT',0,1).astype(np.int64),
             eog=np.array([np.max(np.ptp(notched[i:i+375,IDX_EOG],axis=0)) for i in samples]),
             timestamps=samples.astype(float)/FS,

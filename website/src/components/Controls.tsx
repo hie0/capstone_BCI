@@ -209,6 +209,8 @@ export function Waveform({
   recorded = false,
   samples,
   replayDurationMs = 2000,
+  continuous = false,
+  history,
 }: {
   playing?: boolean;
   phase?: number;
@@ -217,21 +219,34 @@ export function Waveform({
   recorded?: boolean;
   samples?: Record<string, number[]> | null;
   replayDurationMs?: number;
+  continuous?: boolean;
+  history?: Record<string, number[]> | null;
 }) {
   const speed = useBCI((state) => state.speed);
   const [tick, setTick] = useState(0);
   useEffect(() => {
     if (!playing || recorded) return;
+    if (continuous) {
+      let frame = 0;
+      let previous = performance.now();
+      const animate = (now: number) => {
+        setTick((t) => t + Math.min(100, now - previous) * 0.0005);
+        previous = now;
+        frame = requestAnimationFrame(animate);
+      };
+      frame = requestAnimationFrame(animate);
+      return () => cancelAnimationFrame(frame);
+    }
     const id = setInterval(() => setTick((t) => t + 0.17), 100);
     return () => clearInterval(id);
-  }, [playing, recorded]);
+  }, [playing, recorded, continuous]);
   return (
     <div className={`waveform ${large ? "large" : ""}`}>
       <div className="wave-header">
         <Activity size={13} />
         <span>{recorded ? "Recorded EEG" : "Synthetic EEG Demo"}</span>
         <span className="mono">
-          µV · {recorded ? "recorded" : "illustrative"}
+          µV · {recorded ? continuous ? "buffered replay" : "recorded" : "illustrative"}
         </span>
       </div>
       {recorded ? (
@@ -241,6 +256,8 @@ export function Waveform({
           playing={playing}
           speed={speed}
           durationMs={replayDurationMs}
+          continuous={continuous}
+          history={history}
         />
       ) : (
         <svg

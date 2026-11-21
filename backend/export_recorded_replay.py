@@ -96,6 +96,9 @@ def main():
                         assert original['participant_id'] == subject and original['session_id'] == sid
                         assert original['active_channels'] == model.active_channels
                         item = {k: original[k] for k in FIELDS}
+                        if i == 0:
+                            item['history_waveform'] = original['history_waveform']
+                            assert all(len(v) == 500 for v in item['history_waveform'].values())
                         item['quality'] = {k: original['quality'][k] for k in QUALITY_FIELDS}
                         item['playback_source'] = 'precomputed'
                         assert set(item['waveform']) == set(item['active_channels'])

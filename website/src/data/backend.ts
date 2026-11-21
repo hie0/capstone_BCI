@@ -13,6 +13,7 @@ export type BackendSession = {
   available_models: Record<string, BackendModel>;
 };
 export type BackendPrediction = {
+  history_waveform?: Record<string, number[]> | null;
   playback_source?: "precomputed";
   trial_id: number;
   timestamp: number;

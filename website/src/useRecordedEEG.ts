@@ -10,6 +10,7 @@ import {
 import {
   loadRecordedReplay,
   loadRecordedSessions,
+  RecordedSessionUnavailableError,
 } from "./data/recordedReplay";
 
 export function useRecordedEEG(controlDevices: boolean, consumerPaced = false) {
@@ -121,8 +122,24 @@ export function useRecordedEEG(controlDevices: boolean, consumerPaced = false) {
           };
           next();
         })
-        .catch((error: unknown) => {
+        .catch(async (error: unknown) => {
           if (closed || controller.signal.aborted) return;
+          if (error instanceof RecordedSessionUnavailableError) {
+            try {
+              const sessions = await loadRecordedSessions(participantId, controller.signal);
+              if (closed || controller.signal.aborted) return;
+              if (sessions.length) {
+                const state = useBCI.getState();
+                state.setSettings({ sessionId: sessions[0].session_id });
+                state.setBackend({ backendSessions: sessions, backendError: null,
+                  backendStatus: "세션 목록이 갱신되었습니다. 세션을 확인하고 다시 재생하세요." });
+                return;
+              }
+            } catch (refreshError) {
+              if (closed || controller.signal.aborted) return;
+              error = refreshError;
+            }
+          }
           useBCI.getState().setBackend({
             backendStatus: "재생 실패",
             backendError:
