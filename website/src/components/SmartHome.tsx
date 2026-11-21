@@ -115,16 +115,13 @@ export default function SmartHome() {
             <Scene room fallback={<RoomFallback />}>
               <Room />
             </Scene>
-            <div
-              className="scene-wall-temperature"
+            <span
+              className="sr-only"
               aria-live="polite"
               aria-label={`현재 온도 ${s.temperature}도`}
             >
-              <span className="wall-temperature-readout">
-                <i className="classic-thermometer" aria-hidden="true" />
-                <strong>{s.temperature}°C</strong>
-              </span>
-            </div>
+              {s.temperature}°C
+            </span>
             <div className="scene-caption">
               드래그하여 공간 둘러보기 <span>01 / LIVING ROOM</span>
             </div>

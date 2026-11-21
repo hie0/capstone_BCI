@@ -1,9 +1,12 @@
 import {
   BufferGeometry,
   CatmullRomCurve3,
+  CanvasTexture,
   Float32BufferAttribute,
   MathUtils,
   Vector3,
+  SRGBColorSpace,
+  type Mesh,
   type Group,
   type AmbientLight,
   type DirectionalLight,
@@ -875,6 +878,70 @@ function Television({ on }: { on: boolean }) {
   );
 }
 
+function WallThermometer({ temperature, selected }: { temperature: number; selected: boolean }) {
+  const stem = useRef<Mesh>(null);
+  const level = 0.08 + MathUtils.clamp((temperature - 16) / 14, 0, 1) * 0.52;
+  const initialLevel = useRef(level).current;
+  const color = temperature >= 27 ? "#C76B67" : temperature >= 23 ? "#39776F" : "#527C98";
+  const screen = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 384;
+    canvas.height = 192;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#EAF0F5";
+    ctx.fillRect(0, 0, 384, 192);
+    ctx.fillStyle = "#263746";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "700 104px system-ui, sans-serif";
+    ctx.fillText(`${temperature}°C`, 192, 102);
+    const texture = new CanvasTexture(canvas);
+    texture.colorSpace = SRGBColorSpace;
+    return texture;
+  }, [temperature]);
+  useEffect(() => () => screen.dispose(), [screen]);
+  useFrame((_, delta) => {
+    if (!stem.current) return;
+    stem.current.scale.y = MathUtils.damp(stem.current.scale.y, level, 10, delta);
+    stem.current.position.y = -0.37 + stem.current.scale.y / 2;
+  });
+  return (
+    <group name="wall-thermometer" position={[-2.87, 1.95, 0]} rotation={[0, Math.PI / 2, 0]}
+      onClick={event => { if (event.delta < 4) { event.stopPropagation(); useBCI.getState().choose(2); } }}>
+      <RoundedBox args={[0.64, 1.36, 0.12]} radius={0.045} smoothness={4} castShadow receiveShadow>
+        <meshStandardMaterial color={selected ? "#39776F" : "#9CAAB6"} metalness={0.35} roughness={0.55} />
+      </RoundedBox>
+      <RoundedBox position={[0, 0, 0.024]} args={[0.59, 1.31, 0.10]} radius={0.035} smoothness={4} castShadow receiveShadow>
+        <meshStandardMaterial color="#F5F7FA" roughness={0.7} />
+      </RoundedBox>
+      <mesh position={[0, 0.44, 0.079]}>
+        <planeGeometry args={[0.48, 0.24]} />
+        <meshBasicMaterial map={screen} toneMapped={false} />
+      </mesh>
+      <mesh position={[-0.12, -0.07, 0.09]}>
+        <cylinderGeometry args={[0.039, 0.039, 0.63, 20]} />
+        <meshStandardMaterial color="#CBD5DF" roughness={0.35} metalness={0.2} />
+      </mesh>
+      <mesh ref={stem} name="temperature-column" position={[-0.12, -0.37 + initialLevel / 2, 0.116]} scale={[1, initialLevel, 1]}>
+        <cylinderGeometry args={[0.024, 0.024, 1, 20]} />
+        <meshStandardMaterial color={color} roughness={0.35} />
+      </mesh>
+      <mesh position={[-0.12, -0.43, 0.105]}>
+        <sphereGeometry args={[0.078, 24, 16]} />
+        <meshStandardMaterial color="#A8B3BD" metalness={0.35} roughness={0.45} />
+      </mesh>
+      <mesh position={[-0.12, -0.43, 0.133]}>
+        <sphereGeometry args={[0.060, 24, 16]} />
+        <meshStandardMaterial color={color} roughness={0.35} />
+      </mesh>
+      {Array.from({ length: 8 }, (_, i) => (
+        <Box key={i} position={[i % 2 ? 0.07 : 0.09, -0.36 + i * 0.085, 0.082]}
+          size={[i % 2 ? 0.055 : 0.095, 0.012, 0.01]} color="#697B89" />
+      ))}
+    </group>
+  );
+}
+
 export function Room() {
   const s = useBCI();
   return (
@@ -884,6 +951,7 @@ export function Room() {
       <Box position={[0, -0.1, 0]} size={[6, 0.2, 4.8]} color="#D8C8B2" />
       <Box position={[0, 1.55, -2.4]} size={[6, 3.3, 0.13]} color="#F7F4EC" />
       <Box position={[-3, 1.55, 0]} size={[0.13, 3.3, 4.8]} color="#E9EEF0" />
+      <WallThermometer temperature={s.temperature} selected={s.control && s.menu === 2} />
       {Array.from({ length: 12 }, (_, i) => (
         <Box
           key={i}
@@ -1014,6 +1082,7 @@ export function RoomFallback() {
       </div>
       <div className="sofa">━━━</div>
       <div className="lamp">◉ {s.light ? "ON" : "OFF"}</div>
+      <div className="fallback-temperature">{s.temperature}°C</div>
     </div>
   );
 }
@@ -1099,6 +1168,9 @@ function FitRoom() {
   useEffect(() => {
     if ("isOrthographicCamera" in camera) {
       camera.zoom = Math.min(size.width / 8.3, size.height / 6);
+      // Shift the framing down by 6% while preserving the room's viewing angle
+      // and OrbitControls target. Resize keeps the same relative composition.
+      camera.setViewOffset(size.width, size.height, 0, -size.height * 0.06, size.width, size.height);
       camera.updateProjectionMatrix();
     }
   }, [camera, size.width, size.height]);

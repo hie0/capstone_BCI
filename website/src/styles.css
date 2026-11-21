@@ -4608,50 +4608,6 @@ td:first-child {
   font-size: 11px;
 }
 
-.scene-wall-temperature {
-  position: absolute;
-  z-index: 999;
-  top: 25%;
-  left: 17%;
-  color: #263746;
-  pointer-events: none;
-}
-
-.wall-temperature-readout {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.scene-wall-temperature strong {
-  margin-left: 0;
-  color: #263746;
-  font: 800 15px/1 monospace;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
-}
-
-.classic-thermometer {
-  position: relative;
-  width: 7px;
-  height: 27px;
-  border: 2px solid #657b8b;
-  border-radius: 999px;
-  background: linear-gradient(to bottom, #dc6666 0 48%, #5d94c4 48% 100%);
-}
-
-.classic-thermometer::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -5px;
-  width: 11px;
-  height: 11px;
-  border: 2px solid #657b8b;
-  border-radius: 50%;
-  background: #5d94c4;
-  transform: translateX(-50%);
-}
-
 .fallback-tv {
   overflow: hidden;
   color: #ffffff;
@@ -4659,6 +4615,18 @@ td:first-child {
   transition:
     background 320ms ease,
     box-shadow 320ms ease;
+}
+
+.fallback-temperature {
+  position: absolute;
+  top: 28%;
+  left: 15%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
 .fallback-tv.on {
@@ -4790,10 +4758,6 @@ td:first-child {
     gap: 4px;
   }
 
-  .scene-wall-temperature {
-    top: 22%;
-    left: 14%;
-  }
 }
 
 @media (max-width: 980px) {
