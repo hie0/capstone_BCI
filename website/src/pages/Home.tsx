@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   channelInfo,
-  core,
   electrodeNames,
   positions,
   type ChannelMode,
@@ -94,24 +93,20 @@ function StabilityVisual() {
   );
 }
 
-function ChannelReductionGraphic() {
+function FullMontageGraphic() {
   return (
       <svg
         className="channel-reduction-graphic"
         viewBox="0 0 400 260"
         role="img"
-        aria-label="16채널에서 핵심 5채널만 남는 애니메이션"
+        aria-label="16채널 전체 전극 배치도"
       >
         <ellipse cx="200" cy="133" rx="118" ry="112" />
         <path d="M184 22 L200 6 L216 22 M83 112 Q58 133 83 154 M317 112 Q342 133 317 154" />
         {electrodeNames.map((name) => {
           const [x, y] = positions[name];
-          const retained = core.includes(name);
           return (
-            <g
-              key={name}
-              className={retained ? "retained-channel" : "removed-channel"}
-            >
+            <g key={name}>
               <circle cx={200 + x * 112} cy={133 + y * 108} r="9" />
               <text x={200 + x * 112} y={133 + y * 108 + 23}>
                 {name}
@@ -239,7 +234,7 @@ export default function Home() {
             <span className="problem-label">공간적 제약</span>
             <h3>16채널 구성은 착용과 준비가 복잡합니다.</h3>
             <div className="problem-visual channel-burden">
-              <ChannelReductionGraphic />
+              <FullMontageGraphic />
               <div className="problem-visual-copy">
                 <strong>16채널 구성</strong>
                 <span>필요한 영역을 찾기 전, 모든 전극이 활성화됩니다.</span>

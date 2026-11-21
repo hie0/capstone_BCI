@@ -3211,7 +3211,7 @@ td:first-child {
   border-radius: 999px;
   color: var(--accent-strong);
   background: #edf4f2;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
