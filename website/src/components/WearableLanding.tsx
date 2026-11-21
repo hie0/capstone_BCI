@@ -21,14 +21,14 @@ export function WearableHero() {
         <h1 id="wearable-hero-title">더 적은 전극으로, 더 자유롭게.</h1>
         <p>더 간결한 연결로 일상에 이어지는 BCI를 상상합니다.</p>
       </div>
-      <a href="#wearable-comparison" className="lab-status wearable-heading-reduction" title="착용의 변화 살펴보기" aria-label="16채널에서 5채널로">
+      <div className="lab-status wearable-heading-reduction" aria-label="16채널에서 5채널로">
         <span className="wearable-heading-caption">FEWER CHANNELS. MORE POSSIBILITIES.</span>
         <span className="wearable-heading-numbers">
           <b>16</b>
           <ArrowRight aria-hidden="true" />
           <strong>5<small>ch</small></strong>
         </span>
-      </a>
+      </div>
     </section>
   );
 }

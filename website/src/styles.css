@@ -3434,7 +3434,15 @@ td:first-child {
 .workflow-heading strong {
   margin-top: 4px;
   color: var(--primary);
-  font-size: 18px;
+  font-size: 29px;
+  line-height: 1.5;
+  letter-spacing: -0.04em;
+}
+
+@media (max-width: 760px) {
+  .workflow-heading strong {
+    font-size: 24px;
+  }
 }
 
 .workflow-heading > b {
@@ -3485,6 +3493,18 @@ td:first-child {
   color: var(--text-secondary);
   font-size: 10px;
   line-height: 1.65;
+}
+
+.research-process-overview .research-workflow strong {
+  font-size: 16px;
+}
+
+.research-process-overview .research-workflow small {
+  font-size: 12px;
+}
+
+.research-process-overview .pipeline-step > .mono {
+  font-size: 12px;
 }
 
 .stability-method {

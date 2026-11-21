@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import {
   HashRouter,
@@ -15,6 +15,30 @@ import Home from "./pages/Home";
 const Simulation = lazy(() => import("./pages/Simulation"));
 function App() {
   const location = useLocation();
+  const [activeSection, setActiveSection] = useState("research-overview");
+  useEffect(() => {
+    if (location.pathname !== "/") return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const threshold = (document.querySelector("header")?.getBoundingClientRect().bottom ?? 80) + 40;
+      let active = "research-overview";
+      for (const id of ["research-overview", "research-content", "research-results"]) {
+        const section = document.getElementById(id);
+        if (section && section.getBoundingClientRect().top <= threshold) active = id;
+      }
+      setActiveSection(active);
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+    schedule();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, [location.pathname]);
   useEffect(() => {
     if (location.hash) {
       const scrollTimer = window.setTimeout(() => {
@@ -33,19 +57,19 @@ function App() {
       to: "/#research-overview",
       active:
         location.pathname === "/" &&
-        (!location.hash || location.hash === "#research-overview"),
+        activeSection === "research-overview",
     },
     {
       label: "연구 내용",
       to: "/#research-content",
       active:
-        location.pathname === "/" && location.hash === "#research-content",
+        location.pathname === "/" && activeSection === "research-content",
     },
     {
       label: "연구 결과",
       to: "/#research-results",
       active:
-        location.pathname === "/" && location.hash === "#research-results",
+        location.pathname === "/" && activeSection === "research-results",
     },
     {
       label: "응용",
@@ -76,6 +100,10 @@ function App() {
               <Link
                 key={item.label}
                 to={item.to}
+                onClick={() => {
+                  if (location.pathname === "/" && item.to === `/${location.hash}`)
+                    document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
                 className={item.active ? "active" : undefined}
                 aria-current={item.active ? "page" : undefined}
               >

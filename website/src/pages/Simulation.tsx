@@ -181,7 +181,10 @@ export default function Simulation() {
           </div>
         </>
       ) : (
-        <WearableLanding onHome={() => navigate("applications", "home")} />
+        <WearableLanding onHome={() => {
+          navigate("applications", "home");
+          window.scrollTo({ top: 0, behavior: "instant" });
+        }} />
       )}
       <div className="data-legend">
         <span>

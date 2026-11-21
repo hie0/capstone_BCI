@@ -250,7 +250,7 @@ export default function Home() {
               움직임·근전도·접촉 상태의 영향을 받을 경로도 늘어납니다.
             </p>
             <Link to="/#channel-method">
-              제안 방법 살펴보기 <ArrowUpRight size={16} />
+              최적화 과정 살펴보기 <ArrowUpRight size={16} />
             </Link>
           </article>
           <article>
