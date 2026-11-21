@@ -12,11 +12,16 @@ from scipy.signal import sosfilt
 
 from backend.research_protocol import FS,CH_COLS,IDX_EOG,SOS_NOTCH,ONLINE_BAND_SOS
 
+EXCLUDED_RECORDED_SESSIONS = frozenset({
+    "kge_online0928_01", "wmj_online0930_03",
+    "oyj_online0929_02", "khy_online0930_03",
+})
 
 def load_recorded_sessions(root: Path) -> tuple[dict, list[dict]]:
     if not root.is_dir():
         raise FileNotFoundError(f'BCI_DATA_ROOT is not a directory: {root}')
-    paths=sorted(root.rglob('*_calibration_trial_log.csv'))
+    paths=sorted(p for p in root.rglob('*_calibration_trial_log.csv')
+                 if p.parent.name not in EXCLUDED_RECORDED_SESSIONS)
     if not paths:raise ValueError(f'No recorded sessions under BCI_DATA_ROOT={root}')
     # Independent sessions only; chronological filtering within each stays unchanged.
     # Two concurrent CSV reads bound peak memory on the local 8GiB Mac.

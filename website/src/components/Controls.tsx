@@ -65,15 +65,15 @@ export function Settings({
             {recorded ? (
               s.backendSessions
                 .filter((x) => x.participant_id === s.participantId)
-                .map((x) => (
+                .map((x, index) => (
                   <option key={x.session_id} value={x.session_id}>
-                    {x.session_id} · {x.n_online_trials} trials
+                    {x.participant_id} session {index + 1}
                   </option>
                 ))
             ) : (
               <>
-                <option value="session-01">Session 01</option>
-                <option value="session-02">Session 02</option>
+                <option value="session-01">{s.participantId} session 1</option>
+                <option value="session-02">{s.participantId} session 2</option>
               </>
             )}
           </select>

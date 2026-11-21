@@ -38,6 +38,16 @@ for (const subject of ["KGE", "KHY", "OYJ", "WMJ"]) {
     await expect(
       page.getByRole("combobox", { name: "Session", exact: true }),
     ).toHaveValue(new RegExp(`^${subject.toLowerCase()}_online`));
+    await expect(page.getByRole("combobox", { name: "Session", exact: true }).locator("option")).toHaveCount(2);
+    for (const excluded of ["kge_online0928_01", "wmj_online0930_03", "oyj_online0929_02", "khy_online0930_03"])
+      await expect(page.getByRole("combobox", { name: "Session", exact: true }).locator(`option[value="${excluded}"]`)).toHaveCount(0);
+    {
+      const sessionOptions = page.getByRole("combobox", { name: "Session", exact: true }).locator("option");
+      await expect(sessionOptions).toHaveCount(2);
+      await expect(sessionOptions).toHaveText([
+        `${subject} session 1`, `${subject} session 2`,
+      ]);
+    }
     for (const session of sessions.filter(
       (s) => s.participant_id === subject,
     )) {

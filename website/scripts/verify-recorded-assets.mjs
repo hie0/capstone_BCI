@@ -3,10 +3,12 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 const root = new URL('../public/recorded-eeg/', import.meta.url);
 const manifest = JSON.parse(readFileSync(new URL('manifest.json', root), 'utf8'));
-if (manifest.schema_version !== 1 || manifest.sessions.length !== 12) throw new Error('Expected 12 exported EEG sessions');
+if (manifest.schema_version !== 1 || manifest.sessions.length !== 8) throw new Error('Expected 8 exported EEG sessions');
+const excludedSessions = new Set(['kge_online0928_01', 'wmj_online0930_03', 'oyj_online0929_02', 'khy_online0930_03']);
 let trials = 0, configurations = 0, predictions = 0;
 const lowCounts = { KGE: 5, OYJ: 5, WMJ: 7, KHY: 7 };
 for (const session of manifest.sessions) {
+  if (excludedSessions.has(session.session_id)) throw new Error(`Excluded session must not be deployed: ${session.session_id}`);
   trials += session.n_online_trials;
   for (const key of ['16ch__tta_off', '16ch__tta_on', 'low__tta_off', 'low__tta_on']) {
     const asset = session.replays[key];
@@ -26,5 +28,5 @@ for (const session of manifest.sessions) {
     predictions += data.predictions.length;
   }
 }
-if (trials !== 540 || configurations !== 48 || predictions !== 2160) throw new Error('Incomplete Recorded EEG export');
+if (trials !== 360 || configurations !== 32 || predictions !== 1440) throw new Error('Incomplete Recorded EEG export');
 console.log(`Recorded EEG: ${manifest.sessions.length} sessions, ${trials} trials, ${configurations} configurations, ${predictions} verified predictions.`);

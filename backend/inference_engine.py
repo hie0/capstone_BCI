@@ -122,7 +122,7 @@ class NeurolinkInferenceManager:
 
         # 1. Exact match
         direct_key = f"{subj}__{session_id}"
-        if direct_key in self.online_models_map:
+        if direct_key in self.online_models_map and direct_key in self.raw_sessions_map:
             return self.online_models_map[direct_key]
 
         # 2. Case-insensitive or substring match on session name

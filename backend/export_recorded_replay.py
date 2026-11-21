@@ -62,11 +62,11 @@ def main():
         if old.get('source_fingerprint') == source_fingerprint and all(
             (OUTPUT / a['file']).is_file() and digest(OUTPUT / a['file']) == a['sha256'] for a in assets
         ):
-            print('Export cache verified: 12 sessions, 540 trials, 48 configurations; no inference repeated.')
+            print('Export cache verified: 8 sessions, 360 trials, 32 configurations; no inference repeated.')
             return
     manager.load_all()
-    assert len(manager.raw_sessions_map) == 12, 'Expected the selected 12 sessions only'
-    assert sum(len(s['on']['y']) for s in manager.raw_sessions_map.values()) == 540
+    assert len(manager.raw_sessions_map) == 8, 'Expected the selected 8 sessions only'
+    assert sum(len(s['on']['y']) for s in manager.raw_sessions_map.values()) == 360
     sessions, validations = [], []
     for subject in ['KGE', 'KHY', 'OYJ', 'WMJ']:
         for entry in manager.sessions_by_subject[subject]:
@@ -131,12 +131,12 @@ def main():
                         'metrics_artgate90': result['computed_metrics_artgate90']})
             sessions.append(record)
         print(f'{subject}: exported {sum(s["participant_id"] == subject for s in sessions)} sessions', flush=True)
-    assert len(sessions) == 12 and len(validations) == 48
+    assert len(sessions) == 8 and len(validations) == 32
     manifest = {'schema_version': 1, 'kind': 'recorded-model-replay',
         'description': 'Existing Calib20 model predictions replayed in chronological trial order; no browser inference.',
         'waveform': {'kind': 'filtered-display-snippet', 'source_sample_rate_hz': 250,
                      'display_sample_rate_hz': 125, 'samples_per_trial': 250, 'unit': 'uV'},
-        'session_count': 12, 'online_trial_count': 540, 'configuration_count': 48,
+        'session_count': 8, 'online_trial_count': 360, 'configuration_count': 32,
         'low_channel_counts': {s: int(ch[0]) for s, ch in RECORDED_LOW_CHANNELS.items()},
         'sessions': sessions}
     (REPORT / 'manifest-before-fixed-channels.json').write_bytes(encode(prior_manifest))
