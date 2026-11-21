@@ -31,6 +31,8 @@ type State = Settings & {
   recordedPrediction: BackendPrediction | null;
   recordedTimeline: BackendPrediction[];
   recordedCursor: number;
+  recordedTrialReady: boolean;
+  setRecordedTrialReady: (ready: boolean) => void;
   setBackend: (
     data: Partial<
       Pick<State, "backendSessions" | "backendError" | "backendStatus">
@@ -84,6 +86,8 @@ export const useBCI = create<State>((set, get) => ({
   recordedPrediction: null,
   recordedTimeline: [],
   recordedCursor: 0,
+  recordedTrialReady: true,
+  setRecordedTrialReady: (ready) => set({ recordedTrialReady: ready }),
   setBackend: (data) => set(data),
   receivePrediction: (prediction, controlDevices) => {
     if (controlDevices && prediction.quality.is_clean)
@@ -162,6 +166,7 @@ export const useBCI = create<State>((set, get) => ({
               recordedPrediction: null,
               recordedTimeline: [],
               recordedCursor: 0,
+              recordedTrialReady: true,
               confidence: null,
               currentCommand: null,
               backendError: null,
@@ -225,6 +230,7 @@ export const useBCI = create<State>((set, get) => ({
     set((s) => ({
       isPlaying: true,
       ...(s.inputMode === "recorded" &&
+      s.recordedTrialReady &&
       s.recordedCursor >=
         (s.backendSessions.find((x) => x.session_id === s.sessionId)
           ?.n_online_trials ?? Infinity)
@@ -246,6 +252,7 @@ export const useBCI = create<State>((set, get) => ({
       recordedPrediction: null,
       recordedTimeline: [],
       recordedCursor: 0,
+      recordedTrialReady: true,
       backendError: null,
     }),
 }));

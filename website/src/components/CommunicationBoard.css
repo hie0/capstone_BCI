@@ -532,7 +532,7 @@
   background: #E2EBF2;
   color: #345C7D;
 }
-.neuro-suite-card.wave-box .waveform > svg {
+.neuro-suite-card.wave-box .waveform > :is(svg, .recorded-waveform) {
   height: 125px;
   border-radius: 8px;
   background: #FAFBFD;

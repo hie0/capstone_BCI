@@ -1,7 +1,12 @@
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests",
-  testMatch: "recorded-static.spec.ts",
+  testMatch: [
+    "recorded-static.spec.ts",
+    "neuro-runner.spec.ts",
+    "recorded-waveform.spec.ts",
+    "branding.spec.ts",
+  ],
   timeout: 90000,
   workers: 1,
   use: {

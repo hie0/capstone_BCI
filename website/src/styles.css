@@ -132,6 +132,20 @@ header {
   font-weight: 700;
   line-height: 1.2;
 }
+.brand-image {
+  display: block;
+  width: 224px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+.footer-brand {
+  display: block;
+  flex-shrink: 0;
+}
+.footer-brand-image {
+  width: 160px;
+}
 .brand-symbol {
   color: var(--cyan);
   border: 1px solid #1c5565;
@@ -823,7 +837,7 @@ input[type="range"] {
 .wave-header svg {
   color: #31c7d6;
 }
-.waveform > svg {
+.waveform > :is(svg, .recorded-waveform) {
   width: 100%;
   height: 100px;
   display: block;
@@ -1257,7 +1271,7 @@ td:first-child {
 .waveform.large {
   margin: 10px 0 20px;
 }
-.waveform.large > svg {
+.waveform.large > :is(svg, .recorded-waveform) {
   height: 220px;
 }
 .replay-main .row {
@@ -2045,6 +2059,12 @@ td:first-child {
     flex-wrap: wrap;
     padding: 8px 0 0;
   }
+  .brand-image {
+    width: 176px;
+  }
+  .footer-brand-image {
+    width: 150px;
+  }
   .brand {
     font-size: 15px;
     gap: 8px;
@@ -2170,7 +2190,7 @@ td:first-child {
   .monitor .waveform {
     margin: 15px 0;
   }
-  .monitor .waveform > svg {
+  .monitor .waveform > :is(svg, .recorded-waveform) {
     height: 120px;
   }
   .monitor-stats {
@@ -2210,6 +2230,8 @@ td:first-child {
     gap: 20px;
   }
   footer > div {
+    min-width: 0;
+    flex: 1;
     flex-wrap: wrap;
   }
   footer > div span {
@@ -2220,7 +2242,8 @@ td:first-child {
   }
   footer p {
     font-size: 8px;
-    max-width: 180px;
+    max-width: 160px;
+    flex: 1;
   }
   footer p span {
     font-size: 6px;

@@ -1,20 +1,23 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Float, RoundedBox } from "@react-three/drei";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Battery, Brain, Heart, Pause, Play, Radio, RotateCcw, Sliders, Star, Trophy } from "lucide-react";
 import type { Group, Mesh } from "three";
 import { CatmullRomCurve3, MathUtils, Shape, Vector3 } from "three";
 import { useBCI } from "../store";
 import { configuredChannels } from "../data/channels";
 import type { Direction } from "../data/research";
+import type { BackendPrediction } from "../data/backend";
 import { Settings, Waveform } from "./Controls";
 import { RecordedMetrics } from "./RecordedMetrics";
 import { Atlas2D } from "./Scenes";
 import "./NeuroRunner.css";
 
-type GamePhase = "READY" | "RUNNING" | "WAITING_FOR_COMMAND" | "SUCCESS" | "COLLISION" | "PASSING" | "MISSION_COMPLETE" | "GAME_OVER" | "PAUSED";
+type GamePhase = "READY" | "RUNNING" | "WAITING_FOR_COMMAND" | "SUCCESS" | "COLLISION" | "PASSING" | "MISSION_COMPLETE" | "GAME_OVER" | "PAUSED" | "NEXT_TRIAL";
 type HistoryEntry = { id: number; trial: number; target: Direction; predicted: Direction; valid: boolean; success: boolean };
 const TOTAL_MANUAL_STAGES = 20;
+const OBSTACLE_START_Z = -24;
+const STAR_EXTRUSION_OPTIONS = { depth: 0.18, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.04, bevelThickness: 0.04 };
 
 /**
  * Fall Guys Style Cute Yellow Jelly Bean Character
@@ -32,7 +35,7 @@ function JellyBeanCharacter({ lane, phase }: { lane: Direction; phase: GamePhase
     const targetX = lane === "LEFT" ? -1.15 : 1.15;
     group.current.position.x = MathUtils.damp(group.current.position.x, targetX, 12, delta);
 
-    const moving = phase === "RUNNING" || phase === "PASSING";
+    const moving = phase === "RUNNING" || phase === "PASSING" || phase === "NEXT_TRIAL";
     const runSpeed = moving ? 13 : 3.5;
     const time = clock.elapsedTime;
 
@@ -369,7 +372,7 @@ function GoldenStarCoin({ x, isCollected }: { x: number; isCollected: boolean })
           <extrudeGeometry
             args={[
               starShape,
-              { depth: 0.18, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.04, bevelThickness: 0.04 },
+              STAR_EXTRUSION_OPTIONS,
             ]}
           />
           <meshStandardMaterial
@@ -393,43 +396,65 @@ function GoldenStarCoin({ x, isCollected }: { x: number; isCollected: boolean })
 /**
  * Obstacle Track Group
  */
+const MemoCartoonBomb = memo(CartoonBomb);
+const MemoGoldenStarCoin = memo(GoldenStarCoin);
+
 function ObstacleStageGroup({
   safeLane,
   phase,
   progress,
+  obstacleKey,
 }: {
   safeLane: Direction;
   phase: GamePhase;
-  progress: number;
+  progress: { current: number };
+  obstacleKey: string;
 }) {
   const obstacleLane = safeLane === "LEFT" ? 1.15 : -1.15;
   const starLane = safeLane === "LEFT" ? -1.15 : 1.15;
   const group = useRef<Group>(null);
 
+  useLayoutEffect(() => {
+    if (!group.current) return;
+    // Reposition between frames while fully hidden by distant fog. Keep the
+    // meshes/materials mounted so no geometry upload occurs at stage changes.
+    group.current.visible = false;
+    group.current.position.z = OBSTACLE_START_Z;
+  }, [obstacleKey]);
+
   useFrame((_, delta) => {
     if (!group.current) return;
-    let targetZ = -18;
-    if (phase === "RUNNING") {
-      targetZ = -18 + progress * 18.5;
-    } else if (["WAITING_FOR_COMMAND", "SUCCESS", "COLLISION"].includes(phase)) {
+    // Only visible forward motion is interpolated. Recycling is instantaneous
+    // off screen, with fog revealing the next obstacle as it approaches.
+    if (phase === "PAUSED") return;
+    group.current.visible = ![
+      "NEXT_TRIAL",
+      "MISSION_COMPLETE",
+      "GAME_OVER",
+    ].includes(phase);
+    let targetZ = OBSTACLE_START_Z;
+    if (phase === "RUNNING") targetZ = OBSTACLE_START_Z + progress.current * (0.5 - OBSTACLE_START_Z);
+    else if (["WAITING_FOR_COMMAND", "SUCCESS", "COLLISION"].includes(phase))
       targetZ = 0.5;
-    } else if (phase === "PASSING") {
-      targetZ = 4.8;
-    } else if (phase === "READY" || phase === "PAUSED") {
-      targetZ = -18;
+    else if (phase === "PASSING") targetZ = 12;
+    if (phase === "READY") group.current.position.z = OBSTACLE_START_Z;
+    else if (group.current.visible) {
+      group.current.position.z = Math.max(
+        group.current.position.z,
+        MathUtils.damp(
+          group.current.position.z,
+          targetZ,
+          phase === "PASSING" ? 5 : 7.5,
+          delta,
+        ),
+      );
     }
-    group.current.position.z = MathUtils.damp(
-      group.current.position.z,
-      targetZ,
-      phase === "PASSING" ? 7 : 7.5,
-      delta
-    );
   });
 
   return (
-    <group ref={group} position={[0, 0.38, -18]}>
-      <CartoonBomb x={obstacleLane} isHit={phase === "COLLISION"} />
-      <GoldenStarCoin x={starLane} isCollected={phase === "SUCCESS"} />
+    <group ref={group} position={[0, 0.38, OBSTACLE_START_Z]}>
+      <MemoCartoonBomb x={obstacleLane} isHit={phase === "COLLISION"} />
+      <MemoGoldenStarCoin x={starLane} isCollected={phase === "SUCCESS"} />
     </group>
   );
 }
@@ -497,13 +522,15 @@ function RunnerScene({
   safeLane,
   phase,
   progress,
+  obstacleKey,
 }: {
   lane: Direction;
   safeLane: Direction;
   phase: GamePhase;
-  progress: number;
+  progress: { current: number };
+  obstacleKey: string;
 }) {
-  const moving = phase === "RUNNING" || phase === "PASSING";
+  const moving = phase === "RUNNING" || phase === "PASSING" || phase === "NEXT_TRIAL";
 
   return (
     <>
@@ -521,7 +548,7 @@ function RunnerScene({
         <RoadTile key={i} index={i} moving={moving} />
       ))}
 
-      <ObstacleStageGroup safeLane={safeLane} phase={phase} progress={progress} />
+      <ObstacleStageGroup obstacleKey={obstacleKey} safeLane={safeLane} phase={phase} progress={progress} />
       <JellyBeanCharacter lane={lane} phase={phase} />
     </>
   );
@@ -541,116 +568,246 @@ export default function NeuroRunner() {
   const [avoided, setAvoided] = useState(0);
   const [collisions, setCollisions] = useState(0);
   const [excluded, setExcluded] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [round, setRound] = useState(0);
   const processedTrial = useRef<number | null>(null);
+  const pendingTrial = useRef<BackendPrediction | null>(null);
+  const settledTrial = useRef<number | null>(null);
+  const phaseRef = useRef<GamePhase>(phase);
+  const phaseBeforePause = useRef<GamePhase>("READY");
+  const progressRef = useRef(0);
+  const livesRef = useRef(3);
+  const onArrival = useRef<() => void>(() => {});
+  phaseRef.current = phase;
   const timers = useRef<number[]>([]);
   const animFrame = useRef<number | null>(null);
   const channels = recorded && s.recordedPrediction?.active_channels?.length ? s.recordedPrediction.active_channels : configuredChannels(s.channelMode);
 
+  const setGamePhase = (next: GamePhase) => {
+    phaseRef.current = next;
+    setPhase(next);
+  };
   const clearTimers = () => {
     timers.current.forEach(window.clearTimeout);
     timers.current = [];
-    if (animFrame.current) {
-      cancelAnimationFrame(animFrame.current);
-      animFrame.current = null;
-    }
+    if (animFrame.current !== null) cancelAnimationFrame(animFrame.current);
+    animFrame.current = null;
   };
-  const later = (fn: () => void, delay: number) => { timers.current.push(window.setTimeout(fn, delay)); };
-  const chooseSafeLane = useCallback((): Direction => Math.random() > .5 ? "LEFT" : "RIGHT", []);
+  const later = (fn: () => void, delay: number) => {
+    timers.current.push(window.setTimeout(fn, delay));
+  };
+  const duration = (ms: number) =>
+    ms / (s.inputMode === "manual" ? 1 : useBCI.getState().speed);
+  const chooseSafeLane = useCallback(
+    (): Direction => (Math.random() > 0.5 ? "LEFT" : "RIGHT"),
+    [],
+  );
 
   const resetGame = () => {
     clearTimers();
     s.stop();
-    if (recorded) s.setSettings({ inputMode: "recorded" });
-    setPhase("READY"); setStage(1); setScore(0); setLives(3); setLane("LEFT"); setSafeLane(chooseSafeLane());
-    setHistory([]); setAvoided(0); setCollisions(0); setExcluded(0); setProgress(0); processedTrial.current = null;
+    if (recorded) s.setSettings({ inputMode: "recorded", recordedLowChannel: s.recordedLowChannel });
+    s.setRecordedTrialReady(true);
+    pendingTrial.current = null;
+    processedTrial.current = null;
+    settledTrial.current = null;
+    progressRef.current = 0;
+    livesRef.current = 3;
+    setRound((v) => v + 1);
+    setGamePhase("READY");
+    setStage(1);
+    setScore(0);
+    setLives(3);
+    setLane("LEFT");
+    setSafeLane(chooseSafeLane());
+    setHistory([]);
+    setAvoided(0);
+    setCollisions(0);
+    setExcluded(0);
   };
-
   useEffect(() => {
+    resetGame();
+  }, [
+    s.participantId,
+    s.sessionId,
+    s.channelMode,
+    s.recordedLowChannel,
+    s.ttaEnabled,
+    s.inputMode,
+  ]);
+  useEffect(
+    () => () => {
+      clearTimers();
+      useBCI.getState().setRecordedTrialReady(true);
+    },
+    [],
+  );
+
+  const beginStage = (fromProgress = 0) => {
     clearTimers();
-    s.stop();
-    setPhase("READY"); setStage(1); setScore(0); setLives(3); setLane("LEFT"); setSafeLane(chooseSafeLane());
-    setHistory([]); setAvoided(0); setCollisions(0); setExcluded(0); setProgress(0); processedTrial.current = null;
-  }, [s.participantId, s.sessionId, s.channelMode, s.recordedLowChannel, s.ttaEnabled, s.inputMode, chooseSafeLane]);
-  useEffect(() => () => clearTimers(), []);
-
-  const beginStage = useCallback(() => {
-    setPhase("RUNNING");
-    setProgress(0);
-    const runningTime = s.inputMode === "manual" ? 3400 : 3400 / s.speed;
-    const startTime = performance.now();
-
-    const updateProg = (now: number) => {
-      const elapsed = now - startTime;
-      const p = Math.min(1, elapsed / runningTime);
-      setProgress(p);
-      if (p < 1) {
-        animFrame.current = requestAnimationFrame(updateProg);
-      } else {
-        setPhase("WAITING_FOR_COMMAND");
+    setGamePhase("RUNNING");
+    progressRef.current = fromProgress;
+    const runningTime = duration(recorded ? 4500 : 3400);
+    const started = performance.now();
+    const updateProgress = (now: number) => {
+      const next = Math.min(1, fromProgress + (now - started) / runningTime);
+      progressRef.current = next;
+      if (next < 1) animFrame.current = requestAnimationFrame(updateProgress);
+      else {
+        animFrame.current = null;
+        setGamePhase("WAITING_FOR_COMMAND");
+        onArrival.current();
       }
     };
-    animFrame.current = requestAnimationFrame(updateProg);
-  }, [s.inputMode, s.speed]);
+    animFrame.current = requestAnimationFrame(updateProgress);
+  };
 
-  const finishStage = useCallback((direction: Direction, target: Direction, trial = stage, valid = true) => {
-    if (!valid) { setExcluded(v => v + 1); setPhase("WAITING_FOR_COMMAND"); return; }
+  const endStage = (trial: number) => {
+    pendingTrial.current = null;
+    if (livesRef.current <= 0) {
+      setGamePhase("GAME_OVER");
+      if (recorded) s.setBackend({ backendStatus: "게임 종료" });
+      s.stop();
+      return;
+    }
+    if (trial >= totalStages) {
+      setGamePhase("MISSION_COMPLETE");
+      if (recorded) s.setBackend({ backendStatus: "세션 재생 완료" });
+      s.stop();
+      return;
+    }
+    if (recorded) {
+      setGamePhase("NEXT_TRIAL");
+      s.setRecordedTrialReady(true);
+    } else {
+      setStage(trial + 1);
+      setSafeLane(chooseSafeLane());
+      beginStage();
+    }
+  };
+  const passObstacle = (trial: number) => {
+    setGamePhase("PASSING");
+    later(() => endStage(trial), duration(1200));
+  };
+  const finishStage = (
+    direction: Direction,
+    target: Direction,
+    trial = stage,
+    valid = true,
+  ) => {
+    if (settledTrial.current === trial) return;
+    settledTrial.current = trial;
+    if (!valid) {
+      setExcluded((v) => v + 1);
+      passObstacle(trial);
+      return;
+    }
     setLane(direction);
     const success = direction === target;
-    setHistory(old => [{ id: old.length + 1, trial, target, predicted: direction, valid, success }, ...old]);
-
+    setHistory((old) => [
+      {
+        id: old.length + 1,
+        trial,
+        target,
+        predicted: direction,
+        valid,
+        success,
+      },
+      ...old,
+    ]);
     if (success) {
-      setScore(v => v + 10);
-      setAvoided(v => v + 1);
-      setPhase("SUCCESS");
+      setScore((v) => v + 10);
+      setAvoided((v) => v + 1);
+      setGamePhase("SUCCESS");
     } else {
-      setCollisions(v => v + 1);
-      setLives(v => recorded ? v : Math.max(0, v - 1));
-      setPhase("COLLISION");
+      setCollisions((v) => v + 1);
+      livesRef.current = Math.max(0, livesRef.current - 1);
+      setLives(livesRef.current);
+      setGamePhase("COLLISION");
     }
-
-    later(() => {
-      setPhase("PASSING");
-      later(() => {
-        const nextLives = success || recorded ? lives : lives - 1;
-        if (!recorded && nextLives <= 0) { setPhase("GAME_OVER"); return; }
-        if (trial >= totalStages) { setPhase("MISSION_COMPLETE"); return; }
-        setStage(v => v + 1);
-        setSafeLane(chooseSafeLane());
-        beginStage();
-      }, 500);
-    }, 700);
-  }, [beginStage, chooseSafeLane, lives, recorded, stage, totalStages]);
+    later(() => passObstacle(trial), duration(900));
+  };
+  onArrival.current = () => {
+    const prediction = pendingTrial.current;
+    if (recorded && prediction)
+      finishStage(
+        prediction.predicted_direction,
+        prediction.true_direction ?? safeLane,
+        prediction.trial_id,
+        prediction.quality.is_clean && prediction.true_direction !== null,
+      );
+  };
 
   const start = () => {
-    if (["MISSION_COMPLETE", "GAME_OVER"].includes(phase)) resetGame();
-    if (recorded) s.play();
-    beginStage();
+    const previous = phaseRef.current;
+    if (["MISSION_COMPLETE", "GAME_OVER"].includes(previous)) resetGame();
+    if (recorded) {
+      s.play();
+      if (previous === "PAUSED" && pendingTrial.current) {
+        const resume = phaseBeforePause.current;
+        const trial = pendingTrial.current.trial_id;
+        if (resume === "RUNNING") beginStage(progressRef.current);
+        else if (resume === "PASSING") passObstacle(trial);
+        else if (resume === "SUCCESS" || resume === "COLLISION") {
+          setGamePhase(resume);
+          later(() => passObstacle(trial), duration(900));
+        }
+      } else setGamePhase("NEXT_TRIAL");
+    } else if (
+      previous === "PAUSED" &&
+      phaseBeforePause.current === "WAITING_FOR_COMMAND"
+    ) {
+      setGamePhase("WAITING_FOR_COMMAND");
+    } else if (
+      previous === "PAUSED" &&
+      ["SUCCESS", "COLLISION", "PASSING"].includes(phaseBeforePause.current)
+    ) {
+      if (phaseBeforePause.current === "PASSING") passObstacle(stage);
+      else {
+        setGamePhase(phaseBeforePause.current);
+        later(() => passObstacle(stage), duration(900));
+      }
+    } else beginStage(previous === "PAUSED" ? progressRef.current : 0);
   };
-  const pause = () => { clearTimers(); s.stop(); setPhase("PAUSED"); };
+  const pause = () => {
+    phaseBeforePause.current = phaseRef.current;
+    clearTimers();
+    s.stop();
+    setGamePhase("PAUSED");
+  };
   const manualCommand = (direction: Direction) => {
-    if (s.inputMode !== "manual" || phase !== "WAITING_FOR_COMMAND") return;
+    if (s.inputMode !== "manual" || phaseRef.current !== "WAITING_FOR_COMMAND")
+      return;
     finishStage(direction, safeLane);
   };
-
   useEffect(() => {
-    const p = s.recordedPrediction;
-    if (!recorded || !s.isPlaying || !p || p.trial_id === processedTrial.current) return;
-    processedTrial.current = p.trial_id;
-    if (!p.quality.is_clean || !p.true_direction) {
-      setExcluded(v => v + 1); setPhase("WAITING_FOR_COMMAND"); return;
-    }
-    setStage(p.trial_id); setSafeLane(p.true_direction); setPhase("WAITING_FOR_COMMAND");
-    later(() => finishStage(p.predicted_direction, p.true_direction!, p.trial_id), 260);
-  }, [recorded, s.isPlaying, s.recordedPrediction, finishStage]);
+    const prediction = s.recordedPrediction;
+    if (
+      !recorded ||
+      !s.isPlaying ||
+      !prediction ||
+      prediction.trial_id === processedTrial.current
+    )
+      return;
+    processedTrial.current = prediction.trial_id;
+    pendingTrial.current = prediction;
+    setStage(prediction.trial_id);
+    setSafeLane(prediction.true_direction ?? chooseSafeLane());
+    beginStage();
+  }, [recorded, s.isPlaying, s.recordedPrediction]);
 
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
-      if (event.repeat || event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
+      if (
+        event.repeat ||
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLSelectElement
+      )
+        return;
       if (event.key === "ArrowLeft") manualCommand("LEFT");
       if (event.key === "ArrowRight") manualCommand("RIGHT");
     };
-    window.addEventListener("keydown", key); return () => window.removeEventListener("keydown", key);
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
   });
 
   const validTrials = history.filter(x => x.valid);
@@ -679,7 +836,7 @@ export default function NeuroRunner() {
         <div className="runner-titlebar application-heading">
           <div><span className="eyebrow">APPLICATION 02</span><h2>Neuro Runner</h2><p>LEFT / RIGHT 운동 상상 명령으로 젤리빈을 움직여 폭탄을 피하고 황금 별을 획득하세요.</p></div>
           <div className="runner-title-actions">
-            {phase === "READY" || phase === "PAUSED" ? <button className="button primary" onClick={start}><Play size={15}/> Start</button> : <button className="button primary" onClick={pause}><Pause size={15}/> Pause</button>}
+            {["READY", "PAUSED", "MISSION_COMPLETE", "GAME_OVER"].includes(phase) ? <button className="button primary" onClick={start}><Play size={15}/> Start</button> : <button className="button primary" onClick={pause}><Pause size={15}/> Pause</button>}
             <button className="button subtle" onClick={resetGame}><RotateCcw size={14}/> Reset</button>
           </div>
         </div>
@@ -690,12 +847,12 @@ export default function NeuroRunner() {
             <div className="runner-play-area">
               <div className={`runner-canvas phase-${phase.toLowerCase()}`}>
                 <Canvas shadows camera={{ position: [0, 3.5, 7.3], fov: 40 }}>
-                  <RunnerScene lane={lane} safeLane={safeLane} phase={phase} progress={progress} />
+                  <RunnerScene lane={lane} safeLane={safeLane} phase={phase} progress={progressRef} obstacleKey={`${round}-${stage}`} />
                 </Canvas>
                 <div className="runner-hud">
                   <div><Trophy size={15}/><span>Score</span><strong>{score}</strong></div>
                   <div><Battery size={15}/><span>Stage</span><strong>{stage} / {totalStages}</strong></div>
-                  <div><Heart size={15}/><span>Lives</span><strong>{recorded ? "∞" : "♥".repeat(lives) || "0"}</strong></div>
+                  <div><Heart size={15}/><span>Lives</span><strong>{"♥".repeat(lives) || "0"}</strong></div>
                   <div><Radio size={15}/><span>Command</span><strong>{s.recordedPrediction?.predicted_direction ?? (phase === "WAITING_FOR_COMMAND" ? "WAITING" : lane)}</strong></div>
                 </div>
 
@@ -746,7 +903,7 @@ export default function NeuroRunner() {
 
             <aside className="runner-side-card runner-monitor">
               <div className="panel-title"><Radio size={15}/> EEG Control Monitor <i className="status-dot"/></div>
-              <Waveform channels={channels} playing={s.isPlaying || !recorded} recorded={recorded} samples={s.recordedPrediction?.waveform}/>
+              <Waveform channels={channels} playing={s.isPlaying || !recorded} recorded={recorded} samples={s.recordedPrediction?.waveform} replayDurationMs={6600}/>
               <dl className="monitor-stats">
                 <div><dt>Current Trial</dt><dd>{recorded ? s.recordedPrediction?.trial_id ?? "—" : stage}</dd></div>
                 <div><dt>Target Direction</dt><dd>{recorded ? s.recordedPrediction?.true_direction ?? "—" : safeLane}</dd></div>

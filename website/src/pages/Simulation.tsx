@@ -36,7 +36,10 @@ export default function Simulation() {
         : { tab: "applications", app: nextApp },
     );
   };
-  useRecordedEEG(tab === "applications" && app === "home");
+  useRecordedEEG(
+    tab === "applications" && app === "home",
+    tab === "applications" && app === "game",
+  );
   return (
     <main
       className={`container simulation ${tab === "applications" ? "applications-active" : ""} ${tab === "applications" && app === "home" ? "smart-home-active" : ""}`}

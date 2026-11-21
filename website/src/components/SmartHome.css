@@ -358,7 +358,7 @@
 .smart-home-active .wave-header {
   font-size: 11px;
 }
-.smart-home-active .waveform > svg {
+.smart-home-active .waveform > :is(svg, .recorded-waveform) {
   height: 136px;
 }
 .smart-home-active .monitor-stats {
@@ -455,7 +455,7 @@
   .smart-home-active .monitor .command-history {
     min-height: 120px;
   }
-  .smart-home-active .monitor .waveform > svg {
+  .smart-home-active .monitor .waveform > :is(svg, .recorded-waveform) {
     height: 140px;
   }
 }

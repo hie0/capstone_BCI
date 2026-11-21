@@ -161,7 +161,7 @@
 /* 2. Monitor */
 .runner-monitor { min-height: 0; max-height: none; overflow: visible; }
 .runner-monitor .waveform { margin: 10px 0; }
-.runner-monitor .waveform > svg { height: 160px; }
+.runner-monitor .waveform > :is(svg, .recorded-waveform) { height: 160px; }
 .runner-monitor .monitor-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .runner-monitor .monitor-stats > div { min-width: 0; padding: 8px; border-radius: 8px; }
 .runner-monitor .monitor-stats dt { font-size: 8.5px; font-weight: 700; }

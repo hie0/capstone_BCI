@@ -3,6 +3,8 @@ import { Activity, Settings2, Play, Pause, Info } from "lucide-react";
 import { useBCI } from "../store";
 import { participantModels, type ParticipantId } from "../data/channels";
 import { selectedBackendModel, isStaticRecordedReplay } from "../data/backend";
+import { RecordedWaveform } from "./RecordedWaveform";
+
 export function Settings({
   compact = false,
   embedded = false,
@@ -206,6 +208,7 @@ export function Waveform({
   large = false,
   recorded = false,
   samples,
+  replayDurationMs = 2000,
 }: {
   playing?: boolean;
   phase?: number;
@@ -213,7 +216,9 @@ export function Waveform({
   large?: boolean;
   recorded?: boolean;
   samples?: Record<string, number[]> | null;
+  replayDurationMs?: number;
 }) {
+  const speed = useBCI((state) => state.speed);
   const [tick, setTick] = useState(0);
   useEffect(() => {
     if (!playing || recorded) return;
@@ -229,65 +234,56 @@ export function Waveform({
           µV · {recorded ? "recorded" : "illustrative"}
         </span>
       </div>
-      <svg
-        viewBox={`0 0 500 ${channels.length * 48}`}
-        preserveAspectRatio="none"
-        role="img"
-        aria-label={recorded ? "실제 EEG 파형" : "합성 EEG 파형"}
-      >
-        <defs>
-          <pattern
-            id="grid"
-            width="25"
-            height="24"
-            patternUnits="userSpaceOnUse"
-          >
-            <path
-              d="M25 0H0V24"
-              fill="none"
-              stroke="#DCE5EB"
-              strokeWidth=".5"
-            />
-          </pattern>
-        </defs>
-        <rect width="500" height="100%" fill="url(#grid)" />
-        {channels.map((c, j) => (
-          <g key={c}>
-            <text x="4" y={j * 48 + 25} fill="#697B89" fontSize="11">
-              {c}
-            </text>
-            <path
-              d={
-                recorded
-                  ? (() => {
-                      const values = samples?.[c];
-                      if (!values?.length)
-                        return `M35 ${24 + j * 48}L500 ${24 + j * 48}`;
-                      const mean =
-                        values.reduce((a, b) => a + b, 0) / values.length;
-                      const scale =
-                        18 /
-                        Math.max(1, ...values.map((v) => Math.abs(v - mean)));
-                      return values
-                        .map(
-                          (v, i) =>
-                            `${i ? "L" : "M"}${35 + (i * 465) / Math.max(1, values.length - 1)},${24 + j * 48 - (v - mean) * scale}`,
-                        )
-                        .join(" ");
-                    })()
-                  : Array.from(
-                      { length: 240 },
-                      (_, i) =>
-                        `${i === 0 ? "M" : "L"}${35 + i * 1.95},${24 + j * 48 + Math.sin(i * 0.36 + tick + phase + j * 2) * 8 + Math.sin(i * 0.89 + tick * 2 + phase + j) * 4 + Math.cos(i * 0.13 + tick) * 3}`,
-                    ).join(" ")
-              }
-              fill="none"
-              stroke={j % 2 ? "#8A79AF" : "#527C98"}
-              strokeWidth="1.2"
-            />
-          </g>
-        ))}
-      </svg>
+      {recorded ? (
+        <RecordedWaveform
+          channels={channels}
+          samples={samples}
+          playing={playing}
+          speed={speed}
+          durationMs={replayDurationMs}
+        />
+      ) : (
+        <svg
+          viewBox={`0 0 500 ${channels.length * 48}`}
+          preserveAspectRatio="none"
+          role="img"
+          aria-label={recorded ? "실제 EEG 파형" : "합성 EEG 파형"}
+        >
+          <defs>
+            <pattern
+              id="grid"
+              width="25"
+              height="24"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M25 0H0V24"
+                fill="none"
+                stroke="#DCE5EB"
+                strokeWidth=".5"
+              />
+            </pattern>
+          </defs>
+          <rect width="500" height="100%" fill="url(#grid)" />
+          {channels.map((c, j) => (
+            <g key={c}>
+              <text x="4" y={j * 48 + 25} fill="#697B89" fontSize="11">
+                {c}
+              </text>
+              <path
+                d={Array.from(
+                  { length: 240 },
+                  (_, i) =>
+                    `${i === 0 ? "M" : "L"}${35 + i * 1.95},${24 + j * 48 + Math.sin(i * 0.36 + tick + phase + j * 2) * 8 + Math.sin(i * 0.89 + tick * 2 + phase + j) * 4 + Math.cos(i * 0.13 + tick) * 3}`,
+                ).join(" ")}
+                fill="none"
+                stroke={j % 2 ? "#8A79AF" : "#527C98"}
+                strokeWidth="1.2"
+              />
+            </g>
+          ))}
+        </svg>
+      )}
     </div>
   );
 }

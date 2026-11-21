@@ -80,12 +80,15 @@ for (const subject of ["KGE", "KHY", "OYJ", "WMJ"]) {
           await expect(
             page.getByRole("img", { name: "실제 EEG 파형" }),
           ).toBeVisible();
-          expect(
-            await page
-              .getByRole("img", { name: "실제 EEG 파형" })
-              .locator("g > path[d]")
-              .count(),
-          ).toBe(expected.active_channels.length);
+          await expect(
+            page.getByRole("img", { name: "실제 EEG 파형" }),
+          ).toHaveAttribute(
+            "data-channels",
+            expected.active_channels.join(","),
+          );
+          await expect(
+            page.getByRole("img", { name: "실제 EEG 파형" }).locator("canvas"),
+          ).toHaveCount(1);
         }
     }
     expect(forbidden).toEqual([]);
@@ -229,6 +232,7 @@ test("Neuro Runner consumes the same recorded model prediction without server in
   );
   await expect(page.locator(".runner-monitor .command-history")).toContainText(
     "Trial 1",
+    { timeout: 12000 },
   );
   await page
     .getByRole("button", { name: "Pause", exact: true })

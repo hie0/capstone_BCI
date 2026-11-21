@@ -12,7 +12,7 @@ import {
   loadRecordedSessions,
 } from "./data/recordedReplay";
 
-export function useRecordedEEG(controlDevices: boolean) {
+export function useRecordedEEG(controlDevices: boolean, consumerPaced = false) {
   const {
     inputMode,
     participantId,
@@ -78,12 +78,10 @@ export function useRecordedEEG(controlDevices: boolean) {
     let timer: ReturnType<typeof setTimeout> | undefined;
     if (isStaticRecordedReplay) {
       const controller = new AbortController();
-      useBCI
-        .getState()
-        .setBackend({
-          backendStatus: "기록 추론 결과 불러오는 중",
-          backendError: null,
-        });
+      useBCI.getState().setBackend({
+        backendStatus: "기록 추론 결과 불러오는 중",
+        backendError: null,
+      });
       loadRecordedReplay(
         participantId,
         sessionId,
@@ -104,28 +102,34 @@ export function useRecordedEEG(controlDevices: boolean) {
               current.ttaEnabled !== ttaEnabled
             )
               return;
+            if (consumerPaced && !current.recordedTrialReady) {
+              timer = setTimeout(next, 100);
+              return;
+            }
             const prediction = replay.predictions[current.recordedCursor];
             if (!prediction) {
               current.setBackend({ backendStatus: "세션 재생 완료" });
               current.stop();
               return;
             }
+            if (consumerPaced) current.setRecordedTrialReady(false);
             current.receivePrediction(prediction, controlDevices);
-            timer = setTimeout(next, 2000 / current.speed);
+            timer = setTimeout(
+              next,
+              consumerPaced ? 100 : 2000 / current.speed,
+            );
           };
           next();
         })
         .catch((error: unknown) => {
           if (closed || controller.signal.aborted) return;
-          useBCI
-            .getState()
-            .setBackend({
-              backendStatus: "재생 실패",
-              backendError:
-                error instanceof Error
-                  ? error.message
-                  : "EEG 재생 파일을 불러올 수 없습니다.",
-            });
+          useBCI.getState().setBackend({
+            backendStatus: "재생 실패",
+            backendError:
+              error instanceof Error
+                ? error.message
+                : "EEG 재생 파일을 불러올 수 없습니다.",
+          });
           useBCI.getState().stop();
         });
       return () => {
@@ -146,11 +150,16 @@ export function useRecordedEEG(controlDevices: boolean) {
       const current = useBCI.getState();
       if (closed || !current.isPlaying || socket.readyState !== WebSocket.OPEN)
         return;
+      if (consumerPaced && !current.recordedTrialReady) {
+        timer = setTimeout(next, 100);
+        return;
+      }
       if (current.recordedCursor >= session.n_online_trials) {
         current.setBackend({ backendStatus: "세션 재생 완료" });
         current.stop();
         return;
       }
+      if (consumerPaced) current.setRecordedTrialReady(false);
       socket.send(
         JSON.stringify({
           action: "step_trial",
@@ -192,7 +201,10 @@ export function useRecordedEEG(controlDevices: boolean) {
           )
             throw new Error("EEG 세션 응답 불일치");
           useBCI.getState().receivePrediction(prediction, controlDevices);
-          timer = setTimeout(next, 2000 / useBCI.getState().speed);
+          timer = setTimeout(
+            next,
+            consumerPaced ? 100 : 2000 / useBCI.getState().speed,
+          );
         } else if (message.type === "error")
           fail(message.detail ?? "추론 실패");
       } catch (e) {
@@ -222,5 +234,6 @@ export function useRecordedEEG(controlDevices: boolean) {
     isPlaying,
     speed,
     controlDevices,
+    consumerPaced,
   ]);
 }

@@ -8,7 +8,8 @@ import {
   Link,
   useLocation,
 } from "react-router-dom";
-import { BrainCircuit, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
+import { BrandLogo } from "./components/BrandLogo";
 import "./styles.css";
 import Home from "./pages/Home";
 const Simulation = lazy(() => import("./pages/Simulation"));
@@ -67,14 +68,8 @@ function App() {
       </a>
       <header>
         <div className="container header-inner">
-          <Link className="brand" to="/">
-            <span className="brand-symbol">
-              <BrainCircuit size={24} />
-            </span>
-            <span>
-              NEURO<span className="brand-light">LINK</span>
-              <small>MI-BCI RESEARCH LAB</small>
-            </span>
+          <Link className="brand" to="/" aria-label="NEUROLINK 홈">
+            <BrandLogo />
           </Link>
           <nav aria-label="메인 내비게이션">
             {navItems.map((item) => (
@@ -119,8 +114,9 @@ function App() {
       </div>
       <footer className="container">
         <div>
-          <BrainCircuit size={20} />
-          <strong>NEUROLINK</strong>
+          <Link className="footer-brand" to="/" aria-label="NEUROLINK 홈">
+            <BrandLogo footer />
+          </Link>
           <span>국립부경대학교 컴퓨터·인공지능공학부</span>
         </div>
         <p>
