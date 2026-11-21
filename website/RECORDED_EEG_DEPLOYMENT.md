@@ -36,6 +36,16 @@ Participant/session/channel/TTA select their corresponding asset. Start, Pause, 
 
 The existing game consumes the shared predictions. Its recorded EEG target comes from trial labels, while movement comes from predicted direction; quality rejection remains in effect. Neuro Runner waits for approach, judgment and passing to finish before requesting the next trial. At 1×, recorded approach takes 4.5 seconds, followed by 0.9 seconds of feedback and 1.2 seconds of passing. Pause preserves the current trial. All modes start with three lives; each clean incorrect prediction costs one life, while rejected trials do not. Obstacle meshes and materials stay mounted. Between trials they reset outside the visible area, then emerge through distant fog; they never travel visibly backwards. Frame-by-frame progress uses a ref instead of re-rendering the React page.
 
+## BCI Communication
+
+Recorded mode uses the same exported model predictions and real waveforms. Each quality-passing prediction moves the existing selection accumulator by 10 points toward LEFT or RIGHT. The existing 80% UI threshold confirms the tree choice; it is distinct from model probability, which remains in the actual prediction monitor. Ground truth never drives a tree choice. Quality-rejected trials do not change the accumulator.
+
+The consumer acknowledges each trial after its UI processing (2 seconds at 1×; a threshold choice uses 600ms confirmation plus 1400ms rest). Pause suspends both replay and any pending confirmation. Resume continues that pending action before accepting another trial. Changing participant/session/channel/TTA resets the tree. Reset clears the current replay; Back pauses playback and returns one tree level.
+
+A terminal selection invokes the browser's Korean TTS and pauses playback. “다음 문장 선택” starts a new root-level selection with subsequent recorded trials, or restarts the session if its last trial was reached. Manual cards and existing speech settings remain available in demo modes. Recorded-mode cards cannot inject manual commands. The speech content is a demonstration mapping from model directions to messages, not a recording of a participant's expressed needs.
+
+Browser validation uses original WMJ replay predictions, including incorrect predictions and artifact-rejected trials, to traverse three tree levels and verify the Korean TTS invocation. It checks pending-decision pause/resume, reset, real metadata, no API/WebSocket requests, no smart-home commands, and preservation of manual tree selection.
+
 ## Optional original live Backend
 
 For local research only, set `VITE_BCI_RECORDED_SOURCE=backend` and start the existing FastAPI server. An external API origin can be supplied with `VITE_BCI_API_BASE`. Never point the public Vercel site at `localhost`.

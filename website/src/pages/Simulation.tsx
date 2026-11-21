@@ -38,7 +38,7 @@ export default function Simulation() {
   };
   useRecordedEEG(
     tab === "applications" && app === "home",
-    tab === "applications" && app === "game",
+    tab === "applications" && (app === "game" || app === "communication"),
   );
   return (
     <main

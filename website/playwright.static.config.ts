@@ -6,6 +6,7 @@ export default defineConfig({
     "neuro-runner.spec.ts",
     "recorded-waveform.spec.ts",
     "branding.spec.ts",
+    "communication-recorded.spec.ts",
   ],
   timeout: 90000,
   workers: 1,

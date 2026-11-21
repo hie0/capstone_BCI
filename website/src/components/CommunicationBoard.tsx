@@ -8,7 +8,10 @@ import {
   Volume2,
 } from "lucide-react";
 import { Atlas2D } from "./Scenes";
-import { Settings, Waveform } from "./Controls";
+import { Settings, Waveform, PlayButton } from "./Controls";
+import { useBCI } from "../store";
+import { selectedBackendModel, isStaticRecordedReplay } from "../data/backend";
+import { RecordedMetrics } from "./RecordedMetrics";
 import type { Direction } from "../data/research";
 import "./CommunicationBoard.css";
 
@@ -173,6 +176,9 @@ const TREE_NODES: Record<string, DecisionNode> = {
 };
 
 export function CommunicationBoard() {
+  const s = useBCI();
+  const recorded = s.inputMode === "recorded";
+  const channels = recorded ? selectedBackendModel(s)?.active_channels ?? MONITOR_CHANNELS : MONITOR_CHANNELS;
   const [currentNodeId, setCurrentNodeId] = useState<string>("ROOT");
   const [history, setHistory] = useState<string[]>([]);
 
@@ -183,40 +189,87 @@ export function CommunicationBoard() {
   const [finalSpeech, setFinalSpeech] = useState<string | null>(null);
   const [isCommitting, setIsCommitting] = useState(false);
 
-  const commitTimer = useRef<number | undefined>(undefined);
-
+  const evidence = useRef(50);
+  const node = useRef("ROOT");
+  const committing = useRef(false);
+  const processedTrial = useRef<number | null>(null);
+  const action = useRef<{ run: () => void; remaining: number; started: number; speed: number; timer?: number } | null>(null);
   const right = 100 - left;
   const confidence = Math.max(left, right);
   const uncertain = confidence < THRESHOLD;
   const currentNode = TREE_NODES[currentNodeId];
 
-  const resetEvidence = () => setLeft(50);
-
+  const clearAction = () => {
+    if (action.current) window.clearTimeout(action.current.timer);
+    action.current = null;
+  };
+  const armAction = () => {
+    const pending = action.current;
+    if (!pending || pending.timer !== undefined || (recorded && !useBCI.getState().isPlaying)) return;
+    pending.speed = recorded ? useBCI.getState().speed : 1;
+    pending.started = performance.now();
+    pending.timer = window.setTimeout(() => {
+      if (action.current !== pending) return;
+      action.current = null;
+      pending.run();
+    }, pending.remaining / pending.speed);
+  };
+  const suspendAction = () => {
+    const pending = action.current;
+    if (!pending || pending.timer === undefined) return;
+    window.clearTimeout(pending.timer);
+    pending.remaining = Math.max(0, pending.remaining - (performance.now() - pending.started) * pending.speed);
+    pending.timer = undefined;
+  };
+  const schedule = (run: () => void, remaining: number) => {
+    clearAction();
+    action.current = { run, remaining, started: 0, speed: 1 };
+    armAction();
+  };
+  const resetEvidence = () => { evidence.current = 50; setLeft(50); };
+  const resetBoard = () => {
+    clearAction();
+    node.current = "ROOT"; committing.current = false;
+    setCurrentNodeId("ROOT"); setHistory([]); resetEvidence();
+    setActiveDirection(undefined); setResult("표현할 항목을 선택하세요.");
+    setFinalSpeech(null); setIsCommitting(false);
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  };
   const resetAll = () => {
-    window.clearTimeout(commitTimer.current);
-    setCurrentNodeId("ROOT");
-    setHistory([]);
-    resetEvidence();
-    setActiveDirection(undefined);
-    setResult("표현할 항목을 선택하세요.");
-    setFinalSpeech(null);
-    setIsCommitting(false);
+    s.stop(); resetBoard(); processedTrial.current = null;
+    s.setRecordedTrialReady(true);
+    if (recorded) s.setSettings({ inputMode: "recorded", recordedLowChannel: s.recordedLowChannel });
   };
-
   const goBack = () => {
-    if (history.length === 0) return;
-    window.clearTimeout(commitTimer.current);
-    const prevHistory = [...history];
-    const prevNodeId = prevHistory.pop() || "ROOT";
-    setHistory(prevHistory);
-    setCurrentNodeId(prevNodeId);
-    resetEvidence();
-    setActiveDirection(undefined);
-    setResult("이전 단계로 돌아왔습니다.");
-    setIsCommitting(false);
+    if (!history.length) return;
+    s.stop(); clearAction(); s.setRecordedTrialReady(true);
+    const previous = history.slice(0, -1);
+    node.current = history[history.length - 1];
+    setHistory(previous); setCurrentNodeId(node.current); resetEvidence();
+    committing.current = false; setIsCommitting(false); setActiveDirection(undefined);
+    setFinalSpeech(null); setResult("이전 단계로 돌아왔습니다.");
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   };
-
-  useEffect(() => () => window.clearTimeout(commitTimer.current), []);
+  const startRecorded = () => {
+    const total = s.backendSessions.find(session => session.session_id === s.sessionId)?.n_online_trials;
+    if (total && s.recordedCursor >= total) resetAll();
+    else if (finalSpeech) resetBoard();
+    s.play();
+  };
+  useEffect(() => {
+    s.stop(); resetBoard(); processedTrial.current = null;
+    s.setRecordedTrialReady(true);
+    if (recorded && (useBCI.getState().recordedPrediction || useBCI.getState().recordedCursor > 0)) {
+      s.setSettings({ inputMode: "recorded", recordedLowChannel: s.recordedLowChannel });
+    }
+  }, [s.inputMode, s.participantId, s.sessionId, s.channelMode, s.recordedLowChannel, s.ttaEnabled]);
+  useEffect(() => {
+    suspendAction(); armAction();
+  }, [s.isPlaying, s.speed]);
+  useEffect(() => () => {
+    clearAction(); useBCI.getState().setRecordedTrialReady(true);
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  }, []);
 
   /**
    * TTS Speech: Plays stable, calm low-pitch Korean Female Voice
@@ -250,57 +303,59 @@ export function CommunicationBoard() {
   };
 
   const select = (direction: Direction) => {
-    if (isCommitting) return;
+    if (committing.current) return;
     setActiveDirection(direction);
-
-    setLeft((prev) => {
-      const next =
-        direction === "LEFT"
-          ? Math.min(100, prev + STEP)
-          : Math.max(0, prev - STEP);
-
-      const targetSelected = direction === "LEFT" ? currentNode.left : currentNode.right;
-
-      if (next >= THRESHOLD || 100 - next >= THRESHOLD) {
-        setIsCommitting(true);
-        setResult(`✓ [${targetSelected.label}] 확정 완료!`);
-
-        window.clearTimeout(commitTimer.current);
-        commitTimer.current = window.setTimeout(() => {
-          if (targetSelected.subId) {
-            // Next Depth in Decision Tree
-            setHistory((prevH) => [...prevH, currentNodeId]);
-            setCurrentNodeId(targetSelected.subId);
-            resetEvidence();
-            setActiveDirection(undefined);
-            setIsCommitting(false);
-          } else if (targetSelected.speech) {
-            // Terminal Leaf Reached: Speak with Female Voice!
-            setFinalSpeech(targetSelected.speech);
-            speakFemale(targetSelected.speech);
-            resetEvidence();
-            setActiveDirection(undefined);
-            setIsCommitting(false);
+    const next = Math.max(0, Math.min(100, evidence.current + (direction === "LEFT" ? STEP : -STEP)));
+    evidence.current = next; setLeft(next);
+    const current = TREE_NODES[node.current];
+    if (next >= THRESHOLD || 100 - next >= THRESHOLD) {
+      const selected = next >= THRESHOLD ? current.left : current.right;
+      const from = node.current;
+      committing.current = true; setIsCommitting(true);
+      setResult(`✓ [${selected.label}] 확정 완료!`);
+      schedule(() => {
+        resetEvidence(); setActiveDirection(undefined);
+        committing.current = false; setIsCommitting(false);
+        if (selected.subId) {
+          node.current = selected.subId;
+          setHistory(previous => [...previous, from]);
+          setCurrentNodeId(selected.subId);
+          if (recorded) schedule(() => useBCI.getState().setRecordedTrialReady(true), 1400);
+        } else if (selected.speech) {
+          setFinalSpeech(selected.speech); speakFemale(selected.speech);
+          if (recorded) {
+            useBCI.getState().setBackend({ backendStatus: "문장 선택 완료" });
+            useBCI.getState().stop();
+            useBCI.getState().setRecordedTrialReady(true);
           }
-        }, 600);
-      } else {
-        setResult(
-          `${direction === "LEFT" ? "왼쪽" : "오른쪽"} 상상 누적 중: ${
-            direction === "LEFT" ? next : 100 - next
-          }% / ${THRESHOLD}%`
-        );
-      }
-
-      return next;
-    });
+        }
+      }, 600);
+    } else {
+      setResult(`${direction === "LEFT" ? "LEFT" : "RIGHT"} ${recorded ? "예측 반영 · 선택" : "상상"} 누적: ${direction === "LEFT" ? next : 100 - next}% / ${THRESHOLD}%`);
+      if (recorded) schedule(() => useBCI.getState().setRecordedTrialReady(true), 2000);
+    }
   };
+  useEffect(() => {
+    const prediction = s.recordedPrediction;
+    const current = useBCI.getState();
+    if (!recorded || !current.isPlaying || !prediction || current.recordedPrediction !== prediction || prediction.trial_id === processedTrial.current) return;
+    processedTrial.current = prediction.trial_id;
+    if (!prediction.quality.is_clean) {
+      setActiveDirection(undefined);
+      setResult(`Trial ${prediction.trial_id}: 품질 기준 미달 · 선택 누적에 반영하지 않습니다.`);
+      schedule(() => useBCI.getState().setRecordedTrialReady(true), 2000);
+      return;
+    }
+    // Only model predictions drive selection. Ground truth is evaluation-only.
+    select(prediction.predicted_direction);
+  }, [recorded, s.isPlaying, s.recordedPrediction]);
 
   const isLeftSelectedInBranch = (targetSubId: string) => {
     return currentNodeId === targetSubId || history.includes(targetSubId);
   };
 
   return (
-    <section className="card communication-board" aria-label="AAC 소통 의사결정 트리">
+    <section className={`card communication-board ${recorded ? "recorded-communication" : ""}`} aria-label="AAC 소통 의사결정 트리">
       {/* Top Header */}
       <div className="comm-header application-heading">
         <div className="application-heading-copy">
@@ -557,7 +612,7 @@ export function CommunicationBoard() {
       {/* Dedicated Dual Option Selection Cards (Directly Above the Gauge) */}
       <div className="comm-option-cards-container">
         <button
-          disabled={isCommitting}
+          disabled={isCommitting || recorded}
           className={`option-card left-card ${activeDirection === "LEFT" ? "imagining" : ""}`}
           onClick={() => select("LEFT")}
         >
@@ -575,13 +630,13 @@ export function CommunicationBoard() {
           </div>
           {activeDirection === "LEFT" && (
             <div className="card-live-indicator left-ind">
-              <Check size={14} /> 왼손 상상 감지 중 ({left}%)
+              <Check size={14} /> {recorded ? `LEFT 예측 반영 · 선택 누적 ${left}%` : `왼손 상상 감지 중 (${left}%)`}
             </div>
           )}
         </button>
 
         <button
-          disabled={isCommitting}
+          disabled={isCommitting || recorded}
           className={`option-card right-card ${activeDirection === "RIGHT" ? "imagining" : ""}`}
           onClick={() => select("RIGHT")}
         >
@@ -599,7 +654,7 @@ export function CommunicationBoard() {
           </div>
           {activeDirection === "RIGHT" && (
             <div className="card-live-indicator right-ind">
-              <Check size={14} /> 오른손 상상 감지 중 ({right}%)
+              <Check size={14} /> {recorded ? `RIGHT 예측 반영 · 선택 누적 ${right}%` : `오른손 상상 감지 중 (${right}%)`}
             </div>
           )}
         </button>
@@ -608,9 +663,9 @@ export function CommunicationBoard() {
       {/* User's Original 80% Balance Gauge */}
       <div className="evidence-bars balance-gauge" aria-live="polite">
         <div className="gauge-labels">
-          <strong className="left-gauge-label">왼쪽 상상: {left}%</strong>
-          <span>가운데(50%)에서 시작해 {THRESHOLD}%까지 채우면 선택이 확정됩니다</span>
-          <strong className="right-gauge-label">오른쪽 상상: {right}%</strong>
+          <strong className="left-gauge-label">{recorded ? "LEFT 선택 누적" : "왼쪽 상상"}: {left}%</strong>
+          <span>{recorded ? `선택 누적 ${THRESHOLD}%에서 확정 · 모델 확률과 별도` : `가운데(50%)에서 시작해 ${THRESHOLD}%까지 채우면 선택이 확정됩니다`}</span>
+          <strong className="right-gauge-label">{recorded ? "RIGHT 선택 누적" : "오른쪽 상상"}: {right}%</strong>
         </div>
         <div className="balance-track">
           <i className="left-threshold" title="80% 임계점" />
@@ -625,7 +680,7 @@ export function CommunicationBoard() {
         </div>
         <p className={uncertain ? "uncertain" : "ready"}>
           {uncertain
-            ? `UNCERTAIN · ${THRESHOLD}%까지 같은 방향을 계속 상상하세요 (현재 최고: ${confidence}%).`
+            ? recorded ? `선택 누적 ${confidence}% · 품질 기준을 통과한 예측만 반영합니다.` : `UNCERTAIN · ${THRESHOLD}%까지 같은 방향을 계속 상상하세요 (현재 최고: ${confidence}%).`
             : `✓ ${THRESHOLD}% 선택 임계값에 도달했습니다!`}
         </p>
       </div>
@@ -644,7 +699,8 @@ export function CommunicationBoard() {
           </div>
           <div className="brain-canvas-wrap">
             <Atlas2D
-              mode="5ch"
+              mode={recorded ? s.channelMode : "5ch"}
+              activeOverride={recorded ? channels : undefined}
               selected={activeDirection === "LEFT" ? "C4" : activeDirection === "RIGHT" ? "C3" : ""}
               onSelect={() => {}}
               direction={activeDirection}
@@ -662,35 +718,42 @@ export function CommunicationBoard() {
               <Activity size={15} /> ((o)) EEG Control Monitor
             </span>
             <div className="wave-status-tags">
-              <span className="wave-sub-tag">Synthetic EEG Demo · μV illustrative</span>
+              <span className="wave-sub-tag">{recorded ? isStaticRecordedReplay ? "Recorded EEG · 추론 결과 재생" : "Recorded EEG · 모델 추론" : "Synthetic EEG Demo · μV illustrative"}</span>
               <strong className={`status-badge ${activeDirection ? activeDirection.toLowerCase() : "idle"}`}>
-                {activeDirection ? `${activeDirection} 활성` : "READY"}
+                {recorded ? s.isPlaying ? s.recordedPrediction?.quality.status ?? "READY" : s.backendStatus : activeDirection ? `${activeDirection} 활성` : "READY"}
               </strong>
             </div>
           </div>
           <Waveform
-            channels={MONITOR_CHANNELS}
-            playing={Boolean(activeDirection)}
+            channels={channels}
+            recorded={recorded}
+            samples={s.recordedPrediction?.waveform}
+            playing={recorded ? s.isPlaying : Boolean(activeDirection)}
             phase={activeDirection === "RIGHT" ? 2.8 : 0.2}
           />
+          {recorded && <div className="communication-playback">
+            {finalSpeech ? <button className="button primary" onClick={startRecorded}>다음 문장 선택</button> : <PlayButton recorded playing={s.isPlaying} onClick={s.isPlaying ? s.stop : startRecorded} />}
+            <span className="small muted">{s.backendStatus}</span>
+          </div>}
           <div className="monitor-meta-grid">
             <div className="meta-item">
               <span className="meta-key">Current Trial</span>
-              <span className="meta-val">{history.length + 1}</span>
+              <span className="meta-val">{recorded ? s.recordedPrediction?.trial_id ?? "—" : history.length + 1}</span>
             </div>
             <div className="meta-item">
-              <span className="meta-key">Target Direction</span>
-              <span className="meta-val highlight">{activeDirection || "READY"}</span>
+              <span className="meta-key">{recorded ? "Predicted Direction" : "Target Direction"}</span>
+              <span className="meta-val highlight">{recorded ? s.recordedPrediction?.predicted_direction ?? "—" : activeDirection || "READY"}</span>
             </div>
             <div className="meta-item">
               <span className="meta-key">Active Channels</span>
-              <span className="meta-val mono">F3 · F4 · C3 · Cz · C4</span>
+              <span className="meta-val mono">{channels.join(" · ")}</span>
             </div>
             <div className="meta-item">
               <span className="meta-key">TTA Status</span>
-              <span className="meta-val status-on">ON</span>
+              <span className={`meta-val ${s.ttaEnabled ? "status-on" : ""}`}>{s.ttaEnabled ? "ON" : "OFF"}</span>
             </div>
           </div>
+          {recorded && <RecordedMetrics />}
         </div>
 
         {/* 3. Right: Control Settings (Settings2) */}

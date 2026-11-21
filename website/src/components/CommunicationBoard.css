@@ -659,3 +659,55 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* Recorded EEG uses real predictions; manual cards retain their demo behavior. */
+.recorded-communication .option-card:disabled {
+  cursor: default;
+  opacity: 1;
+}
+.communication-playback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+.communication-playback .button {
+  min-height: 40px;
+}
+.recorded-communication .wave-box .suite-card-header {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.recorded-communication .wave-status-tags {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.recorded-communication .recorded-metrics {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.recorded-communication .recorded-metrics .monitor-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.recorded-communication .recorded-metrics .monitor-stats > div {
+  display: block;
+  min-width: 0;
+  padding: 8px;
+  margin: 0;
+  border-radius: 8px;
+  background: var(--surface-secondary);
+  overflow-wrap: anywhere;
+}
+.recorded-communication .recorded-metrics dt {
+  font-size: 9px;
+  line-height: 1.5;
+}
+.recorded-communication .recorded-metrics dd {
+  margin: 4px 0 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
