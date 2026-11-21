@@ -59,6 +59,13 @@ for (const subject of ["KGE", "KHY", "OYJ", "WMJ"]) {
             session,
             `${channel}__tta_${tta ? "on" : "off"}`,
           ).predictions[0];
+          const expectedCount = channel === "16ch" ? 16 :
+            ({ KGE: 5, OYJ: 5, WMJ: 7, KHY: 7 } as Record<string, number>)[subject];
+          expect(expected.active_channels).toHaveLength(expectedCount);
+          if (channel === "low") {
+            await expect(page.getByRole("combobox", { name: "Channel configuration", exact: true })
+              .locator('option:checked')).toContainText(`${expectedCount}ch`);
+          }
           await page
             .getByRole("button", { name: "실제 EEG 재생", exact: true })
             .click();

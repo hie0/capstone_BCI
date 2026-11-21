@@ -10,7 +10,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from backend.inference_engine import inference_manager as manager, MODELS_DIR, DATA_ROOT
+from backend.inference_engine import inference_manager as manager, MODELS_DIR, DATA_ROOT, RECORDED_LOW_CHANNELS
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / 'website/public/recorded-eeg'
@@ -46,6 +46,15 @@ def main():
         sources[f'backend/{name}'] = digest(ROOT / 'backend' / name)
     source_fingerprint = hashlib.sha256(encode(sources)).hexdigest()
     previous = REPORT / 'validation.json'
+    prior_manifest = json.loads((OUTPUT / 'manifest.json').read_text()) if (OUTPUT / 'manifest.json').exists() else {}
+    prior_validation = json.loads(previous.read_text()) if previous.exists() else {}
+    prior_sources = json.loads((REPORT / 'sources.json').read_text()) if (REPORT / 'sources.json').exists() else {}
+    # Reuse verified 16ch exports only when models, data and inference sources
+    # match. Export formatting changes alone do not require 16ch inference.
+    reusable_sources = {k: v for k, v in sources.items() if k not in
+        ('backend/export_recorded_replay.py',)}
+    reuse_full = reusable_sources == {k: v for k, v in prior_sources.items() if k not in
+        ('backend/export_recorded_replay.py',)}
     if previous.exists() and (OUTPUT / 'manifest.json').exists():
         old = json.loads(previous.read_text())
         manifest = json.loads((OUTPUT / 'manifest.json').read_text())
@@ -69,11 +78,23 @@ def main():
                 for tta in [False, True]:
                     key = f'{channel}__tta_{"on" if tta else "off"}'
                     _, model = manager.resolve_calib_model(subject, sid, channel, tta)
+                    if channel == 'low':
+                        assert len(model.ch_idx) == int(RECORDED_LOW_CHANNELS[subject][0])
+                    old_session = next((s for s in prior_manifest.get('sessions', []) if s['session_id'] == sid), {})
+                    old_asset = old_session.get('replays', {}).get(key)
+                    old_condition = next((v for v in prior_validation.get('conditions', [])
+                        if v['session'] == sid and v['configuration'] == key), None)
+                    if channel == '16ch' and reuse_full and old_asset and old_condition and digest(OUTPUT / old_asset['file']) == old_asset['sha256']:
+                        record['available_models'][key] = old_session['available_models'][key]
+                        record['replays'][key] = old_asset
+                        validations.append(old_condition)
+                        continue
                     result = manager.evaluate_full_session_chronological(subject, sid, channel, tta, include_waveforms=True)
                     predictions = []
                     for i, original in enumerate(result['predictions']):
                         assert original['trial_id'] == i + 1
                         assert original['participant_id'] == subject and original['session_id'] == sid
+                        assert original['active_channels'] == model.active_channels
                         item = {k: original[k] for k in FIELDS}
                         item['quality'] = {k: original['quality'][k] for k in QUALITY_FIELDS}
                         item['playback_source'] = 'precomputed'
@@ -116,8 +137,18 @@ def main():
         'waveform': {'kind': 'filtered-display-snippet', 'source_sample_rate_hz': 250,
                      'display_sample_rate_hz': 125, 'samples_per_trial': 250, 'unit': 'uV'},
         'session_count': 12, 'online_trial_count': 540, 'configuration_count': 48,
+        'low_channel_counts': {s: int(ch[0]) for s, ch in RECORDED_LOW_CHANNELS.items()},
         'sessions': sessions}
+    (REPORT / 'manifest-before-fixed-channels.json').write_bytes(encode(prior_manifest))
     (OUTPUT / 'manifest.json').write_bytes(encode(manifest))
+    # Retire only previously generated, hash-verified public replay assets.
+    # Never touch recordings or model files.
+    current_files = {a['file'] for s in sessions for a in s['replays'].values()}
+    for s in prior_manifest.get('sessions', []):
+        for a in s['replays'].values():
+            p = OUTPUT / a['file']
+            if a['file'] not in current_files and p.parent == OUTPUT and p.is_file() and digest(p) == a['sha256']:
+                p.unlink()
     (REPORT / 'sources.json').write_bytes(encode(sources))
     (REPORT / 'validation.json').write_bytes(encode({'source_fingerprint': source_fingerprint,
         'models_retrained': False, 'total_predictions': sum(v['trials'] for v in validations),

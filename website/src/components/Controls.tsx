@@ -158,7 +158,7 @@ export function Settings({
           >
             Low Channel
             {recorded
-              ? ` · ${selectedSession?.available_models[`low__tta_${s.ttaEnabled ? "on" : "off"}`]?.montage ?? "연결 대기"}`
+              ? ` · ${selectedSession?.available_models[`low__tta_${s.ttaEnabled ? "on" : "off"}`]?.n_channels ?? "–"}ch · ${selectedSession?.available_models[`low__tta_${s.ttaEnabled ? "on" : "off"}`]?.montage ?? "연결 대기"}`
               : ""}
           </option>
         </select>

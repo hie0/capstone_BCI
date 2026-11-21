@@ -11,6 +11,7 @@ const predictions = JSON.parse(
   readFileSync(new URL(session.replays.low__tta_off.file, root), "utf8"),
 ).predictions;
 const sentence = "목이 마릅니다. 시원한 물 한 잔만 주세요.";
+const recordedSentence = "실내 공기가 너무 춥거나 덥습니다. 온도 조절 부탁드립니다.";
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -111,22 +112,22 @@ test("communication follows actual predictions, rejects artifacts, pauses pendin
     timeout: 10000,
   });
   expect(predictions[4].quality.is_clean).toBe(false);
-  await expect(page.locator(".left-gauge-label")).toContainText("60%");
+  await expect(page.locator(".left-gauge-label")).toContainText("40%");
   await expect(page.getByTestId("quality-gate")).toHaveText(
     predictions[4].quality.status,
   );
-  await expect(page.locator(".comm-speech-window")).toContainText(sentence, {
+  await expect(page.locator(".comm-speech-window")).toContainText(recordedSentence, {
     timeout: 20000,
   });
   await expect(
     page.getByRole("button", { name: "다음 문장 선택", exact: true }),
   ).toBeVisible();
-  await expect(page.getByTestId("observed-accuracy")).toContainText("n=13");
+  await expect(page.getByTestId("observed-accuracy")).toContainText("n=15");
   await page.waitForTimeout(1200);
-  await expect(page.getByTestId("observed-accuracy")).toContainText("n=13");
+  await expect(page.getByTestId("observed-accuracy")).toContainText("n=15");
   expect(
     await page.evaluate(() => (window as Window & { spoken: string[] }).spoken),
-  ).toEqual([sentence]);
+  ).toEqual([recordedSentence]);
   await page.screenshot({
     path: "../backend/local_cache/communication-recorded-1440.png",
     fullPage: true,

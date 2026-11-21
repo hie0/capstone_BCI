@@ -43,6 +43,10 @@ MODELS_DIR = BACKEND_DIR / "models"
 LOCAL_CACHE_DIR = BACKEND_DIR / "local_cache"
 DATA_ROOT = resolve_data_root()
 
+# Website low-channel playback uses a fixed channel count per participant.
+# Select an existing fitted Calib20 model; never relabel a variable-count model.
+RECORDED_LOW_CHANNELS = {"KGE": "5ch", "OYJ": "5ch", "WMJ": "7ch", "KHY": "7ch"}
+
 
 class NeurolinkInferenceManager:
     """
@@ -153,7 +157,7 @@ class NeurolinkInferenceManager:
 
         cm = channel_mode.strip().lower()
         if cm in ("optimal", "low", "low_ch", "lowch"):
-            cm_key = "low"
+            cm_key = RECORDED_LOW_CHANNELS[participant_id.upper()]
         elif cm in ("16", "16ch", "full"):
             cm_key = "16ch"
         elif cm in ("7", "7ch"):
@@ -161,7 +165,7 @@ class NeurolinkInferenceManager:
         elif cm in ("5", "5ch"):
             cm_key = "5ch"
         else:
-            cm_key = "low"
+            raise ValueError(f"Unsupported channel mode: {channel_mode}")
 
         candidate_keys = [f"{cm_key}__{tta_suffix}"]
         for k in candidate_keys:

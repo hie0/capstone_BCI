@@ -48,6 +48,6 @@ npm run build
 
 
 Phase4에서는 Smart Home과 Wearable 양쪽에서 Participant/Session·16ch/Low Channel·TTA·속도를 설정할 수 있다. Decision score=P(RIGHT), logit, latency, Quality Gate 및 관측 trial Accuracy/BA는 실제 응답으로 표시한다.
-`Low Channel`은 제공된 joblib의 low 키를 그대로 사용한다. TTA ON/OFF 사이 montage가 다를 수 있으므로 고정 모델 TTA 단독 비교로 해석하지 않는다. 상세 조건과 검증 결과는 [PHASE4_INTEGRATION_RESULTS.md](../PHASE4_INTEGRATION_RESULTS.md)에 있다.
+`Low Channel`은 제공된 세션별 joblib에서 KGE·OYJ는 `5ch__tta_off/on`, WMJ·KHY는 `7ch__tta_off/on` 키로 연결한다. 모든 세션과 TTA 설정에서 피험자별 전극 수를 고정하며, `/api/sessions`와 추론이 같은 구성을 사용한다. 저장 모델에 따라 전극 위치·reference·filter·window가 다를 수 있으므로 고정 모델 TTA 단독 비교로 해석하지 않는다. 일부 5ch 모델은 PM 대신 Core 배치(C3/Cz/C4/P7/P8)를 사용하며 실제 활성 전극을 그대로 표시한다. 상세 조건과 검증 결과는 [PHASE4_INTEGRATION_RESULTS.md](../PHASE4_INTEGRATION_RESULTS.md)에 있다.
 
 Backend는 BLAS 계열 스레드를 프로세스당 1개로 제한하고, 독립 EEG 세션은 최대 2개 동시 로딩한다. 세션별 모델과 EEG는 서버 메모리 캐시를 재사용한다. 추가 Low 검증만 실행하려면 저장소 루트에서 `backend/.venv/bin/python backend/validate_phase4.py`를 실행한다(2개 검증 프로세스, 새 학습 없음). 로그/결과는 `backend/local_cache/phase4/`에 저장한다.

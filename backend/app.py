@@ -142,6 +142,18 @@ def list_sessions(
                     "reg": fm.reg,
                     "tta_enabled": fm.use_ea,
                 }
+            # Expose the same fixed-count low alias used by prediction/WebSocket.
+            for tta in (False, True):
+                _, fm = inference_manager.resolve_calib_model(subj, entry["session"], "low", tta)
+                models_info[f'low__tta_{"on" if tta else "off"}'] = {
+                    "montage": fm.montage_name,
+                    "n_channels": len(fm.ch_idx),
+                    "active_channels": fm.active_channels,
+                    "band": fm.band_name,
+                    "window": fm.win_name,
+                    "reg": fm.reg,
+                    "tta_enabled": fm.use_ea,
+                }
             out_sessions.append({
                 "participant_id": subj,
                 "korean_name": PARTICIPANT_SPECS[subj]["korean_name"],
