@@ -82,7 +82,6 @@ export default function SmartHome() {
               <strong>뇌 자극 부위</strong>
               <span>운동 상상 명령에 따라 강조 위치가 바뀝니다.</span>
             </div>
-            <span className="small muted">2D CHANNEL MAP</span>
           </div>
           <div className="wearable-live-scene">
             <Atlas2D
