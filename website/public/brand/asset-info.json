@@ -1,0 +1,50 @@
+{
+  "sourceHashes": [
+    "b60c4238ecc290ac795c4f011b133305225ac2c6059076393c395ade216d7ea4",
+    "2930fd727ea304b8cd2c11db25ec091a716b0d6ee1a66597b77e73b1030cc7a0"
+  ],
+  "bounds": [
+    {
+      "left": 132,
+      "top": 130,
+      "width": 1902,
+      "height": 487,
+      "originalWidth": 2172,
+      "originalHeight": 724
+    },
+    {
+      "left": 173,
+      "top": 174,
+      "width": 906,
+      "height": 906,
+      "originalWidth": 1254,
+      "originalHeight": 1254
+    }
+  ],
+  "header": {
+    "width": 720,
+    "height": 184
+  },
+  "generated": {
+    "neurolink-logo-header.png": {
+      "bytes": 101630,
+      "sha256": "35e1e3a4de56bc92ecd3801a5ce06e82598dbaf1d58a2e3b3cb7e7fd6184e779"
+    },
+    "favicon-16x16.png": {
+      "bytes": 793,
+      "sha256": "a4f3e952af82ee684aff25bc6eb48d13ef9598c1eb1f6b063e8df5768823c35d"
+    },
+    "favicon-32x32.png": {
+      "bytes": 2484,
+      "sha256": "ac0cc4018f01c2f6db935d404d1a037eeff20d53fe7a4181fc082b51df4982f2"
+    },
+    "favicon-48x48.png": {
+      "bytes": 4715,
+      "sha256": "fa5b6cd5c1ac20c46352714af9cbe4ed9cdeb5661d594122ddaddc53e9675b97"
+    },
+    "apple-touch-icon.png": {
+      "bytes": 44092,
+      "sha256": "4c9aa15fefbee288052384480a851675e9471b18ebadcabed0f4209cb7c3c722"
+    }
+  }
+}
