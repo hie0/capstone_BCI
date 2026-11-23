@@ -848,7 +848,41 @@
     justify-content: flex-start;
   }
   .curved-tree-svg { width: 660px; min-width: 660px; max-height: 280px; }
-  .comm-option-cards-container, .comm-neuro-suite,
+  .comm-neuro-suite,
   .monitor-meta-grid { grid-template-columns: 1fr; }
+  .comm-option-cards-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .option-card {
+    min-width: 0;
+    min-height: 190px;
+    padding: 14px 11px;
+    border-radius: 16px;
+  }
+  .card-top-bar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .dir-tag {
+    padding: 4px 7px;
+    font-size: 9px;
+  }
+  .electrode-tag { font-size: 9px; }
+  .card-body {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card-symbol { font-size: 28px; }
+  .card-label { font-size: 14px; }
+  .card-english { font-size: 8px; }
+  .card-desc { font-size: 9px; }
+  .card-live-indicator {
+    align-items: flex-start;
+    font-size: 9px;
+    line-height: 1.4;
+  }
   .neuro-suite-card.brain-box { flex-direction: column; }
 }

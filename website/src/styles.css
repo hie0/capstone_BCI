@@ -4872,7 +4872,7 @@ td:first-child {
   }
 
   #channel-method .atlas-panel {
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    grid-template-columns: 1fr;
     gap: 14px;
     padding: 16px;
   }
@@ -4888,7 +4888,7 @@ td:first-child {
   }
 
   #channel-method .atlas-insight {
-    grid-column: 2;
+    grid-column: 1;
   }
 
   #channel-method .atlas-explorer .segmented {
@@ -4905,9 +4905,9 @@ td:first-child {
   }
 
   #channel-method .atlas-explorer .atlas-svg {
-    width: 100%;
-    max-height: 300px;
-    margin-top: 8px;
+    width: min(72%, 250px);
+    max-height: 250px;
+    margin: 8px auto 0;
   }
 
   #channel-method .electrode-role-card {
