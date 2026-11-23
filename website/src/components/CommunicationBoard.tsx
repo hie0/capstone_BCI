@@ -420,7 +420,7 @@ export function CommunicationBoard() {
       </div>
 
       <p className="comm-intro">
-        LEFT / RIGHT Motor Imagery를 단계형 Message Selection과 Voice Output으로 연결해, 움직임이나 말하기가 어려운 사용자의 의사표현을 돕습니다.
+        LEFT / RIGHT Motor Imagery로 의사표현을 단계적으로 선택하고, 선택된 문장은 TTS 음성으로 출력됩니다. 움직이거나 말하기 어려운 사용자의 의사소통을 돕는 보조 기능입니다.
       </p>
 
       {/* Voice Output Speech Window */}

@@ -244,13 +244,15 @@
   .runner-hud { top: 10px; left: 10px; right: 10px; gap: 6px; }
   .runner-hud > div { padding: 7px 9px; }
   .runner-mini-brain-box {
-    top: 94px; right: 10px; width: 126px; height: 150px;
-    padding: 7px 6px; border-radius: 16px; transform: none;
+    top: 92px; right: 9px; width: 96px; height: 116px;
+    padding: 6px 5px; border-radius: 14px; transform: none;
   }
-  .mini-brain-header { gap: 4px; font-size: 9px; }
-  .mini-brain-svg-wrap { width: 102px; height: 102px; }
-  .mini-brain-svg-wrap svg.atlas-svg { max-width: 102px; max-height: 102px; }
-  .mini-brain-label { font-size: 9px; }
+  .mini-brain-header { gap: 3px; font-size: 8px; }
+  .mini-brain-header svg { width: 12px; height: 12px; }
+  .mini-brain-dot { width: 5px; height: 5px; }
+  .mini-brain-svg-wrap { width: 76px; height: 76px; }
+  .mini-brain-svg-wrap svg.atlas-svg { max-width: 76px; max-height: 76px; }
+  .mini-brain-label { font-size: 8px; }
   .runner-lane-hints { left: 12px; right: 12px; bottom: 12px; }
   .runner-lane-hints span { padding: 7px 10px; font-size: 10px; }
   .runner-monitor .monitor-stats { grid-template-columns: 1fr 1fr; }

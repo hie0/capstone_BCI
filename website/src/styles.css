@@ -4824,7 +4824,166 @@ td:first-child {
 @media (max-width: 760px) {
   .model-roster-grid,
   .research-results-detail .insight-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .model-roster {
+    padding: 16px;
+  }
+
+  .model-roster-grid {
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .model-roster-grid > div {
+    min-height: 128px;
+    padding: 14px;
+  }
+
+  .model-roster-grid strong {
+    font-size: 11px;
+  }
+
+  .model-roster-grid p {
+    font-size: 8px;
+  }
+
+  .research-results-detail .insight-row {
+    gap: 10px;
+  }
+
+  .research-results-detail .insight-row > div {
+    min-width: 0;
+    padding: 16px 14px;
+  }
+
+  .research-results-detail .insight-row span {
+    font-size: 8px;
+    overflow-wrap: anywhere;
+  }
+
+  .research-results-detail .insight-row strong {
+    font-size: clamp(22px, 7.5vw, 30px);
+  }
+
+  .research-results-detail .insight-row p {
+    font-size: 9px;
+  }
+
+  #channel-method .atlas-panel {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 14px;
+    padding: 16px;
+  }
+
+  #channel-method .reduction-hero {
+    grid-column: 1 / -1;
+    padding: 14px 16px;
+  }
+
+  #channel-method .atlas-explorer {
+    grid-column: 1;
+    padding-top: 0;
+  }
+
+  #channel-method .atlas-insight {
+    grid-column: 2;
+  }
+
+  #channel-method .atlas-explorer .segmented {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  #channel-method .atlas-explorer .segmented button {
+    min-width: 0;
+    min-height: 36px;
+    padding: 6px 3px;
+    font-size: 8px;
+  }
+
+  #channel-method .atlas-explorer .atlas-svg {
+    width: 100%;
+    max-height: 300px;
+    margin-top: 8px;
+  }
+
+  #channel-method .electrode-role-card {
+    padding: 14px;
+  }
+
+  #channel-method .electrode-role-card .electrode-name {
+    margin: 7px 0 9px;
+    font-size: 38px;
+  }
+
+  #channel-method .channel-details-card h3 {
+    margin: 10px 0 4px;
+    font-size: 11px;
+  }
+
+  #channel-method .channel-details-card .channel-role-copy,
+  #channel-method .motor-imagery-control p {
+    font-size: 9px;
+    line-height: 1.55;
+  }
+
+  #channel-method .motor-imagery-control {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+
+  #channel-method .motor-imagery-control .segmented button {
+    min-height: 38px;
+    padding-inline: 3px;
+    font-size: 9px;
+  }
+
+  .application-preview {
+    gap: 10px;
+  }
+
+  .application-preview > a {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 22px;
+    align-items: center;
+    column-gap: 12px;
+    min-height: 112px;
+    padding: 16px 18px;
+  }
+
+  .application-preview > a > svg:first-child {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    width: 30px;
+    height: 30px;
+    margin: 0;
+  }
+
+  .application-preview > a > svg:last-child {
+    position: static;
+    grid-column: 3;
+    grid-row: 1 / 4;
+    width: 20px;
+  }
+
+  .application-preview span,
+  .application-preview h3,
+  .application-preview p {
+    grid-column: 2;
+    margin: 0;
+  }
+
+  .application-preview h3 {
+    font-size: 16px;
+    line-height: 1.35;
+  }
+
+  .application-preview p {
+    font-size: 10px;
+    line-height: 1.5;
   }
 
   .research-process-overview {

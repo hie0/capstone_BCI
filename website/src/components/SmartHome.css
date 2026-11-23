@@ -549,7 +549,13 @@
   .smart-home-active .workspace-heading.application-heading h2 { font-size: 26px; }
   .smart-home-active .workspace-heading.application-heading .button { min-width: 96px; }
   .smart-home-active .smart-layout {
-    display: flex; flex-direction: column; gap: 16px;
+    display: grid;
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    grid-template-areas:
+      "room room"
+      "wearable settings"
+      "monitor monitor";
+    gap: 16px;
   }
   .smart-home-active .settings, .smart-home-active .monitor,
   .smart-home-active .room-panel, .smart-home-active .wearable-live-panel {
@@ -558,7 +564,7 @@
   .smart-home-active .device-menu button,
   .smart-home-active .command-buttons > button { min-height: 56px; }
   .smart-home-active .room-scene { height: clamp(290px, 72vw, 420px); }
-  .smart-home-active .wearable-live-scene { height: clamp(300px, 78vw, 390px); }
+  .smart-home-active .wearable-live-scene { height: clamp(220px, 48vw, 320px); }
 }
 
 @media (max-width: 430px) {
@@ -567,6 +573,17 @@
   }
   .smart-home-active .workspace-heading.application-heading .button {
     justify-self: start;
+  }
+  .smart-home-active .smart-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "room"
+      "wearable"
+      "settings"
+      "monitor";
+  }
+  .smart-home-active .wearable-live-scene {
+    height: 225px;
   }
   .smart-home-active .settings { grid-template-columns: 1fr; }
   .smart-home-active .settings .panel-title,
