@@ -521,3 +521,31 @@
     font-size: 29px;
   }
 }
+
+@media (max-width: 820px) {
+  .wearable-story-section { margin-top: 32px; }
+  .wearable-section-heading { margin-bottom: 18px; }
+  .wearable-section-heading h2 { font-size: 25px; }
+  .wearable-comparison-change {
+    gap: 8px; margin-bottom: 14px; padding: 12px 14px;
+  }
+  .wearable-comparison-change > span,
+  .wearable-comparison-change > strong { font-size: 18px; }
+  .wearable-comparison-grid { gap: 14px; }
+  .wearable-comparison-title { padding: 15px 18px; }
+  .wearable-comparison-title > span > b { font-size: 21px; }
+  .wearable-comparison-title > strong { font-size: 29px; }
+  .wearable-photo { aspect-ratio: 16 / 10; }
+  .wearable-before-photo > img { object-position: center 32%; }
+  .wearable-comparison-card figcaption { padding: 18px; }
+  .wearable-comparison-card h3 { margin: 8px 0; font-size: 19px; }
+  .wearable-comparison-card figcaption > p {
+    margin-bottom: 12px; font-size: 12px; line-height: 1.65;
+  }
+}
+
+@media (max-width: 430px) {
+  .wearable-photo { aspect-ratio: 16 / 9; }
+  .wearable-comparison-title > span > small { font-size: 10px; }
+  .wearable-photo-badge { top: 10px; left: 10px; padding: 6px 8px; }
+}

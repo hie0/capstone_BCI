@@ -5064,3 +5064,108 @@ td:first-child {
   .app-picker span { font-size: 9px; }
   .data-legend { align-items: flex-start; flex-direction: column; }
 }
+
+/* Mobile content density: keep every section readable without desktop-scale cards. */
+@media (max-width: 820px) {
+  .section { padding-block: 56px; }
+  .section-title { align-items: flex-start; flex-direction: column; gap: 16px; }
+  .section-title h2 { font-size: clamp(27px, 8vw, 36px); line-height: 1.28; }
+  .section-title p { max-width: none; font-size: 13px; line-height: 1.75; }
+  .problem-grid { grid-template-columns: 1fr; gap: 16px; }
+  .problem-grid article { padding: 22px 18px; }
+  .problem-grid h3 { font-size: 21px; line-height: 1.45; }
+
+  .research-process-overview { margin-top: 40px; }
+  .workflow-heading { margin-top: 0; }
+  .workflow-heading strong { font-size: 26px; line-height: 1.3; }
+  .research-workflow {
+    display: grid;
+    grid-template-columns: 1fr;
+    margin-top: 20px;
+  }
+  .research-workflow > div {
+    display: grid;
+    grid-template-columns: 28px 32px minmax(88px, .65fr) minmax(0, 1.35fr);
+    align-items: center;
+    gap: 12px;
+    min-height: 0;
+    padding: 18px 16px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .research-workflow > div:last-child { border-bottom: 0; }
+  .research-workflow > div::before {
+    top: 0; right: 16px; left: 16px; height: 2px;
+  }
+  .research-workflow svg { width: 24px; height: 24px; margin: 0; }
+  .research-process-overview .research-workflow strong {
+    font-size: 15px; line-height: 1.4; word-break: keep-all;
+  }
+  .research-process-overview .research-workflow small {
+    font-size: 11px; line-height: 1.6;
+  }
+
+  .stability-method { margin-top: 24px; padding: 20px 16px; }
+  .stability-heading { padding-bottom: 18px; }
+  .stability-heading h3 { font-size: 24px; line-height: 1.35; }
+  .stability-heading p { font-size: 12px; line-height: 1.7; }
+  .stability-visual {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 12px;
+  }
+  .stability-visual > b { display: none; }
+  .stability-visual-step {
+    width: auto;
+    max-width: none;
+    min-height: 170px;
+    margin: 0;
+    padding: 12px 8px;
+    border: 1px solid #dce6e3;
+    border-radius: 12px;
+    background: rgba(255,255,255,.68);
+  }
+  .stability-visual-step:last-child { padding: 12px 8px; border: 1px solid #dce6e3; }
+  .stability-visual-step .stability-diagram { max-height: 125px; }
+  .stability-visual-step > span { font-size: 10px; }
+  .stability-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .stability-flow > i { display: none; }
+  .stability-flow article { padding: 16px 14px; }
+  .stability-flow article > strong { font-size: 15px; }
+  .stability-flow article > p { font-size: 11px; line-height: 1.65; }
+  .stability-flow article > .stability-diagram { max-width: 220px; max-height: 150px; }
+
+  .findings { grid-template-columns: 1fr; gap: 24px; }
+  .result-highlight { padding: 20px 16px; }
+  .result-highlight strong { font-size: 30px; }
+  .subject-results-dashboard { padding-inline: 12px; }
+}
+
+@media (max-width: 430px) {
+  .section { padding-block: 44px; }
+  .workflow-heading > b { align-self: flex-start; }
+  .workflow-heading strong { font-size: 24px; }
+  .research-workflow > div {
+    grid-template-columns: 24px 28px minmax(82px, .65fr) minmax(0, 1.35fr);
+    gap: 9px;
+    padding: 16px 12px;
+  }
+  .research-process-overview .research-workflow strong { font-size: 14px; }
+  .research-process-overview .research-workflow small { font-size: 10.5px; }
+  .stability-visual-step { min-height: 150px; padding: 10px 6px; }
+  .stability-visual-step .stability-diagram { max-height: 105px; }
+  .stability-flow { grid-template-columns: 1fr; }
+  .stability-flow article {
+    display: grid;
+    grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr);
+    gap: 8px 12px;
+    align-items: center;
+  }
+  .stability-flow article > span,
+  .stability-flow article > strong,
+  .stability-flow article > p,
+  .stability-flow article > code { grid-column: 2; }
+  .stability-flow article > .stability-diagram {
+    grid-column: 1; grid-row: 1 / span 4; margin: 0; max-height: 130px;
+  }
+}

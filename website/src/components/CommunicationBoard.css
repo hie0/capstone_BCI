@@ -825,6 +825,29 @@
   }
   .header-actions .button:last-child:first-child { grid-column: 1 / -1; }
   .comm-intro { margin-inline: 0; padding: 14px; }
+  .tree-diagram-shell {
+    padding: 10px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tree-diagram-shell::after {
+    content: "좌우로 밀어 전체 선택 경로 보기";
+    position: sticky;
+    left: 10px;
+    display: block;
+    width: max-content;
+    margin-top: 4px;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .curved-tree-container {
+    width: 660px;
+    height: 280px;
+    justify-content: flex-start;
+  }
+  .curved-tree-svg { width: 660px; min-width: 660px; max-height: 280px; }
   .comm-option-cards-container, .comm-neuro-suite,
   .monitor-meta-grid { grid-template-columns: 1fr; }
   .neuro-suite-card.brain-box { flex-direction: column; }

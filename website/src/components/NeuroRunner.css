@@ -244,8 +244,14 @@
   .runner-hud { top: 10px; left: 10px; right: 10px; gap: 6px; }
   .runner-hud > div { padding: 7px 9px; }
   .runner-mini-brain-box {
-    top: 96px; right: 50%; width: min(208px, calc(100% - 48px));
-    transform: translateX(50%);
+    top: 94px; right: 10px; width: 126px; height: 150px;
+    padding: 7px 6px; border-radius: 16px; transform: none;
   }
+  .mini-brain-header { gap: 4px; font-size: 9px; }
+  .mini-brain-svg-wrap { width: 102px; height: 102px; }
+  .mini-brain-svg-wrap svg.atlas-svg { max-width: 102px; max-height: 102px; }
+  .mini-brain-label { font-size: 9px; }
+  .runner-lane-hints { left: 12px; right: 12px; bottom: 12px; }
+  .runner-lane-hints span { padding: 7px 10px; font-size: 10px; }
   .runner-monitor .monitor-stats { grid-template-columns: 1fr 1fr; }
 }

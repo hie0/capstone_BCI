@@ -209,6 +209,18 @@ export function CommunicationBoard() {
   const committing = useRef(false);
   const processedTrial = useRef<number | null>(null);
   const action = useRef<{ run: () => void; remaining: number; started: number; speed: number; timer?: number } | null>(null);
+  const treeScrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const centerMobileTree = () => {
+      const shell = treeScrollRef.current;
+      if (!shell || window.innerWidth > 430) return;
+      shell.scrollLeft = Math.max(0, (shell.scrollWidth - shell.clientWidth) / 2);
+    };
+    centerMobileTree();
+    window.addEventListener("resize", centerMobileTree);
+    return () => window.removeEventListener("resize", centerMobileTree);
+  }, []);
   const right = 100 - left;
   const confidence = Math.max(left, right);
   const uncertain = confidence < THRESHOLD;
@@ -454,7 +466,7 @@ export function CommunicationBoard() {
 
 
       {/* Tree Visualization Container (Refined Sage Green vs Slate Blue Harmony) */}
-      <div className="tree-diagram-shell">
+      <div className="tree-diagram-shell" ref={treeScrollRef}>
         <div className="curved-tree-container">
           <svg viewBox="0 0 760 300" className="curved-tree-svg" fill="none">
             {/* Connector Bezier Curves: Left is Sage Green, Right is Slate Blue */}
