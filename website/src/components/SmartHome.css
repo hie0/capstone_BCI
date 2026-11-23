@@ -532,3 +532,49 @@
     font-size: 11px;
   }
 }
+
+@media (max-width: 820px) {
+  .smart-home-active .workspace-heading.application-heading {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end; gap: 12px;
+  }
+  .smart-home-active .workspace-heading.application-heading > div:first-child {
+    grid-template-columns: 1fr; min-width: 0;
+  }
+  .smart-home-active .workspace-heading.application-heading .eyebrow,
+  .smart-home-active .workspace-heading.application-heading h2,
+  .smart-home-active .workspace-heading.application-heading p {
+    grid-column: 1; grid-row: auto;
+  }
+  .smart-home-active .workspace-heading.application-heading h2 { font-size: 26px; }
+  .smart-home-active .workspace-heading.application-heading .button { min-width: 96px; }
+  .smart-home-active .smart-layout {
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .smart-home-active .settings, .smart-home-active .monitor,
+  .smart-home-active .room-panel, .smart-home-active .wearable-live-panel {
+    width: 100%; min-width: 0;
+  }
+  .smart-home-active .device-menu button,
+  .smart-home-active .command-buttons > button { min-height: 56px; }
+  .smart-home-active .room-scene { height: clamp(290px, 72vw, 420px); }
+  .smart-home-active .wearable-live-scene { height: clamp(300px, 78vw, 390px); }
+}
+
+@media (max-width: 430px) {
+  .smart-home-active .workspace-heading.application-heading {
+    grid-template-columns: 1fr; align-items: stretch;
+  }
+  .smart-home-active .workspace-heading.application-heading .button {
+    justify-self: start;
+  }
+  .smart-home-active .settings { grid-template-columns: 1fr; }
+  .smart-home-active .settings .panel-title,
+  .smart-home-active .settings .note { grid-column: 1; }
+  .smart-home-active .settings .field-pair { display: contents; }
+  .smart-home-active .settings select { min-height: 44px; font-size: 12px; }
+  .smart-home-active .device-menu { gap: 6px; }
+  .smart-home-active .device-menu button { padding-inline: 4px; }
+  .smart-home-active .device-menu button span,
+  .smart-home-active .device-menu button small { font-size: 9px; }
+}
